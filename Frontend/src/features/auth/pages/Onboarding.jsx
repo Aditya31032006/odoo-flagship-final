@@ -128,7 +128,7 @@ export default function Onboarding() {
 
   return (
     <div className="df-auth-container">
-      <div className={`df-auth-card ${registerType === 'company' ? 'df-auth-card--wide' : ''}`}>
+      <div className="df-auth-card df-auth-card--wide">
         {/* Header */}
         <div className="df-auth-card__header">
           <div className="brand-badge" style={{ background: 'rgba(66, 133, 244, 0.15)', borderColor: 'rgba(66, 133, 244, 0.3)', color: '#93c5fd' }}>
@@ -161,7 +161,7 @@ export default function Onboarding() {
         {/* 2-Option Segmented Switcher */}
         <div className="df-auth-card__role-selector">
           <label>Choose Registration Type:</label>
-          <div className="role-grid" style={{ gridTemplateColumns: '1fr 1fr' }}>
+          <div className="role-grid">
             <button
               type="button"
               className={`role-chip ${registerType === 'company' ? 'active' : ''}`}
@@ -205,8 +205,8 @@ export default function Onboarding() {
         <form className="df-auth-card__form" onSubmit={handleSubmit}>
           {/* OPTION 1: Company Fields */}
           {registerType === 'company' && (
-            <div style={{ padding: '0.85rem', background: 'rgba(255, 255, 255, 0.03)', borderRadius: '8px', border: '1px solid rgba(255, 255, 255, 0.08)' }}>
-              <div style={{ fontSize: '0.75rem', fontWeight: 600, color: '#38bdf8', marginBottom: '0.75rem', textTransform: 'uppercase' }}>
+            <div className="df-auth-card__sub-section">
+              <div className="sub-section-title">
                 🏢 Company Details
               </div>
               <div className="form-row">
@@ -248,7 +248,7 @@ export default function Onboarding() {
                 </div>
               </div>
 
-              <div className="form-group" style={{ marginTop: '0.75rem' }}>
+              <div className="form-group" style={{ marginTop: '0.5rem' }}>
                 <label htmlFor="billing_address">Billing Address (Optional)</label>
                 <div className="input-wrapper">
                   <input
@@ -270,8 +270,8 @@ export default function Onboarding() {
 
           {/* OPTION 2: Employee Under Company (Requires Company ID) */}
           {registerType === 'employee' && (
-            <div style={{ padding: '0.85rem', background: 'rgba(255, 255, 255, 0.03)', borderRadius: '8px', border: '1px solid rgba(255, 255, 255, 0.08)' }}>
-              <div style={{ fontSize: '0.75rem', fontWeight: 600, color: '#38bdf8', marginBottom: '0.75rem', textTransform: 'uppercase' }}>
+            <div className="df-auth-card__sub-section">
+              <div className="sub-section-title">
                 🏢 Parent Company Identification
               </div>
               <div className="form-group">
