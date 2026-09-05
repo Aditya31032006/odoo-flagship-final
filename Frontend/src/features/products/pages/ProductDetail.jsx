@@ -627,7 +627,7 @@ export const ProductDetail = ({ isNew = false }) => {
             </table>
           </div>
 
-        
+
 
           {/* Section: Related Subscription Plans & Recurring Add-ons */}
           <div className="df-product-detail__panel">

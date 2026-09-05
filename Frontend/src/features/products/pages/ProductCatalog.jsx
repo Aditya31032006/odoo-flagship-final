@@ -186,7 +186,7 @@ export const ProductCatalog = () => {
         </div>
 
         {/* Bottom Banner matching Wireframe #16 */}
-      
+
       </div>
     </div>
   );

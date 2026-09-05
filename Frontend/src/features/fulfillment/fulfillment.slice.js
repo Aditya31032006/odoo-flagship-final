@@ -45,9 +45,10 @@ export const fetchFulfillmentDetail = createAsyncThunk(
 
 export const acceptSuggestedSplit = createAsyncThunk(
   'fulfillment/acceptSplit',
-  async (orderId, { rejectWithValue }) => {
+  async (orderId, { dispatch, rejectWithValue }) => {
     try {
       const data = await fulfillmentApi.acceptSplit(orderId);
+      dispatch(fetchFulfillmentList());
       return data;
     } catch (err) {
       return rejectWithValue(
@@ -59,9 +60,10 @@ export const acceptSuggestedSplit = createAsyncThunk(
 
 export const saveManualOverride = createAsyncThunk(
   'fulfillment/saveManualOverride',
-  async ({ orderId, splits, backorderQty }, { rejectWithValue }) => {
+  async ({ orderId, splits, backorderQty }, { dispatch, rejectWithValue }) => {
     try {
       const data = await fulfillmentApi.saveManualOverride(orderId, { splits, backorderQty });
+      dispatch(fetchFulfillmentList());
       return data;
     } catch (err) {
       return rejectWithValue(
@@ -73,9 +75,10 @@ export const saveManualOverride = createAsyncThunk(
 
 export const completeShipment = createAsyncThunk(
   'fulfillment/completeShipment',
-  async (orderId, { rejectWithValue }) => {
+  async (orderId, { dispatch, rejectWithValue }) => {
     try {
       const data = await fulfillmentApi.completeShipment(orderId);
+      dispatch(fetchFulfillmentList());
       return data;
     } catch (err) {
       return rejectWithValue(
@@ -252,9 +255,17 @@ export const fulfillmentSlice = createSlice({
       })
       .addCase(acceptSuggestedSplit.fulfilled, (state, action) => {
         state.isSavingSplit = false;
-        state.successMsg = action.payload?.message || 'Warehouse split accepted successfully!';
+        state.successMsg = action.payload?.message || 'Warehouse split accepted! Order is now being shipped.';
         if (action.payload?.data) {
           state.currentDetail = action.payload.data;
+        }
+        const orderIdTarget = action.meta.arg;
+        if (orderIdTarget) {
+          state.orders = state.orders.filter(
+            (o) =>
+              String(o.order_id) !== String(orderIdTarget) &&
+              String(o.order_number) !== String(orderIdTarget)
+          );
         }
       })
       .addCase(acceptSuggestedSplit.rejected, (state, action) => {
@@ -274,6 +285,14 @@ export const fulfillmentSlice = createSlice({
         if (action.payload?.data) {
           state.currentDetail = action.payload.data;
         }
+        const orderIdTarget = action.meta.arg?.orderId;
+        if (orderIdTarget) {
+          state.orders = state.orders.filter(
+            (o) =>
+              String(o.order_id) !== String(orderIdTarget) &&
+              String(o.order_number) !== String(orderIdTarget)
+          );
+        }
       })
       .addCase(saveManualOverride.rejected, (state, action) => {
         state.isSavingSplit = false;
@@ -291,6 +310,14 @@ export const fulfillmentSlice = createSlice({
         state.successMsg = action.payload?.message || 'Shipment completed! Order moved to Payment.';
         if (action.payload?.data) {
           state.currentDetail = action.payload.data;
+        }
+        const orderIdTarget = action.meta.arg;
+        if (orderIdTarget) {
+          state.orders = state.orders.filter(
+            (o) =>
+              String(o.order_id) !== String(orderIdTarget) &&
+              String(o.order_number) !== String(orderIdTarget)
+          );
         }
       })
       .addCase(completeShipment.rejected, (state, action) => {

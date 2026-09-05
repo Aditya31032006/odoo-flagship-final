@@ -226,19 +226,19 @@ export function enrichCustomerUserTier(user) {
         let ringColor = '#ffffff';
         let ringClass = 'df-avatar--standard';
 
-        if (paidCount >= 5) {
+        if (paidCount >= 9) {
             tierName = 'Gold';
             tierBadge = 'Gold Customer';
             tierMaxDiscount = 15;
             ringColor = '#eab308';
             ringClass = 'df-avatar--gold';
-        } else if (paidCount >= 4) {
+        } else if (paidCount >= 6) {
             tierName = 'Silver';
             tierBadge = 'Silver Customer';
             tierMaxDiscount = 10;
             ringColor = '#cbd5e1';
             ringClass = 'df-avatar--silver';
-        } else if (paidCount >= 2) {
+        } else if (paidCount >= 3) {
             tierName = 'Bronze';
             tierBadge = 'Bronze Customer';
             tierMaxDiscount = 5;

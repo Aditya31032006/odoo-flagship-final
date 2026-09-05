@@ -1,0 +1,947 @@
+// ============================================================
+// DEALFLOW360 - DELIVERY SCHEDULE & OPERATIONS CALENDAR SCSS
+// Enhanced with IST timezone support and High-Tier Modal Design
+// ============================================================
+@use '../../../shared/styles/variables' as vars;
+@use '../../../shared/styles/mixins' as mix;
+
+.df-calendar-page {
+  width: 100%;
+  min-height: calc(100vh - 54px);
+  padding: 1.5rem 2rem 3.5rem 2rem;
+  font-family: vars.$font-family-base;
+  box-sizing: border-box;
+
+  @media (max-width: 768px) {
+    padding: 1rem 1rem 2.5rem 1rem;
+  }
+
+  &__container {
+    max-width: 1440px;
+    margin: 0 auto;
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  // Header
+  &__header {
+    margin-bottom: 1.5rem;
+
+    &-title {
+      font-size: 2rem;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      margin: 0 0 0.35rem 0;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    &-subtitle {
+      font-size: 0.9375rem;
+      color: var(--df-text-muted);
+      margin: 0;
+    }
+  }
+
+  // Top KPI Metric Cards Grid
+  &__kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.25rem;
+    margin-bottom: 1.75rem;
+
+    @media (max-width: 900px) {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  &__kpi-card {
+    background: var(--df-bg-card);
+    border: 1px solid var(--df-border-card);
+    border-radius: 12px;
+    padding: 1.25rem 1.5rem;
+    box-shadow: var(--df-card-shadow);
+    position: relative;
+    overflow: hidden;
+    transition: transform 0.25s ease, border-color 0.25s ease;
+
+    &:hover {
+      transform: translateY(-2px);
+      border-color: rgba(56, 189, 248, 0.4);
+    }
+
+    &-label {
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--df-text-muted);
+      margin-bottom: 0.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    &-count {
+      font-size: 2rem;
+      font-weight: 800;
+      line-height: 1.1;
+      margin-bottom: 0.35rem;
+      letter-spacing: -0.02em;
+
+      &--today {
+        color: #38bdf8;
+      }
+
+      &--pending {
+        color: #f59e0b;
+      }
+
+      &--overdue {
+        color: #f43f5e;
+      }
+    }
+
+    &-desc {
+      font-size: 0.8125rem;
+      color: var(--df-text-faint);
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
+    }
+  }
+
+  // Main Layout Grid: Left Sidebar + Main Calendar
+  &__layout {
+    display: grid;
+    grid-template-columns: 280px 1fr;
+    gap: 1.5rem;
+
+    @media (max-width: 1080px) {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  // Left Sidebar
+  &__sidebar {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+  }
+
+  &__sidebar-card {
+    background: var(--df-bg-card);
+    border: 1px solid var(--df-border-card);
+    border-radius: 12px;
+    padding: 1.25rem;
+    box-shadow: var(--df-card-shadow);
+
+    &-title {
+      font-size: 0.8125rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--df-text-muted);
+      margin: 0 0 1rem 0;
+      padding-bottom: 0.5rem;
+      border-bottom: 1px solid var(--df-border-subtle);
+    }
+  }
+
+  // Legend List
+  &__legend-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  &__legend-item {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--df-text-secondary);
+
+    .df-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      flex-shrink: 0;
+
+      &--delivered {
+        background: #10b981;
+      }
+
+      &--shipped {
+        background: #38bdf8;
+      }
+
+      &--pending {
+        background: #f59e0b;
+      }
+
+      &--overdue {
+        background: #ef4444;
+      }
+    }
+  }
+
+  // Upcoming Deliveries Quick Feed
+  &__upcoming-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.65rem;
+    max-height: 380px;
+    overflow-y: auto;
+  }
+
+  &__upcoming-item {
+    padding: 0.65rem 0.8rem;
+    background: var(--df-bg-surface);
+    border: 1px solid var(--df-border-subtle);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+
+    &:hover {
+      background: var(--df-table-row-hover);
+      border-color: #38bdf8;
+    }
+
+    &-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 0.25rem;
+    }
+
+    &-code {
+      font-size: 0.78rem;
+      font-weight: 700;
+      color: #38bdf8;
+    }
+
+    &-date {
+      font-size: 0.72rem;
+      color: var(--df-text-muted);
+    }
+
+    &-customer {
+      font-size: 0.8125rem;
+      font-weight: 600;
+      color: var(--df-text-primary);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    &-lead {
+      font-size: 0.72rem;
+      color: var(--df-text-faint);
+      margin-top: 0.2rem;
+    }
+  }
+
+  // Calendar Main Section
+  &__main {
+    background: var(--df-bg-card);
+    border: 1px solid var(--df-border-card);
+    border-radius: 14px;
+    padding: 1.5rem;
+    box-shadow: var(--df-card-shadow);
+    display: flex;
+    flex-direction: column;
+  }
+
+  // Calendar Top Controls
+  &__controls {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.25rem;
+    flex-wrap: wrap;
+    gap: 1rem;
+
+    &-left {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    &-title {
+      font-size: 1.5rem;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      color: var(--df-heading-color);
+      margin: 0;
+    }
+
+    &-nav {
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
+      background: var(--df-bg-surface);
+      border: 1px solid var(--df-border-subtle);
+      border-radius: 8px;
+      padding: 2px;
+    }
+
+    &-btn {
+      background: transparent;
+      border: none;
+      color: var(--df-text-primary);
+      padding: 0.35rem 0.65rem;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 0.8125rem;
+      font-weight: 600;
+      transition: all 0.15s ease;
+
+      &:hover {
+        background: var(--df-table-row-hover);
+      }
+
+      &--today {
+        text-transform: uppercase;
+        font-size: 0.72rem;
+        letter-spacing: 0.05em;
+        background: #0284c7;
+        color: #ffffff;
+
+        &:hover {
+          background: #0369a1;
+        }
+      }
+    }
+
+    &-view-badge {
+      background: #ffffff;
+      color: #0f172a;
+      font-size: 0.75rem;
+      font-weight: 700;
+      padding: 0.35rem 0.85rem;
+      border-radius: 6px;
+      letter-spacing: 0.05em;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+    }
+  }
+
+  // Calendar Days Header (Mon - Sun)
+  &__days-header {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    border-bottom: 1px solid var(--df-border-subtle);
+    padding-bottom: 0.75rem;
+    margin-bottom: 0.5rem;
+    text-align: center;
+  }
+
+  &__day-name {
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--df-text-muted);
+  }
+
+  // Calendar Grid Cells
+  &__grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    grid-auto-rows: minmax(130px, 1fr);
+    gap: 2px;
+    background: var(--df-border-subtle);
+    border: 1px solid var(--df-border-subtle);
+    border-radius: 10px;
+    overflow: hidden;
+  }
+
+  &__cell {
+    background: var(--df-bg-surface);
+    padding: 0.55rem 0.5rem;
+    display: flex;
+    flex-direction: column;
+    min-height: 130px;
+    position: relative;
+    transition: background-color 0.15s ease;
+
+    &:hover {
+      background: var(--df-table-row-hover);
+    }
+
+    &--other-month {
+      opacity: 0.35;
+      background: var(--df-bg-card);
+    }
+
+    &--today {
+      background: var(--df-table-row-hover);
+      box-shadow: inset 0 0 0 1.5px #38bdf8;
+
+      .df-calendar-page__cell-number {
+        color: #38bdf8;
+        font-weight: 800;
+      }
+    }
+
+    &-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 0.4rem;
+      padding: 0 0.2rem;
+    }
+
+    &-number {
+      font-size: 0.8125rem;
+      font-weight: 700;
+      color: var(--df-text-secondary);
+    }
+
+    &-count-badge {
+      font-size: 0.6875rem;
+      font-weight: 700;
+      color: var(--df-text-muted);
+      background: rgba(255, 255, 255, 0.07);
+      border-radius: 4px;
+      padding: 1px 5px;
+    }
+
+    &-events {
+      display: flex;
+      flex-direction: column;
+      gap: 0.35rem;
+      flex: 1;
+      overflow-y: auto;
+      max-height: 110px;
+      padding-right: 3px;
+      scrollbar-width: thin;
+      scrollbar-color: rgba(255, 255, 255, 0.25) transparent;
+
+      &::-webkit-scrollbar {
+        width: 4px;
+      }
+      &::-webkit-scrollbar-track {
+        background: transparent;
+      }
+      &::-webkit-scrollbar-thumb {
+        background: rgba(255, 255, 255, 0.2);
+        border-radius: 4px;
+
+        &:hover {
+          background: #38bdf8;
+        }
+      }
+    }
+  }
+
+  // Delivery Event Pill Inside Calendar Cell
+  &__event-pill {
+    padding: 0.3rem 0.5rem;
+    border-radius: 5px;
+    font-size: 0.72rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    cursor: pointer;
+    border: 1px solid transparent;
+    transition: all 0.15s ease;
+    white-space: nowrap;
+    overflow: hidden;
+    min-height: 24px;
+    box-sizing: border-box;
+
+    &:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
+      filter: brightness(1.1);
+    }
+
+    &--delivered {
+      background: #064e3b;
+      border-color: #059669;
+      color: #6ee7b7;
+    }
+
+    &--shipped {
+      background: #0c4a6e;
+      border-color: #0284c7;
+      color: #7dd3fc;
+    }
+
+    &--pending {
+      background: #78350f;
+      border-color: #d97706;
+      color: #fcd34d;
+    }
+
+    &--overdue {
+      background: #7f1d1d;
+      border-color: #dc2626;
+      color: #fca5a5;
+    }
+
+    &-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      flex-shrink: 0;
+
+      &--delivered { background: #10b981; }
+      &--shipped { background: #38bdf8; }
+      &--pending { background: #f59e0b; }
+      &--overdue { background: #ef4444; }
+    }
+
+    &-code {
+      font-weight: 700;
+      flex-shrink: 0;
+      letter-spacing: -0.01em;
+    }
+
+    &-cust {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      opacity: 0.9;
+      font-weight: 500;
+      padding-left: 3px;
+      border-left: 1px solid rgba(255, 255, 255, 0.2);
+    }
+  }
+
+  // ============================================================
+  // SOLID CLEAN PROFESSIONAL ORDER DELIVERY POPUP MODAL
+  // ============================================================
+  &__modal-backdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(3, 7, 18, 0.85);
+    z-index: 2000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1.5rem;
+    animation: df-fade-in 0.2s ease-out;
+  }
+
+  &__modal {
+    background: var(--df-modal-bg, #0f172a);
+    border: 1px solid var(--df-border-card, #334155);
+    border-radius: 12px;
+    width: 100%;
+    max-width: 720px;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);
+    padding: 1.75rem 2rem;
+    color: var(--df-text-primary);
+    position: relative;
+    animation: df-modal-pop 0.22s ease-out;
+
+    // Modal Header
+    &-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 1.25rem;
+      padding-bottom: 1rem;
+      border-bottom: 1px solid var(--df-border-subtle, #334155);
+      gap: 1rem;
+
+      &-left {
+        display: flex;
+        flex-direction: column;
+        gap: 0.35rem;
+      }
+    }
+
+    &-status-badge-row {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+    }
+
+    &-placed-time {
+      font-size: 0.75rem;
+      font-weight: 500;
+      color: var(--df-text-muted);
+      background: var(--df-bg-surface, #1e293b);
+      border: 1px solid var(--df-border-subtle, #334155);
+      border-radius: 6px;
+      padding: 2px 8px;
+    }
+
+    &-title {
+      font-size: 1.35rem;
+      font-weight: 800;
+      color: var(--df-heading-color);
+      letter-spacing: -0.02em;
+      margin: 0;
+
+      .df-highlight-code {
+        color: #38bdf8;
+        background: #1e293b;
+        border: 1px solid #334155;
+        border-radius: 6px;
+        padding: 0.15rem 0.5rem;
+        font-family: monospace;
+      }
+    }
+
+    &-customer-info {
+      display: flex;
+      align-items: center;
+      gap: 0.65rem;
+      flex-wrap: wrap;
+      margin-top: 0.2rem;
+
+      .df-customer-pill {
+        font-size: 0.875rem;
+        color: var(--df-text-primary);
+      }
+
+      .df-email-pill {
+        font-size: 0.78rem;
+        color: var(--df-text-muted);
+      }
+    }
+
+    &-close-btn {
+      background: var(--df-bg-surface, #1e293b);
+      border: 1px solid var(--df-border-subtle, #334155);
+      color: var(--df-text-muted);
+      width: 32px;
+      height: 32px;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.9rem;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      flex-shrink: 0;
+
+      &:hover {
+        background: #dc2626;
+        color: #ffffff;
+        border-color: #ef4444;
+      }
+    }
+
+    // Lead Time Banner
+    &-lead-banner {
+      background: var(--df-bg-surface, #1e293b);
+      border: 1px solid var(--df-border-subtle, #334155);
+      border-left: 4px solid #0284c7;
+      border-radius: 8px;
+      padding: 0.85rem 1.15rem;
+      margin-bottom: 1.25rem;
+      display: flex;
+      align-items: center;
+      gap: 0.85rem;
+
+      &-icon {
+        width: 36px;
+        height: 36px;
+        border-radius: 8px;
+        background: #0f172a;
+        border: 1px solid #334155;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.15rem;
+        flex-shrink: 0;
+      }
+
+      &-content {
+        .df-lead-title {
+          font-size: 0.9375rem;
+          color: #ffffff;
+          font-weight: 600;
+          margin-bottom: 0.15rem;
+
+          strong {
+            color: #38bdf8;
+            font-weight: 800;
+          }
+        }
+
+        .df-lead-desc {
+          font-size: 0.8125rem;
+          color: var(--df-text-secondary);
+          line-height: 1.4;
+        }
+      }
+    }
+
+    // 4-Tile Overview Grid
+    &-info-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 0.85rem;
+      margin-bottom: 1.25rem;
+
+      @media (max-width: 600px) {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    &-info-item {
+      background: var(--df-bg-surface, #1e293b);
+      border: 1px solid var(--df-border-subtle, #334155);
+      border-radius: 8px;
+      padding: 0.75rem 1rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+
+      label {
+        font-size: 0.72rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        color: var(--df-text-muted);
+      }
+
+      span {
+        font-size: 0.9375rem;
+        font-weight: 600;
+        color: var(--df-text-primary);
+      }
+
+      .df-delivery-date-highlight {
+        color: #38bdf8;
+        font-weight: 700;
+      }
+    }
+
+    // Products Breakdown Section
+    &-products-section {
+      background: var(--df-bg-surface, #1e293b);
+      border: 1px solid var(--df-border-subtle, #334155);
+      border-radius: 8px;
+      padding: 1rem 1.15rem;
+      margin-bottom: 1.5rem;
+
+      .df-products-section-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 0.75rem;
+
+        h4 {
+          font-size: 0.875rem;
+          font-weight: 700;
+          color: var(--df-heading-color);
+          margin: 0;
+        }
+
+        .df-badge-count {
+          font-size: 0.72rem;
+          font-weight: 700;
+          color: #ffffff;
+          background: #0284c7;
+          border-radius: 4px;
+          padding: 2px 8px;
+        }
+      }
+    }
+
+    // Products Table
+    .df-modal-table-container {
+      overflow-x: auto;
+    }
+
+    &-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.8125rem;
+
+      th {
+        text-align: left;
+        padding: 0.6rem 0.75rem;
+        background: #0f172a;
+        color: var(--df-text-muted);
+        font-weight: 700;
+        font-size: 0.72rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        border: 1px solid var(--df-border-subtle, #334155);
+      }
+
+      td {
+        padding: 0.65rem 0.75rem;
+        border: 1px solid var(--df-border-subtle, #334155);
+        color: var(--df-text-secondary);
+        vertical-align: middle;
+      }
+
+      tr.is-max-lead-row {
+        background: rgba(2, 132, 199, 0.1);
+
+        td {
+          border-color: #0284c7;
+        }
+      }
+
+      .df-prod-cell {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+
+        .df-prod-icon {
+          font-size: 1rem;
+        }
+
+        .df-prod-name {
+          color: var(--df-text-primary);
+          font-size: 0.8125rem;
+        }
+      }
+
+      .df-sku-pill {
+        font-size: 0.75rem;
+        color: var(--df-text-muted);
+        background: #0f172a;
+        padding: 2px 6px;
+        border-radius: 4px;
+        border: 1px solid #334155;
+        font-family: monospace;
+      }
+
+      .df-qty-pill {
+        font-weight: 600;
+        color: var(--df-text-primary);
+      }
+
+      .df-lead-time-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.2rem;
+        padding: 3px 8px;
+        border-radius: 4px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        background: #0f172a;
+        color: var(--df-text-secondary);
+        border: 1px solid var(--df-border-subtle, #334155);
+
+        &--max {
+          background: #0284c7;
+          color: #ffffff;
+          border-color: #38bdf8;
+          font-weight: 700;
+        }
+      }
+
+      .df-line-total {
+        font-weight: 700;
+        color: var(--df-text-primary);
+      }
+    }
+
+    // Modal Footer with Solid Action Buttons
+    &-footer {
+      display: flex;
+      justify-content: flex-end;
+      align-items: center;
+      gap: 0.75rem;
+      padding-top: 1rem;
+      border-top: 1px solid var(--df-border-subtle, #334155);
+    }
+
+    &-btn-close {
+      min-width: 90px;
+      padding: 0.55rem 1.15rem !important;
+      font-size: 0.8125rem !important;
+      font-weight: 600 !important;
+      border-radius: 6px !important;
+      background: #1e293b !important;
+      border: 1px solid #475569 !important;
+      color: #cbd5e1 !important;
+      cursor: pointer;
+
+      &:hover {
+        background: #334155 !important;
+        color: #ffffff !important;
+      }
+    }
+
+    &-btn-action {
+      display: inline-flex !important;
+      align-items: center !important;
+      gap: 0.5rem !important;
+      padding: 0.55rem 1.25rem !important;
+      font-size: 0.8125rem !important;
+      font-weight: 700 !important;
+      border-radius: 6px !important;
+      background: #0284c7 !important;
+      border: 1px solid #38bdf8 !important;
+      color: #ffffff !important;
+      cursor: pointer;
+      transition: all 0.2s ease;
+
+      &:hover {
+        background: #0369a1 !important;
+      }
+    }
+  }
+}
+
+// Delivery Status Badges
+.df-delivery-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 3px 10px;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+
+  &--delivered {
+    background: #064e3b;
+    color: #6ee7b7;
+    border: 1px solid #059669;
+  }
+
+  &--shipped {
+    background: #0c4a6e;
+    color: #7dd3fc;
+    border: 1px solid #0284c7;
+  }
+
+  &--pending {
+    background: #78350f;
+    color: #fcd34d;
+    border: 1px solid #d97706;
+  }
+
+  &--overdue {
+    background: #7f1d1d;
+    color: #fca5a5;
+    border: 1px solid #dc2626;
+  }
+}
+
+@keyframes df-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes df-modal-pop {
+  from { opacity: 0; transform: scale(0.96) translateY(12px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
+}
+

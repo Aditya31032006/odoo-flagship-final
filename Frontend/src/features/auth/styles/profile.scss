@@ -6,8 +6,8 @@
   min-height: calc(100vh - 64px);
   padding: 2rem 1.5rem;
   background: radial-gradient(circle at 10% 20%, rgba(37, 99, 235, 0.08) 0%, transparent 40%),
-              radial-gradient(circle at 90% 80%, rgba(6, 182, 212, 0.06) 0%, transparent 40%),
-              linear-gradient(135deg, #0b1120 0%, #0f172a 50%, #1e293b 100%);
+    radial-gradient(circle at 90% 80%, rgba(6, 182, 212, 0.06) 0%, transparent 40%),
+    linear-gradient(135deg, #0b1120 0%, #0f172a 50%, #1e293b 100%);
   color: #ffffff;
   font-family: vars.$font-family-base;
   box-sizing: border-box;
@@ -67,14 +67,17 @@
       border: 3px solid #eab308;
       box-shadow: 0 0 0 3px rgba(234, 179, 8, 0.35), 0 0 20px rgba(234, 179, 8, 0.6);
     }
+
     &.df-avatar--silver {
       border: 3px solid #cbd5e1;
       box-shadow: 0 0 0 3px rgba(203, 213, 225, 0.35), 0 0 20px rgba(203, 213, 225, 0.6);
     }
+
     &.df-avatar--bronze {
       border: 3px solid #cd7f32;
       box-shadow: 0 0 0 3px rgba(205, 127, 50, 0.35), 0 0 20px rgba(205, 127, 50, 0.6);
     }
+
     &.df-avatar--standard {
       border: 3px solid #ffffff;
       box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.3), 0 0 16px rgba(255, 255, 255, 0.5);
@@ -198,21 +201,25 @@
 
     &--tier {
       font-weight: 700;
+
       &.df-avatar--gold {
         background: rgba(234, 179, 8, 0.18);
         color: #facc15;
         border: 1px solid rgba(234, 179, 8, 0.45);
       }
+
       &.df-avatar--silver {
         background: rgba(203, 213, 225, 0.18);
         color: #f1f5f9;
         border: 1px solid rgba(203, 213, 225, 0.45);
       }
+
       &.df-avatar--bronze {
         background: rgba(205, 127, 50, 0.18);
         color: #fdba74;
         border: 1px solid rgba(205, 127, 50, 0.45);
       }
+
       &.df-avatar--standard {
         background: rgba(255, 255, 255, 0.12);
         color: #ffffff;
@@ -426,7 +433,9 @@
           flex-shrink: 0;
         }
 
-        input, select, textarea {
+        input,
+        select,
+        textarea {
           width: 100%;
           height: 40px;
           padding: 0 0.85rem 0 2.45rem;
@@ -444,7 +453,9 @@
             text-transform: uppercase;
           }
 
-          &.input-readonly, &[readonly], &:disabled {
+          &.input-readonly,
+          &[readonly],
+          &:disabled {
             background: rgba(255, 255, 255, 0.04);
             color: #93c5fd;
             border-color: rgba(255, 255, 255, 0.06);
@@ -456,7 +467,8 @@
             border-color: #3b82f6;
             box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
 
-            & + .input-icon, & ~ .input-icon {
+            &+.input-icon,
+            &~.input-icon {
               color: #3b82f6;
             }
           }
@@ -742,7 +754,7 @@
 }
 
 @keyframes spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
-
-
