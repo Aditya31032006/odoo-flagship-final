@@ -210,7 +210,7 @@ export const FulfillmentDetail = () => {
           </table>
         </div>
 
-        {/* Restock & Backorder Alert Banner */}
+        {/* Restock & Backorder Alert Banner or Shipment Status */}
         {hasPendingBackorders ? (
           <div
             className="df-fulfillment__banner df-fulfillment__banner--danger"
@@ -230,6 +230,41 @@ export const FulfillmentDetail = () => {
             <span style={{ fontSize: '1.35rem', flexShrink: 0 }}>⚠️</span>
             <div>
               <strong style={{ color: '#ef4444' }}>Pending Backorder — Stock Required:</strong> Cannot accept split yet. {shortageQty > 0 ? `${shortageQty} unit(s) are missing` : 'Backorders are pending'} due to zero or insufficient warehouse stock. Please add stock to a warehouse in the Inventory section before proceeding.
+            </div>
+          </div>
+        ) : header?.status === 'processing' ? (
+          <div
+            className="df-fulfillment__banner df-fulfillment__banner--prompt"
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.85rem',
+              background: 'rgba(56, 189, 248, 0.12)',
+              border: '1px solid rgba(56, 189, 248, 0.4)',
+              borderRadius: '8px',
+              padding: '0.9rem 1.25rem',
+              color: '#7dd3fc',
+              fontSize: '0.9375rem',
+              fontWeight: 500,
+            }}
+          >
+            <span style={{ fontSize: '1.35rem', flexShrink: 0 }}>🚚</span>
+            <div>
+              <strong style={{ color: '#38bdf8' }}>In Transit:</strong> Suggested warehouse split accepted and shipment is underway. This order has been removed from Orders Awaiting Fulfillment.
+            </div>
+          </div>
+        ) : header?.status === 'fulfilled' ? (
+          <div
+            className="df-fulfillment__banner df-fulfillment__banner--success"
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.85rem',
+            }}
+          >
+            <span style={{ fontSize: '1.35rem', flexShrink: 0 }}>✅</span>
+            <div>
+              <strong>Shipment Delivered:</strong> All warehouse packages delivered. Order moved to Payment / Invoices.
             </div>
           </div>
         ) : (
@@ -293,37 +328,59 @@ export const FulfillmentDetail = () => {
         {/* Actions Bar matching Wireframe #8 */}
         <PermissionGate allowedRoles={['admin', 'operations', 'finance']}>
           <div className="df-fulfillment__actions-bar">
-            <button
-              type="button"
-              className="df-fulfillment__action-btn df-fulfillment__action-btn--accept"
-              onClick={handleAcceptSplit}
-              disabled={isSavingSplit || hasPendingBackorders}
-              style={
-                hasPendingBackorders
-                  ? {
-                      opacity: 0.45,
-                      cursor: 'not-allowed',
-                      filter: 'grayscale(0.6)',
-                    }
-                  : {}
-              }
-              title={
-                hasPendingBackorders
-                  ? `Cannot accept split: ${shortageQty > 0 ? `${shortageQty} units missing.` : 'Pending backorder exists.'} Please add warehouse stock first.`
-                  : 'Accept suggested warehouse splits and move order to shipment'
-              }
-            >
-              {isSavingSplit ? 'Processing...' : 'Accept Suggested Split'}
-            </button>
+            {header?.status === 'processing' ? (
+              <button
+                type="button"
+                className="df-fulfillment__action-btn df-fulfillment__action-btn--accept"
+                onClick={handleCompleteShipment}
+                disabled={isSavingSplit}
+              >
+                {isSavingSplit ? 'Processing...' : 'Complete Shipment & Move to Payment'}
+              </button>
+            ) : header?.status === 'fulfilled' ? (
+              <button
+                type="button"
+                className="df-fulfillment__action-btn df-fulfillment__action-btn--accept"
+                disabled
+                style={{ opacity: 0.7, cursor: 'default' }}
+              >
+                ✅ Shipment Completed
+              </button>
+            ) : (
+              <>
+                <button
+                  type="button"
+                  className="df-fulfillment__action-btn df-fulfillment__action-btn--accept"
+                  onClick={handleAcceptSplit}
+                  disabled={isSavingSplit || hasPendingBackorders}
+                  style={
+                    hasPendingBackorders
+                      ? {
+                          opacity: 0.45,
+                          cursor: 'not-allowed',
+                          filter: 'grayscale(0.6)',
+                        }
+                      : {}
+                  }
+                  title={
+                    hasPendingBackorders
+                      ? `Cannot accept split: ${shortageQty > 0 ? `${shortageQty} units missing.` : 'Pending backorder exists.'} Please add warehouse stock first.`
+                      : 'Accept suggested warehouse splits and move order to shipment'
+                  }
+                >
+                  {isSavingSplit ? 'Processing...' : 'Accept Suggested Split'}
+                </button>
 
-            <button
-              type="button"
-              className="df-fulfillment__action-btn df-fulfillment__action-btn--override"
-              onClick={() => setIsOverrideModalOpen(true)}
-              disabled={isSavingSplit}
-            >
-              Manual Override
-            </button>
+                <button
+                  type="button"
+                  className="df-fulfillment__action-btn df-fulfillment__action-btn--override"
+                  onClick={() => setIsOverrideModalOpen(true)}
+                  disabled={isSavingSplit}
+                >
+                  Manual Override
+                </button>
+              </>
+            )}
           </div>
         </PermissionGate>
       </div>

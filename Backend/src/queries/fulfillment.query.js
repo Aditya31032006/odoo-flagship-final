@@ -61,8 +61,8 @@ export const GET_ORDERS_AWAITING_FULFILLMENT = `
   JOIN customers c ON o.customer_id = c.id
   LEFT JOIN quotations q ON o.quotation_id = q.id
   WHERE (q.status = 'confirmed' OR (q.status IS NULL AND o.status = 'confirmed'))
-    AND (q.status::TEXT NOT IN ('shipment', 'payment', 'rejected', 'cancelled'))
-    AND (o.status::TEXT NOT IN ('processing', 'fulfilled', 'cancelled'))
+    AND (q.status IS NULL OR q.status::TEXT NOT IN ('shipment', 'payment', 'rejected', 'cancelled'))
+    AND (o.status::TEXT NOT IN ('processing', 'partially_fulfilled', 'shipped', 'fulfilled', 'cancelled'))
   ORDER BY o.created_at DESC;
 `;
 

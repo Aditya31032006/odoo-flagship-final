@@ -36,7 +36,7 @@ export const useFulfillment = (orderId = null) => {
   useEffect(() => {
     if (orderId) {
       dispatch(fetchFulfillmentDetail(orderId));
-    } else if (!isInitialized) {
+    } else {
       dispatch(fetchFulfillmentList());
       dispatch(fetchFulfillmentMeta());
     }
@@ -44,7 +44,7 @@ export const useFulfillment = (orderId = null) => {
     return () => {
       dispatch(clearFulfillmentMessages());
     };
-  }, [dispatch, orderId, isInitialized]);
+  }, [dispatch, orderId]);
 
   const refreshList = useCallback(() => {
     dispatch(fetchFulfillmentList());
