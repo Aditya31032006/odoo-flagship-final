@@ -169,7 +169,6 @@ function NavbarComponent() {
   const location = useLocation();
   const navigate = useNavigate();
   const { user, isAuthenticated, logout } = useAuth();
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
   const dropdownRef = useRef(null);
 
@@ -225,9 +224,6 @@ function NavbarComponent() {
     return null;
   }
 
-  const toggleMobileMenu = () => setMobileMenuOpen((prev) => !prev);
-  const closeMobileMenu = () => setMobileMenuOpen(false);
-
   const handleLogout = async () => {
     setProfileDropdownOpen(false);
     await logout();
@@ -240,7 +236,7 @@ function NavbarComponent() {
     <header className="df-navbar-wrapper">
       <nav className="df-navbar" aria-label="Main Navigation">
         {/* Brand Section */}
-        <Link to={homeDestination} className="df-navbar__brand" onClick={closeMobileMenu} title="DealFlow360 Sales Operations Platform">
+        <Link to={homeDestination} className="df-navbar__brand" title="DealFlow360 Sales Operations Platform">
           <div className="df-navbar__brand-logo">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
               <circle cx="12" cy="12" r="10" />
@@ -276,45 +272,40 @@ function NavbarComponent() {
 
         {/* Right Action Utilities */}
         <div className="df-navbar__actions">
-          {/* User Profile / Auth State */}
+          {/* User Profile with Smooth Hover Trigger */}
           {isAuthenticated && user ? (
-            <div className="df-navbar__user-container" ref={dropdownRef}>
+            <div
+              className="df-navbar__user-container"
+              ref={dropdownRef}
+              onMouseEnter={() => setProfileDropdownOpen(true)}
+              onMouseLeave={() => setProfileDropdownOpen(false)}
+            >
               <div
                 className={`df-navbar__user ${location.pathname === '/profile' ? 'active' : ''}`}
-                onClick={() => {
-                  setProfileDropdownOpen(false);
-                  navigate('/profile');
-                }}
-                title="View & Edit My Profile"
+                title="Hover for Profile Options"
               >
                 <div className="df-navbar__user-avatar">{getInitials(user.name)}</div>
                 <span className="df-navbar__user-role">{formatRole(user.role)}</span>
-                <button
-                  type="button"
-                  className="df-navbar__chevron-btn"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setProfileDropdownOpen((prev) => !prev);
-                  }}
-                  title="More Profile Options"
-                >
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="df-navbar__chevron">
+                <span className="df-navbar__chevron-btn">
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    style={{
+                      transform: profileDropdownOpen ? 'rotate(180deg)' : 'rotate(0deg)',
+                      transition: 'transform 0.2s ease',
+                    }}
+                  >
                     <polyline points="6 9 12 15 18 9" />
                   </svg>
-                </button>
+                </span>
               </div>
 
               {/* Profile Dropdown */}
               {profileDropdownOpen && (
                 <div className="df-navbar__dropdown-menu">
-                  <div
-                    className="df-navbar__dropdown-menu-header"
-                    onClick={() => {
-                      setProfileDropdownOpen(false);
-                      navigate('/profile');
-                    }}
-                    title="Open Full Profile"
-                  >
+                  <div className="df-navbar__dropdown-menu-header">
                     <div className="df-navbar__dropdown-menu-name">
                       {user.name}
                     </div>
@@ -378,55 +369,10 @@ function NavbarComponent() {
               Sign In
             </Link>
           )}
-
-
-          {/* Mobile Menu Toggle Button */}
-          {/* <button
-            className="df-navbar__mobile-toggle"
-            onClick={toggleMobileMenu}
-            aria-label="Toggle Navigation Menu"
-            aria-expanded={mobileMenuOpen}
-          >
-            {mobileMenuOpen ? (
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <line x1="18" x2="6" y1="6" y2="18" />
-                <line x1="6" x2="18" y1="6" y2="18" />
-              </svg>
-            ) : (
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <line x1="4" x2="20" y1="12" y2="12" />
-                <line x1="4" x2="20" y1="6" y2="6" />
-                <line x1="4" x2="20" y1="18" y2="18" />
-              </svg>
-            )}
-          </button> */}
         </div>
-
-        {/* Mobile Navigation Drawer */}
-        {/* <div className={`df-navbar__mobile-drawer ${mobileMenuOpen ? 'is-open' : ''}`}>
-          <ul className="df-navbar__mobile-list">
-            {NAV_ITEMS.map((item) => (
-              <li key={item.path}>
-                <NavLink
-                  to={item.path}
-                  onClick={closeMobileMenu}
-                  className={({ isActive }) =>
-                    `df-navbar__mobile-link ${isActive || (item.path === '/dashboard' && location.pathname === '/') ? 'active' : ''}`
-                  }
-                >
-                  {item.icon}
-                  <span>{item.name}</span>
-                  {item.badge && <span className="df-navbar__badge">{item.badge}</span>}
-                  {item.hasPulse && <span className="df-navbar__badge--health" />}
-                </NavLink>
-              </li>
-            ))}
-          </ul>
-        </div> */}
       </nav>
     </header>
   );
 }
 
 export default React.memo(NavbarComponent);
-

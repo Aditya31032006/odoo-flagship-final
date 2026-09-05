@@ -3,13 +3,13 @@
 :root {
   --df-font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
   --df-page-max-width: 1380px;
-  --df-page-padding: 2rem 2rem 3.5rem 2rem;
-  --df-page-padding-mobile: 1.25rem 1rem 2.5rem 1rem;
+  --df-page-padding: 1.5rem 2rem 3.5rem 2rem;
+  --df-page-padding-mobile: 1rem 1rem 2.5rem 1rem;
   --df-title-size: 1.875rem;
   --df-subtitle-size: 0.9375rem;
-  --df-heading-color: #ffffff;
-  --df-text-muted: #94a3b8;
-  --df-bg-base: #0b0f19;
+  --df-heading-color: #0f172a;
+  --df-text-muted: #64748b;
+  --df-bg-base: #f8fafc;
 }
 
 * {
@@ -25,8 +25,8 @@ body {
   margin: 0;
   padding: 0;
   font-family: var(--df-font-family);
-  background-color: #0b0f19 !important;
-  color: #f1f5f9;
+  background-color: #f8fafc !important;
+  color: #0f172a;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   overflow-x: hidden;
@@ -35,7 +35,7 @@ body {
 #root {
   min-height: 100vh;
   width: 100%;
-  background-color: #0b0f19;
+  background-color: #f8fafc;
   display: flex;
   flex-direction: column;
 }
@@ -45,7 +45,7 @@ body {
   flex-direction: column;
   min-height: 100vh;
   width: 100%;
-  background-color: #0b0f19;
+  background-color: #f8fafc;
 }
 
 .app-main-content {
@@ -53,14 +53,14 @@ body {
   display: flex;
   flex-direction: column;
   width: 100%;
-  background-color: #0b0f19;
-  padding-top: 54px;
+  background-color: #f8fafc;
+  padding-top: 76px;
 }
 
 /* Universal Page Container Standards */
 .df-page-wrapper {
   width: 100%;
-  min-height: calc(100vh - 54px);
+  min-height: calc(100vh - 76px);
   padding: var(--df-page-padding);
   box-sizing: border-box;
 }
@@ -70,135 +70,6 @@ body {
   max-width: var(--df-page-max-width);
   margin: 0 auto;
   box-sizing: border-box;
-}
-
-/* Universal Standardized Buttons */
-.df-btn-primary,
-.df-btn-secondary,
-a.df-btn-primary,
-a.df-btn-secondary,
-button.df-btn-primary,
-button.df-btn-secondary,
-.df-dashboard__btn-primary,
-.df-dashboard__btn-secondary,
-.df-quotations__btn-primary,
-.df-quotations__btn-secondary,
-.df-products__btn-primary,
-.df-products__btn-secondary,
-.df-subscriptions__btn-primary,
-.df-subscriptions__btn-secondary,
-.df-invoices__btn-primary,
-.df-invoices__btn-secondary,
-.df-invoices__btn-payment,
-.df-fulfillment__btn-primary,
-.df-fulfillment__btn-secondary,
-.df-fulfillment__add-btn,
-.df-deal-health__btn-primary,
-.df-deal-health__btn-secondary,
-.df-deal-health__btn-scan,
-.df-deal-health__btn-config,
-.df-staff__btn-primary,
-.df-staff__btn-secondary,
-.df-approvals__btn-primary,
-.df-approvals__btn-secondary,
-.df-reports__filter-bar-btn--pdf,
-.df-reports__filter-bar-btn--csv {
-  display: inline-flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  gap: 0.45rem !important;
-  height: 38px !important;
-  min-height: 38px !important;
-  max-height: 38px !important;
-  padding: 0 1rem !important;
-  border-radius: 8px !important;
-  font-size: 0.875rem !important;
-  font-family: var(--df-font-family) !important;
-  line-height: 1 !important;
-  white-space: nowrap !important;
-  text-decoration: none !important;
-  cursor: pointer !important;
-  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
-  box-sizing: border-box !important;
-  flex-shrink: 0 !important;
-}
-
-.df-btn-primary,
-a.df-btn-primary,
-button.df-btn-primary,
-.df-dashboard__btn-primary,
-.df-quotations__btn-primary,
-.df-products__btn-primary,
-.df-subscriptions__btn-primary,
-.df-invoices__btn-primary,
-.df-invoices__btn-payment,
-.df-fulfillment__btn-primary,
-.df-fulfillment__add-btn,
-.df-deal-health__btn-primary,
-.df-deal-health__btn-scan,
-.df-staff__btn-primary,
-.df-approvals__btn-primary,
-.df-reports__filter-bar-btn--pdf {
-  background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%) !important;
-  color: #ffffff !important;
-  font-weight: 600 !important;
-  border: 1px solid rgba(56, 189, 248, 0.35) !important;
-  box-shadow: 0 2px 8px rgba(2, 132, 199, 0.25) !important;
-
-  &:hover {
-    background: linear-gradient(135deg, #0369a1 0%, #075985 100%) !important;
-    border-color: rgba(56, 189, 248, 0.5) !important;
-    box-shadow: 0 4px 14px rgba(2, 132, 199, 0.4) !important;
-    transform: translateY(-1px) !important;
-    color: #ffffff !important;
-  }
-
-  &:active {
-    transform: translateY(0) !important;
-  }
-
-  svg {
-    width: 15px !important;
-    height: 15px !important;
-    flex-shrink: 0 !important;
-  }
-}
-
-.df-btn-secondary,
-a.df-btn-secondary,
-button.df-btn-secondary,
-.df-dashboard__btn-secondary,
-.df-quotations__btn-secondary,
-.df-products__btn-secondary,
-.df-subscriptions__btn-secondary,
-.df-invoices__btn-secondary,
-.df-fulfillment__btn-secondary,
-.df-deal-health__btn-secondary,
-.df-deal-health__btn-config,
-.df-staff__btn-secondary,
-.df-approvals__btn-secondary,
-.df-reports__filter-bar-btn--csv {
-  background: rgba(30, 41, 59, 0.75) !important;
-  color: #cbd5e1 !important;
-  font-weight: 500 !important;
-  border: 1px solid rgba(255, 255, 255, 0.15) !important;
-
-  &:hover {
-    background: rgba(51, 65, 85, 0.85) !important;
-    color: #ffffff !important;
-    border-color: rgba(255, 255, 255, 0.25) !important;
-    transform: translateY(-1px) !important;
-  }
-
-  &:active {
-    transform: translateY(0) !important;
-  }
-
-  svg {
-    width: 15px !important;
-    height: 15px !important;
-    flex-shrink: 0 !important;
-  }
 }
 
 /* Actions Rows Standards */

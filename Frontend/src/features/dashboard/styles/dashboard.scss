@@ -1,21 +1,23 @@
 // ============================================================
-// DEALFLOW360 - SALES DASHBOARD SCSS
+// DEALFLOW360 - MODERN LIGHT-THEME SALES DASHBOARD SCSS
 // ============================================================
+@use '../../../shared/styles/variables' as vars;
+@use '../../../shared/styles/mixins' as mix;
 
 .df-dashboard {
-  min-height: calc(100vh - 54px);
-  background-color: #0b0f19;
+  min-height: calc(100vh - 76px);
+  background-color: vars.$bg-app;
   background-image: 
-    radial-gradient(at 0% 0%, rgba(56, 189, 248, 0.08) 0px, transparent 50%),
-    radial-gradient(at 100% 0%, rgba(99, 102, 241, 0.08) 0px, transparent 50%),
-    radial-gradient(at 50% 100%, rgba(15, 23, 42, 0.9) 0px, transparent 50%);
-  color: #f1f5f9;
-  padding: 2rem 2rem 3.5rem 2rem;
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    radial-gradient(at 0% 0%, rgba(59, 130, 246, 0.04) 0px, transparent 50%),
+    radial-gradient(at 100% 0%, rgba(99, 102, 241, 0.04) 0px, transparent 50%),
+    radial-gradient(at 50% 100%, rgba(241, 245, 249, 0.6) 0px, transparent 50%);
+  color: vars.$text-primary;
+  padding: 1.5rem 2rem 3.5rem 2rem;
+  font-family: vars.$font-family-base;
   box-sizing: border-box;
 
   @media (max-width: 768px) {
-    padding: 1.25rem 1rem 2.5rem 1rem;
+    padding: 1rem 1rem 2.5rem 1rem;
   }
 
   &__container {
@@ -32,68 +34,41 @@
     justify-content: space-between;
     align-items: flex-start;
     flex-wrap: wrap;
-    gap: 1rem;
+    gap: 1.25rem;
   }
 
   &__title-group {
     h1 {
       font-size: 1.875rem;
       font-weight: 700;
-      color: #ffffff;
+      color: vars.$slate-900;
       letter-spacing: -0.025em;
       line-height: 1.25;
       margin: 0 0 0.35rem 0;
       display: flex;
       align-items: center;
       gap: 0.75rem;
+      flex-wrap: wrap;
 
       .badge-role {
         font-size: 0.75rem;
         font-weight: 600;
         text-transform: uppercase;
         letter-spacing: 0.05em;
-        padding: 0.25rem 0.6rem;
-        border-radius: 9999px;
-        background: rgba(56, 189, 248, 0.15);
-        color: #38bdf8;
-        border: 1px solid rgba(56, 189, 248, 0.3);
+        padding: 0.25rem 0.65rem;
+        border-radius: vars.$radius-full;
+        background: vars.$primary-50;
+        color: vars.$primary-700;
+        border: 1px solid vars.$primary-200;
+        box-shadow: 0 1px 3px rgba(37, 99, 235, 0.08);
       }
     }
 
     p {
-      color: #94a3b8;
+      color: vars.$slate-500;
       font-size: 0.9375rem;
       line-height: 1.5;
       margin: 0;
-    }
-  }
-
-  &__refresh-btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.5rem;
-    padding: 0.5rem 1rem;
-    background: rgba(30, 41, 59, 0.6);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    color: #cbd5e1;
-    border-radius: 8px;
-    font-size: 0.875rem;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 0.2s ease;
-
-    &:hover {
-      background: rgba(51, 65, 85, 0.8);
-      color: #ffffff;
-      border-color: rgba(255, 255, 255, 0.2);
-    }
-
-    svg {
-      width: 16px;
-      height: 16px;
-      &.spinning {
-        animation: spin 1s linear infinite;
-      }
     }
   }
 
@@ -109,93 +84,22 @@
   &__actions-row {
     display: flex;
     align-items: center;
-    gap: 1rem;
-    margin-bottom: 2.5rem;
+    gap: 0.875rem;
     flex-wrap: wrap;
-  }
-
-  &__btn-primary {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.45rem;
-    height: 38px;
-    padding: 0 1rem;
-    background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
-    color: #ffffff;
-    border-radius: 8px;
-    font-weight: 600;
-    font-size: 0.875rem;
-    line-height: 1;
-    white-space: nowrap;
-    border: 1px solid rgba(56, 189, 248, 0.35);
-    text-decoration: none;
-    cursor: pointer;
-    box-shadow: 0 2px 8px rgba(2, 132, 199, 0.25);
-    transition: all 0.2s ease;
-    box-sizing: border-box;
-
-    &:hover {
-      background: linear-gradient(135deg, #0369a1 0%, #075985 100%);
-      transform: translateY(-1px);
-      box-shadow: 0 4px 14px rgba(2, 132, 199, 0.4);
-      color: #ffffff;
-    }
-
-    svg {
-      width: 15px;
-      height: 15px;
-      flex-shrink: 0;
-    }
-  }
-
-  &__btn-secondary {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.45rem;
-    height: 38px;
-    padding: 0 1rem;
-    background: rgba(30, 41, 59, 0.75);
-    color: #cbd5e1;
-    border-radius: 8px;
-    font-weight: 500;
-    font-size: 0.875rem;
-    line-height: 1;
-    white-space: nowrap;
-    border: 1px solid rgba(255, 255, 255, 0.15);
-    text-decoration: none;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    box-sizing: border-box;
-
-    &:hover {
-      background: rgba(51, 65, 85, 0.85);
-      color: #ffffff;
-      border-color: rgba(255, 255, 255, 0.25);
-      transform: translateY(-1px);
-    }
-
-    svg {
-      width: 15px;
-      height: 15px;
-      flex-shrink: 0;
-    }
   }
 
   // Recent Activity Section
   &__activity-card {
-    background: rgba(15, 23, 42, 0.75);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 14px;
+    background: #ffffff;
+    border: 1px solid rgba(226, 232, 240, 0.9);
+    border-radius: 16px;
     padding: 1.75rem 2rem;
-    backdrop-filter: blur(12px);
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+    box-shadow: 0 4px 20px -4px rgba(15, 23, 42, 0.05), 0 2px 6px -2px rgba(15, 23, 42, 0.02);
 
     h2 {
       font-size: 1.25rem;
       font-weight: 600;
-      color: #38bdf8;
+      color: vars.$slate-900;
       margin: 0 0 1.25rem 0;
       display: flex;
       align-items: center;
@@ -204,21 +108,20 @@
       svg {
         width: 20px;
         height: 20px;
-        color: #38bdf8;
+        color: vars.$primary-600;
       }
     }
   }
 }
 
-// KPI Stats Card Sub-Component
+// KPI Stats Card Sub-Component (Light Theme)
 .df-kpi-card {
-  background: rgba(15, 23, 42, 0.75);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 14px;
+  background: #ffffff;
+  border: 1px solid rgba(226, 232, 240, 0.9);
+  border-radius: 16px;
   padding: 1.5rem 1.75rem;
-  backdrop-filter: blur(12px);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
-  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 4px 20px -4px rgba(15, 23, 42, 0.05), 0 2px 6px -2px rgba(15, 23, 42, 0.02);
+  transition: all vars.$transition-spring;
   text-decoration: none;
   display: block;
   position: relative;
@@ -237,63 +140,63 @@
 
   &:hover {
     transform: translateY(-3px);
-    border-color: rgba(255, 255, 255, 0.2);
-    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.4);
+    border-color: rgba(203, 213, 225, 0.95);
+    box-shadow: 0 12px 28px -6px rgba(15, 23, 42, 0.08), 0 4px 8px -2px rgba(15, 23, 42, 0.04);
 
     &::before {
-      background: var(--kpi-accent, #38bdf8);
+      background: var(--kpi-accent, #{vars.$primary-500});
     }
   }
 
   &--amber {
     --kpi-accent: #f59e0b;
-    .df-kpi-card__count { color: #fbbf24; }
-    .df-kpi-card__icon-wrapper { background: rgba(245, 158, 11, 0.15); color: #fbbf24; }
+    .df-kpi-card__count { color: #d97706; }
+    .df-kpi-card__icon-wrapper { background: #fef3c7; color: #d97706; }
   }
 
   &--blue {
-    --kpi-accent: #38bdf8;
-    .df-kpi-card__count { color: #38bdf8; }
-    .df-kpi-card__icon-wrapper { background: rgba(56, 189, 248, 0.15); color: #38bdf8; }
+    --kpi-accent: #3b82f6;
+    .df-kpi-card__count { color: #2563eb; }
+    .df-kpi-card__icon-wrapper { background: #eff6ff; color: #2563eb; }
   }
 
   &--rose {
     --kpi-accent: #f43f5e;
-    .df-kpi-card__count { color: #fb7185; }
-    .df-kpi-card__icon-wrapper { background: rgba(244, 63, 94, 0.15); color: #fb7185; }
+    .df-kpi-card__count { color: #e11d48; }
+    .df-kpi-card__icon-wrapper { background: #ffe4e6; color: #e11d48; }
   }
 
   &__top {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 0.75rem;
+    margin-bottom: 0.85rem;
   }
 
   &__title {
-    font-size: 1rem;
+    font-size: 0.9375rem;
     font-weight: 600;
-    color: #e2e8f0;
+    color: vars.$slate-700;
   }
 
   &__icon-wrapper {
-    width: 36px;
-    height: 36px;
-    border-radius: 8px;
+    width: 38px;
+    height: 38px;
+    border-radius: 10px;
     display: flex;
     align-items: center;
     justify-content: center;
 
     svg {
-      width: 18px;
-      height: 18px;
+      width: 19px;
+      height: 19px;
     }
   }
 
   &__body {
     display: flex;
     align-items: baseline;
-    gap: 0.5rem;
+    gap: 0.625rem;
   }
 
   &__count {
@@ -304,49 +207,54 @@
   }
 
   &__subtitle {
-    font-size: 0.9375rem;
-    color: #94a3b8;
+    font-size: 0.875rem;
+    color: vars.$slate-500;
     font-weight: 400;
   }
 
   &__footer {
-    margin-top: 1rem;
+    margin-top: 1.25rem;
     padding-top: 0.75rem;
-    border-top: 1px solid rgba(255, 255, 255, 0.06);
+    border-top: 1px solid vars.$slate-100;
     display: flex;
     justify-content: space-between;
     align-items: center;
     font-size: 0.8125rem;
-    color: #64748b;
+    color: vars.$slate-400;
 
     .view-link {
-      color: #38bdf8;
-      font-weight: 500;
+      color: vars.$primary-600;
+      font-weight: 600;
       display: flex;
       align-items: center;
       gap: 0.25rem;
 
       svg {
-        width: 12px;
-        height: 12px;
+        width: 13px;
+        height: 13px;
+        transition: transform vars.$transition-fast;
       }
     }
   }
+
+  &:hover .view-link svg {
+    transform: translateX(2px);
+  }
 }
 
-// Recent Activity Timeline Sub-Component
+// Recent Activity Timeline Sub-Component (Light Theme)
 .df-activity-feed {
   list-style: none;
   padding: 0;
   margin: 0;
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: 0.875rem;
 
   &__empty {
     padding: 2.5rem 1rem;
     text-align: center;
-    color: #64748b;
+    color: vars.$slate-400;
     font-size: 0.9375rem;
   }
 
@@ -354,14 +262,16 @@
     display: flex;
     align-items: flex-start;
     gap: 1rem;
-    padding: 0.875rem 1rem;
-    background: rgba(30, 41, 59, 0.4);
-    border: 1px solid rgba(255, 255, 255, 0.05);
-    border-radius: 8px;
-    transition: background 0.2s ease;
+    padding: 0.875rem 1.125rem;
+    background: rgba(248, 250, 252, 0.9);
+    border: 1px solid vars.$slate-200;
+    border-radius: 10px;
+    transition: all vars.$transition-fast;
 
     &:hover {
-      background: rgba(30, 41, 59, 0.7);
+      background: #ffffff;
+      border-color: vars.$slate-300;
+      box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
     }
   }
 
@@ -369,14 +279,14 @@
     width: 8px;
     height: 8px;
     border-radius: 50%;
-    background: #38bdf8;
+    background: vars.$primary-500;
     margin-top: 0.45rem;
     flex-shrink: 0;
-    box-shadow: 0 0 8px rgba(56, 189, 248, 0.6);
+    box-shadow: 0 0 6px rgba(59, 130, 246, 0.4);
 
-    &--approved { background: #10b981; box-shadow: 0 0 8px rgba(16, 185, 129, 0.6); }
-    &--rejected { background: #ef4444; box-shadow: 0 0 8px rgba(239, 68, 68, 0.6); }
-    &--submitted { background: #f59e0b; box-shadow: 0 0 8px rgba(245, 158, 11, 0.6); }
+    &--approved { background: #10b981; box-shadow: 0 0 6px rgba(16, 185, 129, 0.4); }
+    &--rejected { background: #ef4444; box-shadow: 0 0 6px rgba(239, 68, 68, 0.4); }
+    &--submitted { background: #f59e0b; box-shadow: 0 0 6px rgba(245, 158, 11, 0.4); }
   }
 
   &__content {
@@ -385,19 +295,19 @@
   }
 
   &__main {
-    color: #e2e8f0;
+    color: vars.$slate-800;
     font-size: 0.9375rem;
     line-height: 1.4;
 
     strong {
-      color: #ffffff;
+      color: vars.$slate-900;
       font-weight: 600;
     }
 
     .badge-quote {
-      color: #38bdf8;
-      font-weight: 500;
-      margin-left: 0.25rem;
+      color: vars.$primary-600;
+      font-weight: 600;
+      margin-left: 0.35rem;
     }
   }
 
@@ -407,20 +317,15 @@
     gap: 0.75rem;
     margin-top: 0.25rem;
     font-size: 0.75rem;
-    color: #64748b;
+    color: vars.$slate-500;
   }
 
   &__time {
-    color: #94a3b8;
+    color: vars.$slate-400;
   }
 
   &__reason {
     font-style: italic;
-    color: #cbd5e1;
+    color: vars.$slate-600;
   }
-}
-
-@keyframes spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
 }
