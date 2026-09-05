@@ -5,6 +5,7 @@ import useAuth from '../../auth/hook/useAuth.js';
 import DashboardStatsCard from '../components/DashboardStatsCard.jsx';
 import RecentActivityFeed from '../components/RecentActivityFeed.jsx';
 import { useStaggerEntrance } from '../../../shared/animations/useStaggerEntrance.js';
+import { InteractiveButton } from '../../../shared/components/InteractiveButton.jsx';
 import '../styles/dashboard.scss';
 
 export const Dashboard = () => {
@@ -40,21 +41,31 @@ export const Dashboard = () => {
           </div>
 
           <div className="df-dashboard__actions-row">
-            <Link to="/quotations/new" className="df-btn df-btn--primary df-btn--md">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ width: 16, height: 16 }}>
-                <line x1="12" x2="12" y1="5" y2="19" />
-                <line x1="5" x2="19" y1="12" y2="12" />
-              </svg>
+            <InteractiveButton
+              to="/quotations/new"
+              variant="primary"
+              icon={
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="12" x2="12" y1="5" y2="19" />
+                  <line x1="5" x2="19" y1="12" y2="12" />
+                </svg>
+              }
+            >
               New Quotation
-            </Link>
+            </InteractiveButton>
 
-            <Link to="/approvals" className="df-btn df-btn--secondary df-btn--md">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ width: 16, height: 16 }}>
-                <path d="M9 11l3 3L22 4" />
-                <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
-              </svg>
+            <InteractiveButton
+              to="/approvals"
+              variant="secondary"
+              icon={
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M9 11l3 3L22 4" />
+                  <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
+                </svg>
+              }
+            >
               View Approvals
-            </Link>
+            </InteractiveButton>
           </div>
         </header>
 

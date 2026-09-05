@@ -4,10 +4,10 @@
 // DealFlow360 Floating Glassmorphic Navigation Bar (Light Theme)
 .df-navbar-wrapper {
   position: fixed;
-  top: 12px;
-  left: 1.25rem;
-  right: 1.25rem;
-  max-width: 1400px;
+  top: 10px;
+  left: 12px;
+  right: 12px;
+  max-width: calc(100% - 24px);
   margin: 0 auto;
   z-index: 1000;
   height: 54px;
@@ -22,7 +22,7 @@
   background: rgba(255, 255, 255, 0.68);
   backdrop-filter: blur(24px) saturate(180%);
   -webkit-backdrop-filter: blur(24px) saturate(180%);
-  border: 1px solid rgba(255, 255, 255, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.85);
   border-radius: 16px;
   box-shadow: 0 12px 32px 0 rgba(31, 38, 135, 0.08), 0 2px 8px 0 rgba(0, 0, 0, 0.02), inset 0 0 0 1px rgba(255, 255, 255, 0.6);
   color: vars.$text-primary;
@@ -169,7 +169,7 @@
 
     // Active State (Light Theme Active Pill)
     &.active {
-      background: rgba(239, 246, 255, 0.9);
+      background: rgba(239, 246, 255, 0.95);
       color: vars.$bg-active-pill-text;
       font-weight: vars.$font-weight-semibold;
       border-color: rgba(191, 219, 254, 0.9);
@@ -230,8 +230,8 @@
     gap: 0.45rem;
     padding: 0.2rem 0.6rem 0.2rem 0.25rem;
     border-radius: vars.$border-radius-md;
-    background: rgba(255, 255, 255, 0.5);
-    border: 1px solid rgba(226, 232, 240, 0.8);
+    background: rgba(255, 255, 255, 0.55);
+    border: 1px solid rgba(226, 232, 240, 0.85);
     backdrop-filter: blur(8px);
     cursor: pointer;
     transition: all vars.$transition-fast;
@@ -259,7 +259,7 @@
     }
 
     &:hover {
-      background: rgba(255, 255, 255, 0.8);
+      background: rgba(255, 255, 255, 0.85);
       border-color: vars.$slate-300;
     }
 
@@ -294,26 +294,36 @@
     }
   }
 
-  // Smooth blur dropdown menu (Frosted Glass)
+  // Solid clean dropdown menu (No blur/glass on dropdown option)
   &__dropdown-menu {
     position: absolute;
     top: calc(100% + 8px);
     right: 0;
     width: 230px;
-    background: rgba(255, 255, 255, 0.84);
-    border: 1px solid rgba(255, 255, 255, 0.85);
-    border-radius: 14px;
-    box-shadow: 0 20px 40px -10px rgba(15, 23, 42, 0.12), 0 0 0 1px rgba(255, 255, 255, 0.8);
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    box-shadow: 0 14px 34px -4px rgba(15, 23, 42, 0.14), 0 4px 10px -2px rgba(15, 23, 42, 0.06);
     padding: 0.75rem;
     z-index: 1100;
-    backdrop-filter: blur(28px) saturate(180%);
-    -webkit-backdrop-filter: blur(28px) saturate(180%);
-    animation: nav-dropdown-fade 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    animation: nav-dropdown-fade 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
     transform-origin: top right;
+
+    // Invisible hover bridge so cursor can move between trigger and menu without losing hover
+    &::before {
+      content: '';
+      position: absolute;
+      top: -12px;
+      left: 0;
+      right: 0;
+      height: 12px;
+    }
 
     &-header {
       padding: 0.25rem 0.35rem 0.5rem 0.35rem;
-      border-bottom: 1px solid rgba(226, 232, 240, 0.8);
+      border-bottom: 1px solid #f1f5f9;
       margin-bottom: 0.5rem;
       cursor: default;
     }
@@ -321,7 +331,7 @@
     &-name {
       font-size: 0.875rem;
       font-weight: 600;
-      color: vars.$slate-900;
+      color: #0f172a;
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
@@ -329,7 +339,7 @@
 
     &-email {
       font-size: 0.75rem;
-      color: vars.$slate-500;
+      color: #64748b;
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
@@ -353,7 +363,7 @@
       background: transparent;
       border: 1px solid transparent;
       border-radius: 8px;
-      color: vars.$slate-700;
+      color: #334155;
       font-size: 0.8125rem;
       font-weight: 500;
       cursor: pointer;
@@ -365,15 +375,15 @@
       svg {
         width: 15px;
         height: 15px;
-        color: vars.$slate-400;
+        color: #94a3b8;
         flex-shrink: 0;
         transition: color vars.$transition-fast;
       }
 
       &:hover {
-        background: rgba(37, 99, 235, 0.08);
-        border-color: rgba(191, 219, 254, 0.6);
-        color: vars.$primary-700;
+        background: #f1f5f9;
+        border-color: #e2e8f0;
+        color: #0f172a;
 
         svg {
           color: vars.$primary-600;
@@ -387,8 +397,8 @@
       align-items: center;
       gap: 0.5rem;
       padding: 0.5rem 0.625rem;
-      background: rgba(239, 68, 68, 0.06);
-      border: 1px solid rgba(239, 68, 68, 0.15);
+      background: #fef2f2;
+      border: 1px solid #fee2e2;
       border-radius: 8px;
       color: #dc2626;
       font-size: 0.8125rem;
@@ -405,7 +415,7 @@
       }
 
       &:hover {
-        background: rgba(239, 68, 68, 0.14);
+        background: #fee2e2;
         color: #b91c1c;
       }
     }
@@ -466,7 +476,7 @@
 @keyframes nav-dropdown-fade {
   from {
     opacity: 0;
-    transform: translateY(-8px) scale(0.97);
+    transform: translateY(-6px) scale(0.98);
   }
   to {
     opacity: 1;

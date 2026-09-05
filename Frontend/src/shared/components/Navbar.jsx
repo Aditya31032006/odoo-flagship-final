@@ -171,8 +171,23 @@ function NavbarComponent() {
   const { user, isAuthenticated, logout } = useAuth();
   const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
   const dropdownRef = useRef(null);
+  const hoverTimeoutRef = useRef(null);
 
-  // Hide dropdown on outside click
+  const handleProfileMouseEnter = () => {
+    if (hoverTimeoutRef.current) {
+      clearTimeout(hoverTimeoutRef.current);
+      hoverTimeoutRef.current = null;
+    }
+    setProfileDropdownOpen(true);
+  };
+
+  const handleProfileMouseLeave = () => {
+    hoverTimeoutRef.current = setTimeout(() => {
+      setProfileDropdownOpen(false);
+    }, 300);
+  };
+
+  // Hide dropdown on outside click & cleanup timers
   useEffect(() => {
     function handleClickOutside(event) {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
@@ -180,7 +195,10 @@ function NavbarComponent() {
       }
     }
     document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      if (hoverTimeoutRef.current) clearTimeout(hoverTimeoutRef.current);
+    };
   }, []);
 
   const isAuthRoute = AUTH_ROUTES.some((route) =>
@@ -277,8 +295,8 @@ function NavbarComponent() {
             <div
               className="df-navbar__user-container"
               ref={dropdownRef}
-              onMouseEnter={() => setProfileDropdownOpen(true)}
-              onMouseLeave={() => setProfileDropdownOpen(false)}
+              onMouseEnter={handleProfileMouseEnter}
+              onMouseLeave={handleProfileMouseLeave}
             >
               <div
                 className={`df-navbar__user ${location.pathname === '/profile' ? 'active' : ''}`}
