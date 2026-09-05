@@ -3,6 +3,7 @@ import {
   GET_ACTIVE_CUSTOMERS_WITH_TIER,
   GET_ACTIVE_PRICE_LISTS,
   GET_SELLABLE_PRODUCT_VARIANTS,
+  SEARCH_PRODUCT_VARIANTS_FUZZY,
   GET_PRICE_LIST_ITEMS_BY_PRICE_LIST,
   GET_UPSELL_RULES_FOR_PRODUCTS,
   GET_ACTIVE_APPROVAL_RULES,
@@ -115,6 +116,22 @@ export const getSellableVariantsRepo = async () => {
     return result.rows;
   } catch (error) {
     console.error('Error in getSellableVariantsRepo:', error);
+    await client.query('ROLLBACK');
+    throw error;
+  } finally {
+    client.release();
+  }
+};
+
+export const searchProductVariantsFuzzyRepo = async (searchQuery) => {
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    const result = await client.query(SEARCH_PRODUCT_VARIANTS_FUZZY, [searchQuery ? searchQuery.trim() : null]);
+    await client.query('COMMIT');
+    return result.rows;
+  } catch (error) {
+    console.error('Error in searchProductVariantsFuzzyRepo:', error);
     await client.query('ROLLBACK');
     throw error;
   } finally {

@@ -4,6 +4,7 @@ import { Provider } from 'react-redux';
 import { store } from './app/app.store.js';
 import App from './app/App.jsx';
 import './app/index.css';
+import './shared/styles/buttons.scss';
 
 createRoot(document.getElementById('root')).render(
   

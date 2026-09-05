@@ -69,17 +69,30 @@ export const GET_QUOTATIONS_LIST = `
   JOIN customers c ON q.customer_id = c.id
   JOIN users u ON q.sales_rep_id = u.id
   LEFT JOIN customer_tiers ct ON q.tier_id = ct.id
-  WHERE ($1::BIGINT IS NULL OR q.sales_rep_id = $1)
-    AND ($2::TEXT IS NULL OR q.status = $2::quotation_status_enum)
-    AND (
-      $3::TEXT IS NULL 
-      OR c.company_name ILIKE '%' || $3 || '%' 
-      OR q.quotation_number ILIKE '%' || $3 || '%'
-      OR u.name ILIKE '%' || $3 || '%'
-    )
-    AND ($4::BIGINT IS NULL OR q.customer_id = $4)
-  ORDER BY q.created_at DESC
-`;
+    WHERE ($1::BIGINT IS NULL OR q.sales_rep_id = $1)
+      AND ($2::TEXT IS NULL OR q.status = $2::quotation_status_enum)
+      AND (
+        $3::TEXT IS NULL 
+        OR c.company_name ILIKE '%' || $3 || '%' 
+        OR q.quotation_number ILIKE '%' || $3 || '%'
+        OR u.name ILIKE '%' || $3 || '%'
+        OR similarity(c.company_name, $3) > 0.25
+        OR similarity(u.name, $3) > 0.25
+        OR similarity(q.quotation_number, $3) > 0.25
+        OR word_similarity($3, c.company_name) > 0.35
+      )
+      AND ($4::BIGINT IS NULL OR q.customer_id = $4)
+    ORDER BY 
+      CASE 
+        WHEN $3::TEXT IS NOT NULL THEN GREATEST(
+          similarity(c.company_name, $3),
+          similarity(q.quotation_number, $3),
+          similarity(u.name, $3)
+        ) 
+        ELSE 0 
+      END DESC,
+      q.created_at DESC
+  `;
 
 export const GET_QUOTATIONS_KANBAN_SUMMARY = `
   SELECT 

@@ -68,6 +68,56 @@ export const GET_SELLABLE_PRODUCT_VARIANTS = `
   ORDER BY p.name ASC, pv.variant_name ASC
 `;
 
+export const SEARCH_PRODUCT_VARIANTS_FUZZY = `
+  SELECT 
+    pv.id AS product_variant_id,
+    pv.product_id,
+    pv.sku,
+    pv.variant_name,
+    pv.selling_price AS default_selling_price,
+    p.name AS product_name,
+    p.description AS product_description,
+    p.unit,
+    p.base_price,
+    p.tax_percentage,
+    p.category_id,
+    pc.name AS category_name,
+    COALESCE(cdc.max_discount_percentage, 100)::NUMERIC(5,2) AS category_max_discount,
+    GREATEST(
+      similarity(p.name, $1),
+      similarity(pv.sku, $1),
+      similarity(pv.variant_name, $1),
+      word_similarity($1, p.name)
+    ) AS match_score
+  FROM product_variants pv
+  JOIN products p ON pv.product_id = p.id
+  JOIN product_categories pc ON p.category_id = pc.id
+  LEFT JOIN category_discount_ceilings cdc ON pc.id = cdc.category_id
+  WHERE pv.is_active = TRUE AND p.is_active = TRUE
+    AND (
+      $1::TEXT IS NULL
+      OR p.name ILIKE '%' || $1 || '%'
+      OR pv.sku ILIKE '%' || $1 || '%'
+      OR pv.variant_name ILIKE '%' || $1 || '%'
+      OR similarity(p.name, $1) > 0.2
+      OR similarity(pv.sku, $1) > 0.2
+      OR similarity(pv.variant_name, $1) > 0.2
+      OR word_similarity($1, p.name) > 0.35
+    )
+  ORDER BY 
+    CASE 
+      WHEN $1::TEXT IS NOT NULL THEN GREATEST(
+        similarity(p.name, $1),
+        similarity(pv.sku, $1),
+        similarity(pv.variant_name, $1),
+        word_similarity($1, p.name)
+      ) 
+      ELSE 0 
+    END DESC,
+    p.name ASC, 
+    pv.variant_name ASC
+`;
+
 export const GET_PRICE_LIST_ITEMS_BY_PRICE_LIST = `
   SELECT 
     product_variant_id,
