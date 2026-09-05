@@ -1,6 +1,7 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router';
 import { invoiceApi } from '../services/invoice.api.js';
+import { useDebounce } from '../../../shared/hooks/useDebounce.js';
 import '../styles/invoices.scss';
 
 const formatDate = (dateStr) => {
@@ -25,8 +26,22 @@ const InvoicesList = () => {
   const [invoices, setInvoices] = useState([]);
   const [statusCounts, setStatusCounts] = useState({ unpaid_count: 0, paid_count: 0, total_count: 0 });
   const [selectedFilter, setSelectedFilter] = useState('all');
+  const [searchQuery, setSearchQuery] = useState('');
+  const debouncedSearch = useDebounce(searchQuery, 300);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
+
+  const filteredInvoices = useMemo(() => {
+    if (!debouncedSearch.trim()) return invoices;
+    const q = debouncedSearch.trim().toLowerCase();
+    return invoices.filter(
+      (inv) =>
+        inv.invoice_number?.toLowerCase().includes(q) ||
+        inv.customer_name?.toLowerCase().includes(q) ||
+        inv.order_number?.toLowerCase().includes(q) ||
+        inv.status?.toLowerCase().includes(q)
+    );
+  }, [invoices, debouncedSearch]);
 
   const fetchInvoices = useCallback(async (filter) => {
     try {
@@ -79,31 +94,72 @@ const InvoicesList = () => {
           </div>
         </div>
 
-        {/* Status Filter Cards */}
-        <div className="df-invoices__status-cards">
-          <button
-            type="button"
-            className={`df-invoices__status-card df-invoices__status-card--unpaid ${selectedFilter === 'unpaid' ? 'is-selected' : ''}`}
-            onClick={() => handleFilterClick('unpaid')}
-          >
-            {statusCounts.unpaid_count || 0} Unpaid
-          </button>
-          <button
-            type="button"
-            className={`df-invoices__status-card df-invoices__status-card--paid ${selectedFilter === 'paid' ? 'is-selected' : ''}`}
-            onClick={() => handleFilterClick('paid')}
-          >
-            {statusCounts.paid_count || 0} Paid
-          </button>
-          {selectedFilter !== 'all' && (
+        {/* Status Filter Cards & Search Toolbar */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem', marginBottom: '1.25rem' }}>
+          <div className="df-invoices__status-cards" style={{ margin: 0 }}>
             <button
               type="button"
-              className="df-invoices__status-card df-invoices__status-card--all"
-              onClick={() => setSelectedFilter('all')}
+              className={`df-invoices__status-card df-invoices__status-card--unpaid ${selectedFilter === 'unpaid' ? 'is-selected' : ''}`}
+              onClick={() => handleFilterClick('unpaid')}
             >
-              Show All ({statusCounts.total_count || invoices.length})
+              {statusCounts.unpaid_count || 0} Unpaid
             </button>
-          )}
+            <button
+              type="button"
+              className={`df-invoices__status-card df-invoices__status-card--paid ${selectedFilter === 'paid' ? 'is-selected' : ''}`}
+              onClick={() => handleFilterClick('paid')}
+            >
+              {statusCounts.paid_count || 0} Paid
+            </button>
+            {selectedFilter !== 'all' && (
+              <button
+                type="button"
+                className="df-invoices__status-card df-invoices__status-card--all"
+                onClick={() => setSelectedFilter('all')}
+              >
+                Show All ({statusCounts.total_count || invoices.length})
+              </button>
+            )}
+          </div>
+
+          <div style={{ position: 'relative', width: '280px', maxWidth: '100%' }}>
+            <input
+              type="text"
+              placeholder="Search by invoice #, customer, order..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              style={{
+                width: '100%',
+                background: 'rgba(30, 41, 59, 0.7)',
+                border: '1px solid rgba(255, 255, 255, 0.12)',
+                borderRadius: '8px',
+                padding: '0.5rem 2rem 0.5rem 0.8rem',
+                color: '#ffffff',
+                fontSize: '0.8125rem',
+                outline: 'none',
+              }}
+            />
+            {searchQuery && (
+              <button
+                type="button"
+                onClick={() => setSearchQuery('')}
+                title="Clear search"
+                style={{
+                  position: 'absolute',
+                  right: '8px',
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  background: 'transparent',
+                  border: 'none',
+                  color: '#94a3b8',
+                  cursor: 'pointer',
+                  fontSize: '13px',
+                }}
+              >
+                ✕
+              </button>
+            )}
+          </div>
         </div>
 
         {/* Invoices Table */}
@@ -124,14 +180,14 @@ const InvoicesList = () => {
                 </tr>
               </thead>
               <tbody>
-                {invoices.length === 0 ? (
+                {filteredInvoices.length === 0 ? (
                   <tr>
                     <td colSpan="5" className="df-invoices__empty">
-                      No invoices found for the selected view.
+                      {searchQuery ? 'No invoices match your search.' : 'No invoices found for the selected view.'}
                     </td>
                   </tr>
                 ) : (
-                  invoices.map((inv) => {
+                  filteredInvoices.map((inv) => {
                     const isPaid = inv.status === 'paid' || parseFloat(inv.paid_amount) >= parseFloat(inv.grand_total);
                     const statusLabel = isPaid ? 'Paid' : (parseFloat(inv.paid_amount) > 0 ? 'Partially Paid' : 'Unpaid');
                     const badgeClass = isPaid ? 'paid' : (parseFloat(inv.paid_amount) > 0 ? 'partially_paid' : 'unpaid');

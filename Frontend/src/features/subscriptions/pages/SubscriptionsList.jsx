@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router';
 import { useSelector } from 'react-redux';
 import { useForm } from 'react-hook-form';
 import { subscriptionApi } from '../services/subscription.api.js';
+import { useDebounce } from '../../../shared/hooks/useDebounce.js';
 import PermissionGate from '../../../shared/components/PermissionGate.jsx';
 import '../styles/subscriptions.scss';
 
@@ -29,8 +30,23 @@ const SubscriptionsList = () => {
   const [subscriptions, setSubscriptions] = useState([]);
   const [statusCounts, setStatusCounts] = useState({ active_count: 0, paused_count: 0, cancelled_count: 0, total_count: 0 });
   const [selectedFilter, setSelectedFilter] = useState('all');
+  const [searchQuery, setSearchQuery] = useState('');
+  const debouncedSearch = useDebounce(searchQuery, 300);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
+
+  const filteredSubscriptions = useMemo(() => {
+    if (!debouncedSearch.trim()) return subscriptions;
+    const q = debouncedSearch.trim().toLowerCase();
+    return subscriptions.filter(
+      (s) =>
+        s.customer_name?.toLowerCase().includes(q) ||
+        s.plan_name?.toLowerCase().includes(q) ||
+        s.billing_cycle?.toLowerCase().includes(q) ||
+        s.order_number?.toLowerCase().includes(q) ||
+        s.status?.toLowerCase().includes(q)
+    );
+  }, [subscriptions, debouncedSearch]);
 
   // Modal State for "+ New Plan (Admin)"
   const [isPlanModalOpen, setIsPlanModalOpen] = useState(false);
@@ -128,38 +144,79 @@ const SubscriptionsList = () => {
           </p>
         </div>
 
-        {/* Status KPI Cards matching Wireframe #9 */}
-        <div className="df-subscriptions__status-cards">
-          <button
-            type="button"
-            className={`df-subscriptions__status-card df-subscriptions__status-card--active ${selectedFilter === 'active' ? 'is-selected' : ''}`}
-            onClick={() => handleFilterClick('active')}
-          >
-            {statusCounts.active_count ?? 0} Active
-          </button>
-          <button
-            type="button"
-            className={`df-subscriptions__status-card df-subscriptions__status-card--paused ${selectedFilter === 'paused' ? 'is-selected' : ''}`}
-            onClick={() => handleFilterClick('paused')}
-          >
-            {statusCounts.paused_count ?? 0} Paused
-          </button>
-          <button
-            type="button"
-            className={`df-subscriptions__status-card df-subscriptions__status-card--cancelled ${selectedFilter === 'cancelled' ? 'is-selected' : ''}`}
-            onClick={() => handleFilterClick('cancelled')}
-          >
-            {statusCounts.cancelled_count ?? 0} Cancelled
-          </button>
-          {selectedFilter !== 'all' && (
+        {/* Search & Status KPI Cards matching Wireframe #9 */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem', marginBottom: '1.25rem' }}>
+          <div className="df-subscriptions__status-cards" style={{ margin: 0 }}>
             <button
               type="button"
-              className="df-subscriptions__status-card df-subscriptions__status-card--all"
-              onClick={() => setSelectedFilter('all')}
+              className={`df-subscriptions__status-card df-subscriptions__status-card--active ${selectedFilter === 'active' ? 'is-selected' : ''}`}
+              onClick={() => handleFilterClick('active')}
             >
-              Show All ({statusCounts.total_count ?? subscriptions.length})
+              {statusCounts.active_count ?? 0} Active
             </button>
-          )}
+            <button
+              type="button"
+              className={`df-subscriptions__status-card df-subscriptions__status-card--paused ${selectedFilter === 'paused' ? 'is-selected' : ''}`}
+              onClick={() => handleFilterClick('paused')}
+            >
+              {statusCounts.paused_count ?? 0} Paused
+            </button>
+            <button
+              type="button"
+              className={`df-subscriptions__status-card df-subscriptions__status-card--cancelled ${selectedFilter === 'cancelled' ? 'is-selected' : ''}`}
+              onClick={() => handleFilterClick('cancelled')}
+            >
+              {statusCounts.cancelled_count ?? 0} Cancelled
+            </button>
+            {selectedFilter !== 'all' && (
+              <button
+                type="button"
+                className="df-subscriptions__status-card df-subscriptions__status-card--all"
+                onClick={() => setSelectedFilter('all')}
+              >
+                Show All ({statusCounts.total_count ?? subscriptions.length})
+              </button>
+            )}
+          </div>
+
+          <div style={{ position: 'relative', width: '280px', maxWidth: '100%' }}>
+            <input
+              type="text"
+              placeholder="Search plan, customer, order..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              style={{
+                width: '100%',
+                background: 'rgba(30, 41, 59, 0.7)',
+                border: '1px solid rgba(255, 255, 255, 0.12)',
+                borderRadius: '8px',
+                padding: '0.5rem 2rem 0.5rem 0.8rem',
+                color: '#ffffff',
+                fontSize: '0.8125rem',
+                outline: 'none',
+              }}
+            />
+            {searchQuery && (
+              <button
+                type="button"
+                onClick={() => setSearchQuery('')}
+                title="Clear search"
+                style={{
+                  position: 'absolute',
+                  right: '8px',
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  background: 'transparent',
+                  border: 'none',
+                  color: '#94a3b8',
+                  cursor: 'pointer',
+                  fontSize: '13px',
+                }}
+              >
+                ✕
+              </button>
+            )}
+          </div>
         </div>
 
         {/* Subscriptions Table */}
@@ -180,14 +237,14 @@ const SubscriptionsList = () => {
                 </tr>
               </thead>
               <tbody>
-                {subscriptions.length === 0 ? (
+                {filteredSubscriptions.length === 0 ? (
                   <tr>
                     <td colSpan="5" className="df-subscriptions__empty">
-                      No subscriptions found for the selected filter.
+                      {searchQuery ? 'No subscriptions match your search.' : 'No subscriptions found for the selected filter.'}
                     </td>
                   </tr>
                 ) : (
-                  subscriptions.map((sub) => (
+                  filteredSubscriptions.map((sub) => (
                     <tr key={sub.id} onClick={() => handleRowClick(sub.id)}>
                       <td>
                         <strong>{sub.customer_name || 'N/A'}</strong>

@@ -153,14 +153,16 @@ function ReportsDashboard() {
       )}
 
       {/* Dedicated Executive PDF Document Preview & Print Modal */}
-      <ReportPrintModal
-        isOpen={isPrintModalOpen}
-        onClose={handleClosePrintModal}
-        analytics={analytics}
-        filters={filters}
-        filterMeta={filterMeta}
-        user={user}
-      />
+      {isPrintModalOpen && (
+        <ReportPrintModal
+          isOpen={isPrintModalOpen}
+          onClose={handleClosePrintModal}
+          analytics={analytics}
+          filters={filters}
+          filterMeta={filterMeta}
+          user={user}
+        />
+      )}
     </div>
   );
 }

@@ -13,6 +13,7 @@ export const useDashboard = (autoFetch = true) => {
     activities,
     isLoadingStats,
     isLoadingActivity,
+    isInitialized,
     statsError,
     activityError,
     lastUpdated,
@@ -24,10 +25,10 @@ export const useDashboard = (autoFetch = true) => {
   }, [dispatch]);
 
   useEffect(() => {
-    if (autoFetch) {
+    if (autoFetch === 'force' || (autoFetch && !isInitialized)) {
       loadData();
     }
-  }, [autoFetch, loadData]);
+  }, [autoFetch, isInitialized, loadData]);
 
   const clearErrors = useCallback(() => {
     dispatch(clearDashboardErrors());

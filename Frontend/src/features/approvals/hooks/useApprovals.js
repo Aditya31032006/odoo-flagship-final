@@ -19,6 +19,7 @@ export const useApprovals = (quotationId = null) => {
     isLoadingList,
     isLoadingDetail,
     isSubmittingDecision,
+    isInitialized,
     error,
     successMsg,
     filterPendingOnly,
@@ -27,14 +28,14 @@ export const useApprovals = (quotationId = null) => {
   useEffect(() => {
     if (quotationId) {
       dispatch(fetchApprovalDetail(quotationId));
-    } else {
+    } else if (!isInitialized) {
       dispatch(fetchApprovalsList());
     }
 
     return () => {
       dispatch(clearApprovalMessages());
     };
-  }, [dispatch, quotationId]);
+  }, [dispatch, quotationId, isInitialized]);
 
   const refreshList = useCallback(() => {
     return dispatch(fetchApprovalsList());

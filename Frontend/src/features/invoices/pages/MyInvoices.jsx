@@ -218,6 +218,23 @@ export default function MyInvoices() {
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
+          {searchQuery && (
+            <button
+              type="button"
+              onClick={() => setSearchQuery('')}
+              title="Clear search"
+              style={{
+                background: 'transparent',
+                border: 'none',
+                color: '#94a3b8',
+                cursor: 'pointer',
+                fontSize: '13px',
+                padding: '0 0.5rem',
+              }}
+            >
+              ✕
+            </button>
+          )}
         </div>
 
         <div className="status-filters">
@@ -498,12 +515,14 @@ export default function MyInvoices() {
       )}
 
       {/* Dedicated Invoice Print & PDF Preview Modal (Matching Reports page) */}
-      <InvoicePrintModal
-        isOpen={isPrintModalOpen}
-        onClose={() => setIsPrintModalOpen(false)}
-        invoice={invoiceDetail?.invoice || selectedInvoice}
-        items={invoiceDetail?.items || []}
-      />
+      {isPrintModalOpen && (
+        <InvoicePrintModal
+          isOpen={isPrintModalOpen}
+          onClose={() => setIsPrintModalOpen(false)}
+          invoice={invoiceDetail?.invoice || selectedInvoice}
+          items={invoiceDetail?.items || []}
+        />
+      )}
     </div>
   );
 }

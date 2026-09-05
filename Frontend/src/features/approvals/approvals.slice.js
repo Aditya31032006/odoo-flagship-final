@@ -55,6 +55,7 @@ const initialState = {
   isLoadingList: false,
   isLoadingDetail: false,
   isSubmittingDecision: false,
+  isInitialized: false,
   error: null,
   successMsg: null,
   filterPendingOnly: false,
@@ -87,6 +88,7 @@ export const approvalsSlice = createSlice({
       })
       .addCase(fetchApprovalsList.fulfilled, (state, action) => {
         state.isLoadingList = false;
+        state.isInitialized = true;
         state.counts = action.payload?.counts || state.counts;
         state.approvals = action.payload?.approvals || [];
       })

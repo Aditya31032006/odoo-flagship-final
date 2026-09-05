@@ -440,37 +440,43 @@ export const FulfillmentList = () => {
       </div>
 
       {/* Warehouse Stock Modal */}
-      <WarehouseStockModal
-        isOpen={stockModal.isOpen}
-        onClose={() => setStockModal({ isOpen: false, initialData: null })}
-        initialData={stockModal.initialData}
-        warehouses={meta?.warehouses || []}
-        variants={meta?.variants || []}
-        onSave={handleSaveStock}
-        isSaving={isMutating}
-      />
+      {stockModal.isOpen && (
+        <WarehouseStockModal
+          isOpen={stockModal.isOpen}
+          onClose={() => setStockModal({ isOpen: false, initialData: null })}
+          initialData={stockModal.initialData}
+          warehouses={meta?.warehouses || []}
+          variants={meta?.variants || []}
+          onSave={handleSaveStock}
+          isSaving={isMutating}
+        />
+      )}
 
       {/* Order Modal */}
-      <OrderModal
-        isOpen={orderModal.isOpen}
-        onClose={() => setOrderModal({ isOpen: false, initialData: null })}
-        initialData={orderModal.initialData}
-        customers={meta?.customers || []}
-        variants={meta?.variants || []}
-        warehouses={meta?.warehouses || []}
-        onSave={handleSaveOrder}
-        isSaving={isMutating}
-      />
+      {orderModal.isOpen && (
+        <OrderModal
+          isOpen={orderModal.isOpen}
+          onClose={() => setOrderModal({ isOpen: false, initialData: null })}
+          initialData={orderModal.initialData}
+          customers={meta?.customers || []}
+          variants={meta?.variants || []}
+          warehouses={meta?.warehouses || []}
+          onSave={handleSaveOrder}
+          isSaving={isMutating}
+        />
+      )}
 
       {/* Delete Confirmation Modal */}
-      <DeleteConfirmModal
-        isOpen={deleteModal.isOpen}
-        onClose={() => setDeleteModal({ isOpen: false, type: null, id: null, title: '', message: '' })}
-        title={deleteModal.title}
-        message={deleteModal.message}
-        onConfirm={handleConfirmDelete}
-        isDeleting={isMutating}
-      />
+      {deleteModal.isOpen && (
+        <DeleteConfirmModal
+          isOpen={deleteModal.isOpen}
+          onClose={() => setDeleteModal({ isOpen: false, type: null, id: null, title: '', message: '' })}
+          title={deleteModal.title}
+          message={deleteModal.message}
+          onConfirm={handleConfirmDelete}
+          isDeleting={isMutating}
+        />
+      )}
     </div>
   );
 };

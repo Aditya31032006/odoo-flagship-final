@@ -394,13 +394,15 @@ const DealHealthDashboard = () => {
       </div>
 
       {/* Thresholds Config Modal */}
-      <ConfigureThresholdsModal
-        isOpen={isConfigModalOpen}
-        onClose={() => setIsConfigModalOpen(false)}
-        currentConfig={config}
-        onSave={handleConfigSubmit}
-        isSaving={isSavingConfig}
-      />
+      {isConfigModalOpen && (
+        <ConfigureThresholdsModal
+          isOpen={isConfigModalOpen}
+          onClose={() => setIsConfigModalOpen(false)}
+          currentConfig={config}
+          onSave={handleConfigSubmit}
+          isSaving={isSavingConfig}
+        />
+      )}
     </div>
   );
 };

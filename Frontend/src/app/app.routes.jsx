@@ -117,7 +117,7 @@ export const router = createBrowserRouter([
         children: [
           {
             path: '/fulfillment',
-            element: withSuspense(FulfillmentDetail),
+            element: withSuspense(FulfillmentList),
           },
           {
             path: '/fulfillment/:orderId',
