@@ -5,6 +5,7 @@ import PublicRoute from '../features/auth/components/PublicRoute.jsx';
 import Login from '../features/auth/pages/Login.jsx';
 import Register from '../features/auth/pages/Register.jsx';
 import Onboarding from '../features/auth/pages/Onboarding.jsx';
+import ForgotPassword from '../features/auth/pages/ForgotPassword.jsx';
 
 // Lightweight placeholder view component for quick verification
 const PagePlaceholder = ({ title, description }) => (
@@ -136,6 +137,10 @@ export const router = createBrowserRouter([
       {
         path: '/onboarding',
         element: <Onboarding />,
+      },
+      {
+        path: '/forgot-password',
+        element: <ForgotPassword />,
       },
     ],
   },
