@@ -7,7 +7,7 @@ import { useToast } from '../../../shared/context/ToastContext.jsx';
 export const useProducts = ({ id = null, isEditingExisting = false, autoFetch = true } = {}) => {
   const dispatch = useDispatch();
   const { toast, confirm } = useToast();
-  const { summary, productsList, isLoading: isCatalogLoading, error: catalogError } = useSelector(
+  const { summary, productsList, isLoading: isCatalogLoading, isInitialized, error: catalogError } = useSelector(
     (state) => state.products
   );
 

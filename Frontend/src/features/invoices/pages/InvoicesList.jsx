@@ -86,10 +86,14 @@ const InvoicesList = () => {
             </div>
             <button
               type="button"
-              className="df-invoices__btn-payment"
+              className="df-btn-primary df-invoices__btn-payment"
               onClick={() => navigate('/invoices/new')}
             >
-              + New Invoice
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
+                <line x1="12" y1="5" x2="12" y2="19" />
+                <line x1="5" y1="12" x2="19" y2="12" />
+              </svg>
+              New Invoice
             </button>
           </div>
         </div>
@@ -214,10 +218,7 @@ const InvoicesList = () => {
           )}
         </div>
 
-        {/* Hint Box Bar matching Wireframe #12 */}
-        <div className="df-invoices__hint-bar">
-          <span>Click an invoice row to open its full payment and delivery reconciliation detail.</span>
-        </div>
+       
       </div>
     </div>
   );

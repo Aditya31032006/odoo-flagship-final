@@ -178,7 +178,7 @@ export default function StaffManagement() {
           <div className="df-staff__header-right">
             <button
               type="button"
-              className="df-staff__btn-primary"
+              className="df-btn-primary df-staff__btn-primary"
               onClick={() => {
                 reset();
                 setActionAlert({ type: '', text: '', tempPassword: '' });

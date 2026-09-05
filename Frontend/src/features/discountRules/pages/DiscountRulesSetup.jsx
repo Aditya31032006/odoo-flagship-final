@@ -1,4 +1,5 @@
 import React from 'react';
+import { Link } from 'react-router';
 import { useForm } from 'react-hook-form';
 import useDiscountRules from '../hooks/useDiscountRules.js';
 import '../styles/discountRules.scss';
@@ -79,10 +80,30 @@ export const DiscountRulesSetup = () => {
   return (
     <div className="df-discount-rules">
       <div className="df-discount-rules__container">
-        {/* Header */}
-        <header className="df-discount-rules__header">
-          <h1>Discount tiers and approval chains</h1>
-          <p>Configure customer tier discount limits, category ceilings, and governance approval rules.</p>
+        {/* Header with Top-Right Actions */}
+        <header className="df-discount-rules__header" style={{ display: 'flex', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem' }}>
+          <div>
+            <h1>Discount tiers and approval chains</h1>
+            <p>Configure customer tier discount limits, category ceilings, and governance approval rules.</p>
+          </div>
+
+          <div className="df-discount-rules__header-right">
+            <Link
+              to="/products"
+              className="df-btn-secondary"
+            >
+              ← Back to Products
+            </Link>
+
+            <button
+              type="button"
+              className="df-btn-primary"
+              onClick={handleSubmit(onSubmit)}
+              disabled={isSaving}
+            >
+              {isSaving ? 'Saving...' : 'Save Configuration'}
+            </button>
+          </div>
         </header>
 
         {/* Alerts */}
