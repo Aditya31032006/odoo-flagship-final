@@ -177,7 +177,7 @@ export const CREATE_INVOICE = `
     grand_total,
     paid_amount
   )
-  VALUES ($1, $2, $3, 'issued', CURRENT_DATE, CURRENT_DATE + INTERVAL '15 days', $4, $5, $6, $7, 0)
+  VALUES ($1, $2, $3, 'issued', CURRENT_DATE, $4, $5, $6, $7, $8, 0)
   RETURNING *;
 `;
 
@@ -196,4 +196,39 @@ export const INSERT_INVOICE_ITEM = `
   )
   VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
   RETURNING *;
+`;
+
+export const GET_INVOICE_META_CUSTOMERS = `
+  SELECT id, company_name, email, billing_address
+  FROM customers
+  WHERE is_active = TRUE
+  ORDER BY company_name ASC;
+`;
+
+export const GET_INVOICE_META_PRODUCTS = `
+  SELECT 
+    pv.id AS variant_id,
+    p.id AS product_id,
+    COALESCE(p.name || ' (' || pv.variant_name || ')', p.name) AS product_name,
+    pv.sku,
+    pv.selling_price,
+    p.tax_percentage
+  FROM product_variants pv
+  JOIN products p ON pv.product_id = p.id
+  WHERE pv.is_active = TRUE AND p.is_active = TRUE
+  ORDER BY p.name ASC;
+`;
+
+export const GET_INVOICE_META_ORDERS = `
+  SELECT 
+    o.id,
+    o.order_number,
+    o.customer_id,
+    c.company_name AS customer_name,
+    o.status,
+    o.created_at
+  FROM orders o
+  JOIN customers c ON o.customer_id = c.id
+  ORDER BY o.created_at DESC
+  LIMIT 50;
 `;

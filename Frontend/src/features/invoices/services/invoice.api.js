@@ -17,9 +17,19 @@ export const invoiceApi = {
     return res.data?.data;
   },
 
+  getMeta: async () => {
+    const res = await apiClient.get('/invoices/meta');
+    return res.data?.data;
+  },
+
   getInvoiceDetail: async (id) => {
     const res = await apiClient.get(`/invoices/${id}`);
     return res.data?.data;
+  },
+
+  createInvoice: async (invoiceData) => {
+    const res = await apiClient.post('/invoices', invoiceData);
+    return res.data;
   },
 
   recordPayment: async (id, paymentData) => {

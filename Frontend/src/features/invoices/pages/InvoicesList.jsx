@@ -63,11 +63,20 @@ const InvoicesList = () => {
         {/* Page Header matching Wireframe #12 */}
         <div className="df-invoices__header">
           <div className="df-invoices__title-row">
-            <h1 className="df-invoices__title">Invoices (List)</h1>
+            <div>
+              <h1 className="df-invoices__title">Invoices (List)</h1>
+              <p className="df-invoices__subtitle">
+                Every invoice generated from one-time and recurring orders
+              </p>
+            </div>
+            <button
+              type="button"
+              className="df-invoices__btn-payment"
+              onClick={() => navigate('/invoices/new')}
+            >
+              + New Invoice
+            </button>
           </div>
-          <p className="df-invoices__subtitle">
-            Every invoice generated from one-time and recurring orders
-          </p>
         </div>
 
         {/* Status Filter Cards */}

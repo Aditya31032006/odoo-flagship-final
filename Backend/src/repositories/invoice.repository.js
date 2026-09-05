@@ -11,6 +11,9 @@ import {
   UPDATE_INVOICE_PAID_AMOUNT,
   CREATE_INVOICE,
   INSERT_INVOICE_ITEM,
+  GET_INVOICE_META_CUSTOMERS,
+  GET_INVOICE_META_PRODUCTS,
+  GET_INVOICE_META_ORDERS,
 } from '../queries/invoice.query.js';
 
 export const getInvoicesListRepo = async (statusFilter = null) => {
@@ -89,6 +92,20 @@ export const getInvoicesListRepo = async (statusFilter = null) => {
   };
 };
 
+export const getInvoiceMetaRepo = async () => {
+  const [customersRes, productsRes, ordersRes] = await Promise.all([
+    pool.query(GET_INVOICE_META_CUSTOMERS),
+    pool.query(GET_INVOICE_META_PRODUCTS),
+    pool.query(GET_INVOICE_META_ORDERS),
+  ]);
+
+  return {
+    customers: customersRes.rows,
+    products: productsRes.rows,
+    orders: ordersRes.rows,
+  };
+};
+
 export const getInvoiceDetailRepo = async (invoiceId) => {
   const invRes = await pool.query(GET_INVOICE_BY_ID, [invoiceId]);
   if (invRes.rows.length === 0) {
@@ -132,6 +149,88 @@ export const getInvoiceDetailRepo = async (invoiceId) => {
     relatedInvoices,
     lifecycle,
   };
+};
+
+export const createInvoiceRepo = async ({
+  customerId,
+  orderId = null,
+  dueDate = null,
+  items = [],
+}) => {
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+
+    // 1. Generate unique invoice number
+    const countRes = await client.query('SELECT COUNT(*)::INT AS count FROM invoices');
+    const invCount = (countRes.rows[0]?.count || 0) + 1;
+    const invoiceNumber = `INV-${String(invCount + 1040).padStart(4, '0')}`;
+
+    // 2. Calculate line items totals
+    let subtotal = 0;
+    let taxTotal = 0;
+    const processedItems = items.map((item) => {
+      const qty = parseInt(item.quantity, 10) || 1;
+      const price = parseFloat(item.unit_price) || 0;
+      const taxRate = parseFloat(item.tax_percentage) || 0;
+      const itemSubtotal = qty * price;
+      const itemTax = (itemSubtotal * taxRate) / 100;
+      const itemTotal = itemSubtotal + itemTax;
+
+      subtotal += itemSubtotal;
+      taxTotal += itemTax;
+
+      return {
+        ...item,
+        quantity: qty,
+        unit_price: price,
+        tax_percentage: taxRate,
+        tax_amount: itemTax,
+        line_total: itemTotal,
+      };
+    });
+
+    const grandTotal = subtotal + taxTotal;
+    const targetDueDate = dueDate || new Date(Date.now() + 15 * 86400000).toISOString().split('T')[0];
+
+    // 3. Create invoice
+    const invRes = await client.query(CREATE_INVOICE, [
+      invoiceNumber,
+      orderId || null,
+      customerId,
+      targetDueDate,
+      subtotal,
+      0, // discount_total
+      taxTotal,
+      grandTotal,
+    ]);
+    const createdInvoice = invRes.rows[0];
+
+    // 4. Insert invoice items
+    for (const it of processedItems) {
+      await client.query(INSERT_INVOICE_ITEM, [
+        createdInvoice.id,
+        it.order_item_id || null,
+        it.product_variant_id || null,
+        it.product_name || 'Product Item',
+        it.sku || null,
+        it.quantity,
+        it.unit_price,
+        it.tax_percentage,
+        it.tax_amount,
+        it.line_total,
+      ]);
+    }
+
+    await client.query('COMMIT');
+
+    return await getInvoiceDetailRepo(createdInvoice.id);
+  } catch (err) {
+    await client.query('ROLLBACK');
+    throw err;
+  } finally {
+    client.release();
+  }
 };
 
 export const recordPaymentRepo = async ({

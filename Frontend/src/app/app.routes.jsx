@@ -23,6 +23,7 @@ import SubscriptionDetail from '../features/subscriptions/pages/SubscriptionDeta
 import DealHealthDashboard from '../features/dealHealth/pages/DealHealthDashboard.jsx';
 import InvoicesList from '../features/invoices/pages/InvoicesList.jsx';
 import InvoiceDetail from '../features/invoices/pages/InvoiceDetail.jsx';
+import InvoiceCreate from '../features/invoices/pages/InvoiceCreate.jsx';
 import './placeholder.scss';
 
 // Lightweight placeholder view component for quick verification
@@ -88,6 +89,10 @@ export const router = createBrowserRouter([
       {
         path: '/invoices',
         element: <InvoicesList />,
+      },
+      {
+        path: '/invoices/new',
+        element: <InvoiceCreate />,
       },
       {
         path: '/invoices/:id',
