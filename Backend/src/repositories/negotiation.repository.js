@@ -172,8 +172,8 @@ export const acceptQuotationTermsRepo = async ({ quotationId, userId, userRole }
     }
     const quotation = quoteRes.rows[0];
 
-    // 1. Update quotation status to 'confirmed'
-    const updatedQuoteRes = await client.query(UPDATE_QUOTATION_STATUS, ['confirmed', quotationId]);
+    // 1. Update quotation status to 'approved'
+    const updatedQuoteRes = await client.query(UPDATE_QUOTATION_STATUS, ['approved', quotationId]);
 
     // 2. Update negotiation record if active
     const negRes = await client.query(GET_ACTIVE_NEGOTIATION, [quotationId]);

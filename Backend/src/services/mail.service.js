@@ -398,3 +398,443 @@ export function generateStaffInvitationEmail({ name, email, role, tempPassword }
   </html>
   `;
 }
+
+/**
+ * Generates an HTML email sent to customer when a new pending quotation is issued with Negotiate and Direct Confirm options
+ */
+export function generateQuotationIssuedEmail({
+  customerName,
+  quotationNumber,
+  quotationId,
+  grandTotal,
+  validUntil,
+  items = [],
+  frontendUrl,
+}) {
+  const baseFrontend = frontendUrl || config.FRONTEND_ORIGIN || 'http://localhost:5173';
+  const negotiateUrl = `${baseFrontend}/my_quotations?quoteId=${quotationId}`;
+  const confirmUrl = `${baseFrontend}/my_quotations?action=confirm&quoteId=${quotationId}`;
+  const formattedTotal = `$${Number(grandTotal || 0).toLocaleString()}`;
+  const formattedValid = validUntil ? new Date(validUntil).toLocaleDateString() : '30 Days from issue';
+
+  return `
+  <!DOCTYPE html>
+  <html>
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>New Quotation: ${quotationNumber}</title>
+    <style>
+      body {
+        margin: 0;
+        padding: 0;
+        background-color: #0b0f19;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+        color: #f1f5f9;
+      }
+      .email-container {
+        max-width: 600px;
+        margin: 35px auto;
+        background-color: #1e293b;
+        border-radius: 12px;
+        overflow: hidden;
+        border: 1px solid #334155;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+      }
+      .email-header {
+        background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
+        padding: 28px 24px;
+        text-align: center;
+        color: #ffffff;
+      }
+      .email-header h1 {
+        margin: 0;
+        font-size: 22px;
+        font-weight: 700;
+        letter-spacing: -0.3px;
+      }
+      .email-body {
+        padding: 30px 28px;
+        line-height: 1.6;
+        color: #cbd5e1;
+      }
+      .quote-summary-card {
+        background-color: #0f172a;
+        border: 1px solid rgba(56, 189, 248, 0.25);
+        border-radius: 10px;
+        padding: 20px;
+        margin: 22px 0;
+      }
+      .quote-row {
+        display: flex;
+        justify-content: space-between;
+        margin: 8px 0;
+        font-size: 14px;
+      }
+      .quote-label {
+        color: #94a3b8;
+      }
+      .quote-val {
+        color: #ffffff;
+        font-weight: 600;
+      }
+      .grand-total {
+        font-size: 20px;
+        font-weight: 800;
+        color: #34d399;
+      }
+      .actions-container {
+        margin: 30px 0 15px 0;
+        text-align: center;
+      }
+      .btn {
+        display: inline-block;
+        padding: 13px 24px;
+        border-radius: 8px;
+        font-weight: 700;
+        font-size: 14px;
+        text-decoration: none;
+        margin: 8px 6px;
+        transition: all 0.2s ease;
+      }
+      .btn-confirm {
+        background: linear-gradient(135deg, #059669 0%, #10b981 100%);
+        color: #ffffff !important;
+        box-shadow: 0 4px 12px rgba(16, 185, 129, 0.35);
+      }
+      .btn-negotiate {
+        background: rgba(30, 41, 59, 0.9);
+        border: 1px solid #38bdf8;
+        color: #38bdf8 !important;
+      }
+      .footer {
+        padding: 20px;
+        text-align: center;
+        font-size: 12px;
+        color: #64748b;
+        background-color: #0f172a;
+        border-top: 1px solid #334155;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="email-container">
+      <div class="email-header">
+        <h1>📄 New Quotation Ready for Review</h1>
+      </div>
+      <div class="email-body">
+        <p style="font-size: 16px; color: #f8fafc;">Dear <strong>${customerName || 'Valued Partner'}</strong>,</p>
+        <p>A new quotation <strong>${quotationNumber}</strong> has been prepared and submitted for your review by the sales team.</p>
+        
+        <div class="quote-summary-card">
+          <div class="quote-row">
+            <span class="quote-label">Quotation Number:</span>
+            <span class="quote-val" style="color: #38bdf8;">${quotationNumber}</span>
+          </div>
+          <div class="quote-row">
+            <span class="quote-label">Valid Until:</span>
+            <span class="quote-val">${formattedValid}</span>
+          </div>
+          <hr style="border: 0; border-top: 1px solid #334155; margin: 12px 0;" />
+          <div class="quote-row">
+            <span class="quote-label" style="font-size: 16px; font-weight: bold; color: #f8fafc;">Grand Total:</span>
+            <span class="quote-val grand-total">${formattedTotal}</span>
+          </div>
+        </div>
+
+        <p style="text-align: center; font-weight: 600; color: #f8fafc; margin-top: 24px;">Please choose how you would like to proceed:</p>
+
+        <div class="actions-container">
+          <a href="${confirmUrl}" class="btn btn-confirm">
+            ✅ Direct Confirm Order
+          </a>
+          <a href="${negotiateUrl}" class="btn btn-negotiate">
+            💬 Negotiate / Request Changes
+          </a>
+        </div>
+
+        <p style="font-size: 13px; color: #94a3b8; text-align: center; margin-top: 20px;">
+          Clicking <strong>Direct Confirm</strong> will automatically accept this quotation and move it into approved status.
+        </p>
+
+        <p style="margin-top: 28px; color: #f8fafc;">Best regards,<br><strong>The DealFlow360 Sales Team</strong></p>
+      </div>
+      <div class="footer">
+        &copy; ${new Date().getFullYear()} DealFlow360. All rights reserved.
+      </div>
+    </div>
+  </body>
+  </html>
+  `;
+}
+
+/**
+ * Generates an HTML email sent to customer when sales team submits a counter-offer
+ */
+export function generateCounterOfferEmail({
+  customerName,
+  quotationNumber,
+  quotationId,
+  counterDiscount,
+  requestedDeliveryDate,
+  message,
+  frontendUrl,
+}) {
+  const baseFrontend = frontendUrl || config.FRONTEND_ORIGIN || 'http://localhost:5173';
+  const portalUrl = `${baseFrontend}/my_quotations?quoteId=${quotationId}`;
+  const formattedDate = requestedDeliveryDate ? new Date(requestedDeliveryDate).toLocaleDateString() : 'As Scheduled';
+
+  return `
+  <!DOCTYPE html>
+  <html>
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Counter-Offer for ${quotationNumber}</title>
+    <style>
+      body {
+        margin: 0;
+        padding: 0;
+        background-color: #0b0f19;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+        color: #f1f5f9;
+      }
+      .email-container {
+        max-width: 600px;
+        margin: 35px auto;
+        background-color: #1e293b;
+        border-radius: 12px;
+        overflow: hidden;
+        border: 1px solid #334155;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+      }
+      .email-header {
+        background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+        padding: 28px 24px;
+        text-align: center;
+        color: #ffffff;
+      }
+      .email-header h1 {
+        margin: 0;
+        font-size: 22px;
+        font-weight: 700;
+      }
+      .email-body {
+        padding: 30px 28px;
+        line-height: 1.6;
+        color: #cbd5e1;
+      }
+      .offer-card {
+        background-color: #0f172a;
+        border: 1px solid rgba(245, 158, 11, 0.35);
+        border-radius: 10px;
+        padding: 20px;
+        margin: 20px 0;
+      }
+      .offer-row {
+        display: flex;
+        justify-content: space-between;
+        margin: 8px 0;
+        font-size: 14px;
+      }
+      .offer-label {
+        color: #94a3b8;
+      }
+      .offer-val {
+        color: #ffffff;
+        font-weight: 600;
+      }
+      .btn {
+        display: inline-block;
+        padding: 13px 28px;
+        border-radius: 8px;
+        font-weight: 700;
+        font-size: 14px;
+        text-decoration: none;
+        background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+        color: #ffffff !important;
+        box-shadow: 0 4px 12px rgba(245, 158, 11, 0.35);
+      }
+      .footer {
+        padding: 20px;
+        text-align: center;
+        font-size: 12px;
+        color: #64748b;
+        background-color: #0f172a;
+        border-top: 1px solid #334155;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="email-container">
+      <div class="email-header">
+        <h1>💬 New Counter-Offer Proposed</h1>
+      </div>
+      <div class="email-body">
+        <p style="font-size: 16px; color: #f8fafc;">Dear <strong>${customerName || 'Valued Partner'}</strong>,</p>
+        <p>Our sales team has responded to your negotiation with a revised <strong>counter-offer</strong> for quotation <strong>${quotationNumber}</strong>.</p>
+        
+        <div class="offer-card">
+          ${counterDiscount != null ? `
+          <div class="offer-row">
+            <span class="offer-label">Proposed Counter Discount:</span>
+            <span class="offer-val" style="color: #fbbf24; font-size: 16px;">${counterDiscount}%</span>
+          </div>` : ''}
+          ${requestedDeliveryDate ? `
+          <div class="offer-row">
+            <span class="offer-label">Proposed Delivery Date:</span>
+            <span class="offer-val">${formattedDate}</span>
+          </div>` : ''}
+          ${message ? `
+          <div style="margin-top: 12px; padding-top: 10px; border-top: 1px solid #334155;">
+            <span class="offer-label">Note from Sales Rep:</span>
+            <p style="margin: 6px 0 0 0; color: #f8fafc; font-style: italic;">"${message}"</p>
+          </div>` : ''}
+        </div>
+
+        <div style="text-align: center; margin: 30px 0 15px 0;">
+          <a href="${portalUrl}" class="btn">
+            Review & Respond on Portal &rarr;
+          </a>
+        </div>
+
+        <p style="margin-top: 28px; color: #f8fafc;">Best regards,<br><strong>The DealFlow360 Sales Team</strong></p>
+      </div>
+      <div class="footer">
+        &copy; ${new Date().getFullYear()} DealFlow360. All rights reserved.
+      </div>
+    </div>
+  </body>
+  </html>
+  `;
+}
+
+/**
+ * Generates an HTML email sent when a quotation is confirmed & approved
+ */
+export function generateQuotationApprovedEmail({
+  customerName,
+  quotationNumber,
+  quotationId,
+  grandTotal,
+  validUntil,
+  frontendUrl,
+}) {
+  const baseFrontend = frontendUrl || config.FRONTEND_ORIGIN || 'http://localhost:5173';
+  const portalUrl = `${baseFrontend}/my_quotations?quoteId=${quotationId}`;
+  const formattedTotal = `$${Number(grandTotal || 0).toLocaleString()}`;
+
+  return `
+  <!DOCTYPE html>
+  <html>
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quotation Approved: ${quotationNumber}</title>
+    <style>
+      body {
+        margin: 0;
+        padding: 0;
+        background-color: #0b0f19;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+        color: #f1f5f9;
+      }
+      .email-container {
+        max-width: 600px;
+        margin: 35px auto;
+        background-color: #1e293b;
+        border-radius: 12px;
+        overflow: hidden;
+        border: 1px solid #334155;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+      }
+      .email-header {
+        background: linear-gradient(135deg, #059669 0%, #10b981 100%);
+        padding: 28px 24px;
+        text-align: center;
+        color: #ffffff;
+      }
+      .email-header h1 {
+        margin: 0;
+        font-size: 22px;
+        font-weight: 700;
+      }
+      .email-body {
+        padding: 30px 28px;
+        line-height: 1.6;
+        color: #cbd5e1;
+      }
+      .card {
+        background-color: #0f172a;
+        border: 1px solid rgba(16, 185, 129, 0.3);
+        border-radius: 10px;
+        padding: 20px;
+        margin: 20px 0;
+      }
+      .row {
+        display: flex;
+        justify-content: space-between;
+        margin: 8px 0;
+        font-size: 14px;
+      }
+      .btn {
+        display: inline-block;
+        padding: 13px 28px;
+        border-radius: 8px;
+        font-weight: 700;
+        font-size: 14px;
+        text-decoration: none;
+        background: linear-gradient(135deg, #059669 0%, #10b981 100%);
+        color: #ffffff !important;
+        box-shadow: 0 4px 12px rgba(16, 185, 129, 0.35);
+      }
+      .footer {
+        padding: 20px;
+        text-align: center;
+        font-size: 12px;
+        color: #64748b;
+        background-color: #0f172a;
+        border-top: 1px solid #334155;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="email-container">
+      <div class="email-header">
+        <h1>🎉 Quotation Approved & Finalized</h1>
+      </div>
+      <div class="email-body">
+        <p style="font-size: 16px; color: #f8fafc;">Dear <strong>${customerName || 'Valued Partner'}</strong>,</p>
+        <p>Quotation <strong>${quotationNumber}</strong> has been successfully <strong>approved and confirmed</strong>.</p>
+        
+        <div class="card">
+          <div class="row">
+            <span style="color: #94a3b8;">Quotation Number:</span>
+            <span style="color: #38bdf8; font-weight: 600;">${quotationNumber}</span>
+          </div>
+          <div class="row">
+            <span style="color: #94a3b8;">Status:</span>
+            <span style="color: #34d399; font-weight: 700;">APPROVED</span>
+          </div>
+          <div class="row">
+            <span style="color: #94a3b8;">Grand Total:</span>
+            <span style="color: #34d399; font-weight: 800; font-size: 18px;">${formattedTotal}</span>
+          </div>
+        </div>
+
+        <div style="text-align: center; margin: 30px 0 15px 0;">
+          <a href="${portalUrl}" class="btn">
+            View Quotation Details &rarr;
+          </a>
+        </div>
+
+        <p style="margin-top: 28px; color: #f8fafc;">Best regards,<br><strong>The DealFlow360 Sales Team</strong></p>
+      </div>
+      <div class="footer">
+        &copy; ${new Date().getFullYear()} DealFlow360. All rights reserved.
+      </div>
+    </div>
+  </body>
+  </html>
+  `;
+}

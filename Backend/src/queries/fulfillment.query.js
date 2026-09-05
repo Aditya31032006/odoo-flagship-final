@@ -151,5 +151,6 @@ export const GET_FULFILLMENT_META_VARIANTS = `
     COALESCE(pv.selling_price, p.base_price, 1000) AS price
   FROM product_variants pv 
   JOIN products p ON pv.product_id = p.id 
+  WHERE p.is_active = TRUE AND pv.is_active = TRUE
   ORDER BY p.name ASC, pv.sku ASC;
 `;

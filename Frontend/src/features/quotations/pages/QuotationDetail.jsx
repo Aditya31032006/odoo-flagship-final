@@ -247,23 +247,73 @@ export const QuotationDetail = ({ isNew = false }) => {
 
           {!isCustomer && (
             <div className="buttons-group">
-              <button
-                type="button"
-                className="df-quotation-detail__btn-draft"
-                onClick={handleSaveDraft}
-                disabled={isSaving}
-              >
-                {isSaving ? 'Saving...' : 'Save Draft'}
-              </button>
+              {status === 'confirmed' ? (
+                <div style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '0.5rem',
+                  padding: '0.65rem 1.25rem',
+                  background: 'rgba(16, 185, 129, 0.15)',
+                  border: '1px solid rgba(16, 185, 129, 0.4)',
+                  borderRadius: '8px',
+                  color: '#34d399',
+                  fontWeight: 600,
+                  fontSize: '0.9375rem'
+                }}>
+                  ✅ Order Confirmed &amp; Locked
+                </div>
+              ) : status === 'approved' ? (
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '1rem',
+                  flexWrap: 'wrap'
+                }}>
+                  <div style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '0.5rem',
+                    padding: '0.65rem 1.25rem',
+                    background: 'rgba(16, 185, 129, 0.15)',
+                    border: '1px solid rgba(16, 185, 129, 0.4)',
+                    borderRadius: '8px',
+                    color: '#34d399',
+                    fontWeight: 600,
+                    fontSize: '0.9375rem'
+                  }}>
+                    ✓ Status: Approved
+                  </div>
 
-              <button
-                type="button"
-                className="df-quotation-detail__btn-submit"
-                onClick={handleSubmitApproval}
-                disabled={isSaving}
-              >
-                {isSaving ? 'Processing...' : 'Submit for Approval'}
-              </button>
+                  <button
+                    type="button"
+                    className="df-quotation-detail__btn-draft"
+                    onClick={handleSaveDraft}
+                    disabled={isSaving}
+                  >
+                    {isSaving ? 'Saving...' : 'Update & Re-save'}
+                  </button>
+                </div>
+              ) : (
+                <>
+                  <button
+                    type="button"
+                    className="df-quotation-detail__btn-draft"
+                    onClick={handleSaveDraft}
+                    disabled={isSaving}
+                  >
+                    {isSaving ? 'Saving...' : 'Save Quotation'}
+                  </button>
+
+                  <button
+                    type="button"
+                    className="df-quotation-detail__btn-submit"
+                    onClick={handleSubmitApproval}
+                    disabled={isSaving}
+                  >
+                    {isSaving ? 'Filing...' : 'File & Send to Customer'}
+                  </button>
+                </>
+              )}
             </div>
           )}
         </footer>

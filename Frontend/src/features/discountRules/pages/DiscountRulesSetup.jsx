@@ -1,4 +1,5 @@
 import React from 'react';
+import { useForm } from 'react-hook-form';
 import useDiscountRules from '../hooks/useDiscountRules.js';
 import '../styles/discountRules.scss';
 
@@ -17,8 +18,9 @@ export const DiscountRulesSetup = () => {
     saveConfiguration,
   } = useDiscountRules();
 
-  const handleSave = async (e) => {
-    e.preventDefault();
+  const { handleSubmit } = useForm();
+
+  const onSubmit = async () => {
     await saveConfiguration();
   };
 
@@ -89,7 +91,7 @@ export const DiscountRulesSetup = () => {
           {successMsg && <div className="df-discount-rules__alert-success">{successMsg}</div>}
         </div>
 
-        <form onSubmit={handleSave}>
+        <form onSubmit={handleSubmit(onSubmit)}>
           {/* Top 2-Column Grid: Customer Tiers & Category Ceilings */}
           <div className="df-discount-rules__top-grid">
             {/* 1. Customer Tiers Ceilings Card matching Wireframe #18 */}

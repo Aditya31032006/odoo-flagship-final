@@ -129,32 +129,47 @@ export const saveQuotationRepo = async ({
     const insertedItems = [];
     for (let i = 0; i < items.length; i++) {
       const item = items[i];
+      const listPrice = item.list_price != null ? Number(item.list_price) : Number(item.unit_price || 0);
+      const unitPrice = item.unit_price != null ? Number(item.unit_price) : listPrice;
+      const qty = Math.max(1, Number(item.quantity) || 1);
+      const discountPct = Number(item.discount_percentage) || 0;
+      const discountAmt = item.discount_amount != null ? Number(item.discount_amount) : Number(((unitPrice * qty) * (discountPct / 100)).toFixed(2));
+      const taxPct = Number(item.tax_percentage) || 0;
+      const taxable = Math.max(0, (unitPrice * qty) - discountAmt);
+      const taxAmt = item.tax_amount != null ? Number(item.tax_amount) : Number((taxable * (taxPct / 100)).toFixed(2));
+      const lineTotal = item.line_total != null ? Number(item.line_total) : Number((taxable + taxAmt).toFixed(2));
+
       const itemRes = await client.query(INSERT_QUOTATION_ITEM, [
         quotation.id,
         item.product_variant_id,
         i + 1, // line_number
-        item.product_name_snapshot || item.product_name,
-        item.sku_snapshot || item.sku,
-        item.quantity,
-        item.list_price,
-        item.unit_price,
-        item.discount_percentage || 0,
-        item.discount_amount || 0,
-        item.tax_percentage || 0,
-        item.tax_amount || 0,
-        item.allowed_discount_percentage || null,
-        item.excess_discount_percentage || 0,
-        item.line_total,
+        item.product_name_snapshot || item.product_name || 'Product',
+        item.sku_snapshot || item.sku || null,
+        qty,
+        listPrice,
+        unitPrice,
+        discountPct,
+        discountAmt,
+        taxPct,
+        taxAmt,
+        item.allowed_discount_percentage != null ? Number(item.allowed_discount_percentage) : null,
+        item.excess_discount_percentage != null ? Number(item.excess_discount_percentage) : 0,
+        lineTotal,
         Boolean(item.is_upsell),
       ]);
       insertedItems.push(itemRes.rows[0]);
     }
 
     // If submitted for approval, evaluate approval rules and create approval steps
+    const effectiveUserId = user_id || sales_rep_id || quotation?.sales_rep_id || 1;
+
     if (status === 'pending_approval') {
+      await client.query('DELETE FROM approval_steps WHERE approval_request_id IN (SELECT id FROM approval_requests WHERE quotation_id = $1)', [quotation.id]);
+      await client.query('DELETE FROM approval_requests WHERE quotation_id = $1', [quotation.id]);
+
       const appReqRes = await client.query(CREATE_APPROVAL_REQUEST, [
         quotation.id,
-        user_id,
+        effectiveUserId,
       ]);
       const approvalRequest = appReqRes.rows[0];
 
@@ -181,7 +196,7 @@ export const saveQuotationRepo = async ({
     // Record in quotation audit log
     await client.query(INSERT_QUOTATION_AUDIT_LOG, [
       quotation.id,
-      user_id,
+      effectiveUserId,
       actionType,
       action_reason || (status === 'pending_approval' ? 'Submitted for approval' : 'Saved quotation draft'),
       JSON.stringify({

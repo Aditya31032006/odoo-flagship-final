@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, memo } from 'react';
+import { useForm } from 'react-hook-form';
 import useAuth from '../../auth/hook/useAuth.js';
 import negotiationApi from '../services/negotiation.api.js';
 import '../styles/negotiation.scss';
@@ -15,18 +16,39 @@ export const NegotiationPanel = memo(({
   const [negotiation, setNegotiation] = useState(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
-
-  // Counter offer form state
   const [showCounterForm, setShowCounterForm] = useState(false);
-  const [counterDiscount, setCounterDiscount] = useState('');
-  const [requestedDeliveryDate, setRequestedDeliveryDate] = useState('');
-  const [counterNote, setCounterNote] = useState('');
-
-  // Chat Composer state
-  const [chatMessage, setChatMessage] = useState('');
-  const [taggedItemId, setTaggedItemId] = useState('');
 
   const messagesEndRef = useRef(null);
+
+  // 1. React Hook Form for Counter-Offer
+  const {
+    register: registerCounter,
+    handleSubmit: handleSubmitCounter,
+    setValue: setCounterValue,
+    reset: resetCounter,
+    formState: { errors: counterErrors },
+  } = useForm({
+    defaultValues: {
+      counter_discount_percentage: '',
+      requested_delivery_date: '',
+      message: '',
+    },
+  });
+
+  // 2. React Hook Form for Chat Composer
+  const {
+    register: registerChat,
+    handleSubmit: handleSubmitChat,
+    reset: resetChat,
+    watch: watchChat,
+  } = useForm({
+    defaultValues: {
+      message: '',
+      quotation_item_id: '',
+    },
+  });
+
+  const chatMessageVal = watchChat('message');
 
   // Fetch negotiation thread
   const loadNegotiation = async () => {
@@ -35,10 +57,10 @@ export const NegotiationPanel = memo(({
       const data = await negotiationApi.getNegotiation(quotationId);
       setNegotiation(data);
       if (data?.counter_discount_percentage != null) {
-        setCounterDiscount(data.counter_discount_percentage);
+        setCounterValue('counter_discount_percentage', data.counter_discount_percentage);
       }
       if (data?.requested_delivery_date) {
-        setRequestedDeliveryDate(data.requested_delivery_date.split('T')[0]);
+        setCounterValue('requested_delivery_date', data.requested_delivery_date.split('T')[0]);
       }
     } catch (err) {
       console.warn('Failed to load negotiation thread:', err);
@@ -58,21 +80,20 @@ export const NegotiationPanel = memo(({
     }
   }, [negotiation?.messages]);
 
-  // Submit counter-offer
-  const handleSubmitCounter = async (e) => {
-    e.preventDefault();
-    if (!counterDiscount && !requestedDeliveryDate) return;
+  // Submit counter-offer handler
+  const onCounterSubmit = async (formData) => {
+    if (!formData.counter_discount_percentage && !formData.requested_delivery_date) return;
 
     setSubmitting(true);
     try {
       const res = await negotiationApi.submitCounterOffer(quotationId, {
-        counter_discount_percentage: counterDiscount ? Number(counterDiscount) : undefined,
-        requested_delivery_date: requestedDeliveryDate || undefined,
-        message: counterNote,
+        counter_discount_percentage: formData.counter_discount_percentage ? Number(formData.counter_discount_percentage) : undefined,
+        requested_delivery_date: formData.requested_delivery_date || undefined,
+        message: formData.message || '',
       });
       setNegotiation(res.data);
       setShowCounterForm(false);
-      setCounterNote('');
+      resetCounter();
       if (onQuotationUpdated) onQuotationUpdated();
     } catch (err) {
       alert(err.customMessage || 'Failed to submit counter-offer');
@@ -81,20 +102,19 @@ export const NegotiationPanel = memo(({
     }
   };
 
-  // Send message
-  const handleSendMessage = async (e) => {
-    e.preventDefault();
-    if (!chatMessage.trim()) return;
+  // Send message handler
+  const onChatSubmit = async (formData) => {
+    const text = formData.message?.trim();
+    if (!text) return;
 
     setSubmitting(true);
     try {
       const res = await negotiationApi.sendMessage(quotationId, {
-        message: chatMessage.trim(),
-        quotation_item_id: taggedItemId ? Number(taggedItemId) : null,
+        message: text,
+        quotation_item_id: formData.quotation_item_id ? Number(formData.quotation_item_id) : null,
       });
       setNegotiation(res.data);
-      setChatMessage('');
-      setTaggedItemId('');
+      resetChat({ message: '', quotation_item_id: '' });
       if (onQuotationUpdated) onQuotationUpdated();
     } catch (err) {
       alert(err.customMessage || 'Failed to send message');
@@ -122,82 +142,88 @@ export const NegotiationPanel = memo(({
     }
   };
 
-  const isConfirmed = quotation?.status === 'confirmed';
+  const isConfirmed = quotation?.status === 'confirmed' || negotiation?.status === 'accepted';
   const hasActiveCounter = negotiation?.counter_discount_percentage != null;
 
   return (
     <div className="df-negotiation-panel">
-      {/* Header */}
+      {/* Header Banner */}
       <div className="df-negotiation-panel__header">
-        <div className="title-group">
+        <div className="header-info">
           <h3>
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
             </svg>
-            Live Deal Negotiation Hub
+            Deal Negotiation &amp; Messaging Hub
           </h3>
-          <span className={`status-pill status-pill--${negotiation?.status || 'open'}`}>
-            {negotiation?.status || 'Open'}
+          <span className="subtitle">
+            Directly communicate counter-discounts and delivery requirements with your sales team.
           </span>
         </div>
 
-        {/* Accept Deal Button */}
-        {!isConfirmed && (
-          <button
-            type="button"
-            className="accept-deal-btn"
-            onClick={handleAcceptDeal}
-            disabled={submitting}
-            title="Accept current quotation terms and confirm order"
-          >
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" width="14" height="14">
-              <polyline points="20 6 9 17 4 12" />
-            </svg>
-            Accept & Confirm Order
-          </button>
-        )}
+        {/* Global Action Status */}
+        <div className="header-actions">
+          {isConfirmed ? (
+            <span className="status-badge status-badge--confirmed">
+              ✅ Quotation Accepted &amp; Confirmed
+            </span>
+          ) : (
+            <>
+              {isCustomer && (
+                <button
+                  type="button"
+                  className="btn-accept-deal"
+                  onClick={handleAcceptDeal}
+                  disabled={submitting}
+                >
+                  Confirm &amp; Accept Deal
+                </button>
+              )}
+              <button
+                type="button"
+                className="btn-counter-toggle"
+                onClick={() => setShowCounterForm((prev) => !prev)}
+              >
+                {showCounterForm ? 'Hide Counter Form' : hasActiveCounter ? 'Revise Counter Offer' : '+ Propose Counter Offer'}
+              </button>
+            </>
+          )}
+        </div>
       </div>
 
-      {/* Active Counter Banner */}
-      {hasActiveCounter && (
-        <div className="df-negotiation-panel__counter-banner">
+      {/* Active Counter Offer Summary */}
+      {hasActiveCounter && !showCounterForm && (
+        <div className="df-negotiation-panel__counter-summary">
           <div className="counter-details">
-            <span>
-              🎯 Requested Counter Discount: <strong>{negotiation.counter_discount_percentage}%</strong>
-            </span>
+            <span className="badge-active">Active Counter Proposal</span>
+            {negotiation.counter_discount_percentage != null && (
+              <span className="counter-val">
+                Requested Discount: <strong>{negotiation.counter_discount_percentage}%</strong>
+              </span>
+            )}
             {negotiation.requested_delivery_date && (
-              <span className="detail-badge">
-                📅 Target Date: {new Date(negotiation.requested_delivery_date).toLocaleDateString()}
+              <span className="counter-val">
+                Target Delivery: <strong>{new Date(negotiation.requested_delivery_date).toLocaleDateString()}</strong>
               </span>
             )}
           </div>
-
           {!isConfirmed && (
-            <div className="counter-actions">
-              <button
-                type="button"
-                className="btn-revise"
-                onClick={() => setShowCounterForm((prev) => !prev)}
-              >
-                {showCounterForm ? 'Hide Form' : isCustomer ? 'Update Counter Offer' : 'Revise Terms'}
-              </button>
-            </div>
+            <button
+              type="button"
+              className="btn-edit-counter"
+              onClick={() => setShowCounterForm(true)}
+            >
+              Modify Proposal
+            </button>
           )}
         </div>
       )}
 
-      {/* Counter Offer Form */}
-      {(!hasActiveCounter || showCounterForm) && !isConfirmed && (
+      {/* Counter Offer Form (React Hook Form) */}
+      {showCounterForm && !isConfirmed && (
         <div className="df-negotiation-panel__counter-form">
-          <div className="form-title">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="15" height="15">
-              <line x1="12" y1="1" x2="12" y2="23" />
-              <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
-            </svg>
-            {isCustomer ? 'Propose Counter Terms to Sales Team' : 'Adjust Proposed Counter Terms'}
-          </div>
-
-          <form onSubmit={handleSubmitCounter}>
+          <h4>Propose Revised Commercial Terms</h4>
+          <form onSubmit={handleSubmitCounter(onCounterSubmit)}>
             <div className="inputs-grid">
               <div className="input-block">
                 <label>Requested Discount Percentage (%)</label>
@@ -207,18 +233,23 @@ export const NegotiationPanel = memo(({
                   max="100"
                   step="0.5"
                   placeholder="e.g. 15%"
-                  value={counterDiscount}
-                  onChange={(e) => setCounterDiscount(e.target.value)}
-                  required
+                  {...registerCounter('counter_discount_percentage', {
+                    min: { value: 0, message: 'Discount cannot be negative' },
+                    max: { value: 100, message: 'Discount cannot exceed 100%' },
+                  })}
                 />
+                {counterErrors.counter_discount_percentage && (
+                  <span style={{ color: '#ef4444', fontSize: '0.75rem' }}>
+                    {counterErrors.counter_discount_percentage.message}
+                  </span>
+                )}
               </div>
 
               <div className="input-block">
                 <label>Preferred Delivery Date</label>
                 <input
                   type="date"
-                  value={requestedDeliveryDate}
-                  onChange={(e) => setRequestedDeliveryDate(e.target.value)}
+                  {...registerCounter('requested_delivery_date')}
                 />
               </div>
 
@@ -227,26 +258,16 @@ export const NegotiationPanel = memo(({
                 <input
                   type="text"
                   placeholder="e.g. Bulk order commitment across Q3 and Q4"
-                  value={counterNote}
-                  onChange={(e) => setCounterNote(e.target.value)}
+                  {...registerCounter('message')}
                 />
               </div>
             </div>
 
             <div className="form-footer">
-              {hasActiveCounter && (
-                <button
-                  type="button"
-                  className="btn-cancel"
-                  onClick={() => setShowCounterForm(false)}
-                >
-                  Cancel
-                </button>
-              )}
               <button
                 type="submit"
                 className="btn-submit"
-                disabled={submitting || !counterDiscount}
+                disabled={submitting}
               >
                 {submitting ? 'Submitting...' : 'Submit Counter Offer'}
               </button>
@@ -295,16 +316,13 @@ export const NegotiationPanel = memo(({
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Chat Composer */}
+      {/* Chat Composer (React Hook Form) */}
       {!isConfirmed && (
-        <form className="df-negotiation-panel__composer" onSubmit={handleSendMessage}>
+        <form className="df-negotiation-panel__composer" onSubmit={handleSubmitChat(onChatSubmit)}>
           {quotationItems.length > 0 && (
             <div className="tag-row">
               <label style={{ fontSize: '0.75rem', color: '#94a3b8' }}>Tag specific item (optional):</label>
-              <select
-                value={taggedItemId}
-                onChange={(e) => setTaggedItemId(e.target.value)}
-              >
+              <select {...registerChat('quotation_item_id')}>
                 <option value="">General Deal Discussion</option>
                 {quotationItems.map((item) => (
                   <option key={item.id} value={item.id}>
@@ -322,19 +340,18 @@ export const NegotiationPanel = memo(({
                   ? 'Ask a question or discuss terms with your assigned sales representative...'
                   : 'Reply to client regarding quotation terms...'
               }
-              value={chatMessage}
-              onChange={(e) => setChatMessage(e.target.value)}
+              {...registerChat('message', { required: true })}
               onKeyDown={(e) => {
                 if (e.key === 'Enter' && !e.shiftKey) {
                   e.preventDefault();
-                  handleSendMessage(e);
+                  handleSubmitChat(onChatSubmit)();
                 }
               }}
             />
             <button
               type="submit"
               className="btn-send"
-              disabled={submitting || !chatMessage.trim()}
+              disabled={submitting || !chatMessageVal?.trim()}
               title="Send Message"
             >
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
