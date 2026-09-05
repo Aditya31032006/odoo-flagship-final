@@ -403,65 +403,12 @@
     }
   }
 
-  // SVG Native Chart Styling
-  &__svg-chart-container {
+  // Chart.js Canvas Wrapper
+  &__chart-canvas-wrap {
     width: 100%;
+    height: 270px;
     position: relative;
-    flex: 1;
-    min-height: 240px;
-
-    svg {
-      width: 100%;
-      height: 100%;
-      overflow: visible;
-    }
-
-    .chart-grid-line {
-      stroke: rgba(255, 255, 255, 0.05);
-      stroke-dasharray: 4 4;
-    }
-
-    .chart-axis-text {
-      fill: #64748b;
-      font-size: 11px;
-      font-weight: 500;
-    }
-
-    .chart-area-pipeline {
-      fill: url(#pipelineGradient);
-      opacity: 0.4;
-    }
-
-    .chart-line-pipeline {
-      fill: none;
-      stroke: #6366f1;
-      stroke-width: 2.5;
-      stroke-linecap: round;
-      stroke-linejoin: round;
-    }
-
-    .chart-area-confirmed {
-      fill: url(#confirmedGradient);
-      opacity: 0.5;
-    }
-
-    .chart-line-confirmed {
-      fill: none;
-      stroke: #10b981;
-      stroke-width: 2.5;
-      stroke-linecap: round;
-      stroke-linejoin: round;
-    }
-
-    .chart-data-point {
-      cursor: pointer;
-      transition: r 0.2s ease, stroke-width 0.2s ease;
-
-      &:hover {
-        r: 6;
-        stroke-width: 3;
-      }
-    }
+    margin-top: 0.5rem;
   }
 
   // Bottlenecks Visual Stage Bars
@@ -518,19 +465,6 @@
         background: linear-gradient(90deg, #4f46e5, #818cf8);
         box-shadow: 0 0 10px rgba(99, 102, 241, 0.35);
       }
-    }
-  }
-
-  &__svg-bar-wrap {
-    width: 100%;
-    height: 8px;
-    border-radius: 9999px;
-    overflow: hidden;
-
-    .df-reports__svg-bar {
-      width: 100%;
-      height: 8px;
-      display: block;
     }
   }
 
