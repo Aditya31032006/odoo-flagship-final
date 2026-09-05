@@ -262,7 +262,7 @@ export const QuotationDetail = ({ isNew = false }) => {
                 }}>
                   ✅ Order Confirmed &amp; Locked
                 </div>
-              ) : status === 'pending_approval' ? (
+              ) : status === 'approved' ? (
                 <div style={{
                   display: 'flex',
                   alignItems: 'center',
@@ -274,14 +274,14 @@ export const QuotationDetail = ({ isNew = false }) => {
                     alignItems: 'center',
                     gap: '0.5rem',
                     padding: '0.65rem 1.25rem',
-                    background: 'rgba(245, 158, 11, 0.15)',
-                    border: '1px solid rgba(245, 158, 11, 0.4)',
+                    background: 'rgba(16, 185, 129, 0.15)',
+                    border: '1px solid rgba(16, 185, 129, 0.4)',
                     borderRadius: '8px',
-                    color: '#fbbf24',
+                    color: '#34d399',
                     fontWeight: 600,
                     fontSize: '0.9375rem'
                   }}>
-                    ⏳ Status: Pending Approval
+                    ✓ Status: Approved &amp; Sent to Customer
                   </div>
 
                   <button
@@ -290,7 +290,7 @@ export const QuotationDetail = ({ isNew = false }) => {
                     onClick={handleSaveDraft}
                     disabled={isSaving}
                   >
-                    {isSaving ? 'Saving...' : 'Update Quotation'}
+                    {isSaving ? 'Saving...' : 'Update & Re-save'}
                   </button>
                 </div>
               ) : (
@@ -310,7 +310,7 @@ export const QuotationDetail = ({ isNew = false }) => {
                     onClick={handleSubmitApproval}
                     disabled={isSaving}
                   >
-                    {isSaving ? 'Processing...' : 'Submit for Approval'}
+                    {isSaving ? 'Processing...' : 'Approve & Send to Customer'}
                   </button>
                 </>
               )}

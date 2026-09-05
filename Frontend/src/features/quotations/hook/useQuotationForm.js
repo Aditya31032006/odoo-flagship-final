@@ -427,8 +427,8 @@ export const useQuotationForm = ({ quotationId = null } = {}) => {
       const targetId = quotationId && quotationId !== 'new' ? quotationId : 'new';
       const result = await quotationApi.submitForApproval(targetId, payload);
 
-      setSuccessMessage('Quotation submitted for approval successfully!');
-      setStatus('pending_approval');
+      setSuccessMessage('Quotation approved & email notification sent to customer!');
+      setStatus('approved');
       return result;
     } catch (err) {
       setError(err.customMessage || 'Failed to submit quotation for approval');

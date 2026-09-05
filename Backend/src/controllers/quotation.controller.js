@@ -281,7 +281,7 @@ export const submitApprovalController = async (req, res, next) => {
       grand_total = 0,
       valid_until = null,
       items = [],
-      action_reason = 'Submitted for managerial approval',
+      action_reason = 'Approved and issued to customer',
     } = req.body;
 
     const submitted = await saveQuotationRepo({
@@ -290,7 +290,7 @@ export const submitApprovalController = async (req, res, next) => {
       sales_rep_id: user.id,
       tier_id,
       price_list_id,
-      status: 'pending_approval',
+      status: 'approved',
       blended_risk_score,
       risk_level,
       subtotal,
@@ -303,9 +303,28 @@ export const submitApprovalController = async (req, res, next) => {
       user_id: user.id,
     });
 
+    if (submitted) {
+      try {
+        const custRes = await pool.query('SELECT company_name, email FROM customers WHERE id = $1', [customer_id]);
+        if (custRes.rows.length > 0 && custRes.rows[0].email) {
+          await addQuotationApprovedEmailJob({
+            toEmail: custRes.rows[0].email,
+            customerName: custRes.rows[0].company_name,
+            quotationNumber: submitted.quotation_number,
+            quotationId: submitted.id,
+            grandTotal: submitted.grand_total,
+            validUntil: submitted.valid_until,
+            items,
+          });
+        }
+      } catch (mailErr) {
+        console.warn('⚠️ Failed to dispatch quotation approved email:', mailErr.message);
+      }
+    }
+
     return res.status(STATUS_CODES.OK).json({
       success: true,
-      message: 'Quotation submitted for approval successfully',
+      message: 'Quotation approved successfully and notification sent to customer',
       data: submitted,
     });
   } catch (error) {
