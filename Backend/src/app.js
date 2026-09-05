@@ -15,6 +15,7 @@ import fulfillmentRouter from './routes/fulfillment.route.js';
 import negotiationRouter from './routes/negotiation.route.js';
 import subscriptionRouter from './routes/subscription.route.js';
 import dealHealthRouter from './routes/dealHealth.route.js';
+import invoiceRouter from './routes/invoice.route.js';
 import handleError from './middleware/error.middleware.js';
 import config from './config/config.js';
 
@@ -44,6 +45,7 @@ app.use('/api/fulfillment', fulfillmentRouter);
 app.use('/api/negotiations', negotiationRouter);
 app.use('/api/subscriptions', subscriptionRouter);
 app.use('/api/deal-health', dealHealthRouter);
+app.use('/api/invoices', invoiceRouter);
 
 // Global Error Handler
 app.use(handleError);

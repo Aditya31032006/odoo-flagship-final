@@ -21,6 +21,8 @@ import MyQuotations from '../features/quotations/pages/MyQuotations.jsx';
 import SubscriptionsList from '../features/subscriptions/pages/SubscriptionsList.jsx';
 import SubscriptionDetail from '../features/subscriptions/pages/SubscriptionDetail.jsx';
 import DealHealthDashboard from '../features/dealHealth/pages/DealHealthDashboard.jsx';
+import InvoicesList from '../features/invoices/pages/InvoicesList.jsx';
+import InvoiceDetail from '../features/invoices/pages/InvoiceDetail.jsx';
 import './placeholder.scss';
 
 // Lightweight placeholder view component for quick verification
@@ -85,12 +87,11 @@ export const router = createBrowserRouter([
       },
       {
         path: '/invoices',
-        element: (
-          <PagePlaceholder
-            title="Invoices & KUBER Accounting"
-            description="Connect order items with KUBER accounting entries, invoices, and ledger journals."
-          />
-        ),
+        element: <InvoicesList />,
+      },
+      {
+        path: '/invoices/:id',
+        element: <InvoiceDetail />,
       },
       {
         path: '/deal-health',
