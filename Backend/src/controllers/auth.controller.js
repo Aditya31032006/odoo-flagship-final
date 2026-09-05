@@ -5,6 +5,10 @@ import {
     listActiveCompaniesRepo,
     findUserRepo,
     findUserByIdRepo,
+    getUserFullProfileRepo,
+    updateUserProfileRepo,
+    findUserWithPasswordByIdRepo,
+    changeUserPasswordByIdRepo,
     updateUserPasswordRepo
 } from '../repositories/auth.repository.js';
 import { hashPassword, verifyPassword } from '../utils/password.util.js';
@@ -112,7 +116,7 @@ export const registerController = async (req, res, next) => {
 };
 
 /**
- * Login user (automatically resolves role and company linkage from database)
+ * Login user via email and password
  */
 export const loginController = async (req, res, next) => {
     try {
@@ -231,6 +235,101 @@ export const getMeController = async (req, res, next) => {
         return res.status(STATUS_CODES.OK).json({
             message: MESSAGES.USER.RETRIEVED,
             user: freshUser
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
+/**
+ * Get detailed profile information (User + Company/Customer details)
+ */
+export const getProfileController = async (req, res, next) => {
+    try {
+        const userId = req.user.id;
+        const profile = await getUserFullProfileRepo(userId);
+        if (!profile) {
+            return res.status(STATUS_CODES.NOT_FOUND).json({ message: MESSAGES.USER.NOT_FOUND });
+        }
+
+        return res.status(STATUS_CODES.OK).json({
+            message: 'Profile retrieved successfully',
+            profile
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
+/**
+ * Update editable profile information (Name, Mobile, Company Details if primary)
+ */
+export const updateProfileController = async (req, res, next) => {
+    try {
+        const userId = req.user.id;
+        const {
+            name,
+            mobile,
+            company_name,
+            gst_number,
+            billing_address,
+            shipping_address
+        } = req.body;
+
+        const updatedProfile = await updateUserProfileRepo(userId, {
+            name,
+            mobile,
+            company_name,
+            gst_number,
+            billing_address,
+            shipping_address
+        });
+
+        // Sign updated token and refresh cookie
+        const { password_hash, ...safeUser } = updatedProfile;
+        const token = signToken(safeUser);
+        res.cookie("auth_token", token, getAccessCookieOptions());
+
+        return res.status(STATUS_CODES.OK).json({
+            message: 'Profile updated successfully',
+            user: safeUser,
+            profile: updatedProfile,
+            token
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
+/**
+ * Change current user password (verifies old password first)
+ */
+export const changePasswordController = async (req, res, next) => {
+    try {
+        const userId = req.user.id;
+        const { current_password, new_password } = req.body;
+
+        const user = await findUserWithPasswordByIdRepo(userId);
+        if (!user) {
+            return res.status(STATUS_CODES.NOT_FOUND).json({ message: MESSAGES.USER.NOT_FOUND });
+        }
+
+        if (!user.password_hash) {
+            return res.status(STATUS_CODES.BAD_REQUEST).json({
+                message: 'This account was created with Google OAuth. Please set a password through reset flow.'
+            });
+        }
+
+        const isCurrentValid = await verifyPassword(current_password, user.password_hash);
+        if (!isCurrentValid) {
+            return res.status(STATUS_CODES.BAD_REQUEST).json({ message: 'Current password is incorrect.' });
+        }
+
+        const hashedNewPassword = await hashPassword(new_password);
+        await changeUserPasswordByIdRepo(userId, hashedNewPassword);
+
+        return res.status(STATUS_CODES.OK).json({
+            message: 'Password changed successfully!'
         });
     } catch (error) {
         next(error);

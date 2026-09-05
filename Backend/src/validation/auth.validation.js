@@ -90,3 +90,45 @@ export const resetPasswordValidation = [
   body('new_password').isLength({ min: 6 }).withMessage('New password must be at least 6 characters long'),
   validate
 ];
+
+export const updateProfileValidation = [
+  body('name')
+    .trim()
+    .notEmpty()
+    .withMessage('Full name is required')
+    .isLength({ min: 2, max: 100 })
+    .withMessage('Name must be between 2 and 100 characters long'),
+  body('mobile')
+    .optional({ values: 'falsy' })
+    .trim()
+    .matches(/^[6-9]\d{9}$/)
+    .withMessage('Mobile number must be exactly 10 digits starting with 6, 7, 8, or 9 (e.g. 9876543210)'),
+  body('company_name')
+    .optional({ values: 'falsy' })
+    .trim()
+    .isLength({ min: 2, max: 255 })
+    .withMessage('Company name must be between 2 and 255 characters'),
+  body('gst_number')
+    .optional({ values: 'falsy' })
+    .trim()
+    .toUpperCase()
+    .matches(/^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/)
+    .withMessage('Invalid GST number format (15 characters, e.g. 27AABCU9603R1ZM)'),
+  body('billing_address')
+    .optional({ values: 'falsy' })
+    .trim(),
+  body('shipping_address')
+    .optional({ values: 'falsy' })
+    .trim(),
+  validate
+];
+
+export const changePasswordValidation = [
+  body('current_password')
+    .notEmpty()
+    .withMessage('Current password is required'),
+  body('new_password')
+    .isLength({ min: 6 })
+    .withMessage('New password must be at least 6 characters long'),
+  validate
+];

@@ -90,6 +90,53 @@ export function useAuth() {
   );
 
   /**
+   * Get full profile (user + company)
+   */
+  const getProfile = useCallback(async () => {
+    try {
+      const response = await authApi.getProfile();
+      return { success: true, profile: response.profile };
+    } catch (err) {
+      const msg = err.customMessage || 'Failed to fetch profile details.';
+      return { success: false, error: msg };
+    }
+  }, []);
+
+  /**
+   * Update editable user profile & company details
+   */
+  const updateProfile = useCallback(
+    async (profileData) => {
+      dispatch(setLoading(true));
+      try {
+        const response = await authApi.updateProfile(profileData);
+        if (response.user) {
+          dispatch(setUser(response.user));
+        }
+        return { success: true, profile: response.profile, user: response.user, message: response.message };
+      } catch (err) {
+        const msg = err.customMessage || 'Failed to update profile.';
+        dispatch(setError(msg));
+        return { success: false, error: msg };
+      }
+    },
+    [dispatch]
+  );
+
+  /**
+   * Change user password
+   */
+  const changePassword = useCallback(async (passwordData) => {
+    try {
+      const response = await authApi.changePassword(passwordData);
+      return { success: true, message: response.message };
+    } catch (err) {
+      const msg = err.customMessage || 'Failed to change password.';
+      return { success: false, error: msg };
+    }
+  }, []);
+
+  /**
    * Request password reset OTP
    */
   const forgotPassword = useCallback(async (email) => {
@@ -183,6 +230,9 @@ export function useAuth() {
     login,
     register,
     completeOnboarding,
+    getProfile,
+    updateProfile,
+    changePassword,
     forgotPassword,
     resetPassword,
     getCompanies,

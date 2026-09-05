@@ -3,11 +3,16 @@ import {
     CREATE_USER,
     FIND_USER,
     FIND_USER_BY_ID,
+    GET_USER_FULL_PROFILE,
+    UPDATE_USER_BASIC_PROFILE,
+    UPDATE_CUSTOMER_DETAILS,
     CREATE_CUSTOMER,
     FIND_CUSTOMER_BY_ID,
     LIST_ACTIVE_CUSTOMERS,
     LINK_CUSTOMER_USER,
-    UPDATE_PASSWORD
+    UPDATE_PASSWORD,
+    FIND_USER_WITH_PASSWORD_BY_ID,
+    UPDATE_USER_PASSWORD_BY_ID
 } from '../queries/auth.query.js';
 
 /**
@@ -104,13 +109,13 @@ export const registerEmployeeUnderCompanyRepo = async ({ company_id, user, role 
         await client.query("BEGIN");
 
         // 1. Verify company exists
-        const companyCheck = await client.query(FIND_CUSTOMER_BY_ID, [company_id]);
-        if (companyCheck.rows.length === 0) {
+        const companyResult = await client.query(FIND_CUSTOMER_BY_ID, [company_id]);
+        if (companyResult.rows.length === 0) {
             throw new Error(`Company with ID "${company_id}" was not found.`);
         }
-        const existingCompany = companyCheck.rows[0];
+        const targetCompany = companyResult.rows[0];
 
-        // 2. Create user with assigned role (default 'customer')
+        // 2. Create employee user
         const userResult = await client.query(CREATE_USER, [
             user.name.trim(),
             user.email.toLowerCase().trim(),
@@ -121,9 +126,9 @@ export const registerEmployeeUnderCompanyRepo = async ({ company_id, user, role 
         ]);
         const createdUser = userResult.rows[0];
 
-        // 3. Link user to company
+        // 3. Link customer to user (not primary contact by default)
         await client.query(LINK_CUSTOMER_USER, [
-            existingCompany.id,
+            targetCompany.id,
             createdUser.id,
             false // is_primary_contact
         ]);
@@ -132,9 +137,9 @@ export const registerEmployeeUnderCompanyRepo = async ({ company_id, user, role 
 
         return {
             ...createdUser,
-            customer_id: existingCompany.id,
-            company_name: existingCompany.company_name,
-            gst_number: existingCompany.gst_number,
+            customer_id: targetCompany.id,
+            company_name: targetCompany.company_name,
+            gst_number: targetCompany.gst_number,
             is_primary_contact: false
         };
     } catch (error) {
@@ -239,6 +244,102 @@ export const findUserByIdRepo = async (id) => {
         return result.rows[0];
     } catch (error) {
         console.error("Error in findUserByIdRepo:", error);
+        throw error;
+    } finally {
+        client.release();
+    }
+};
+
+/**
+ * Fetch complete user profile with joined customer/company details
+ */
+export const getUserFullProfileRepo = async (id) => {
+    const client = await pool.connect();
+    try {
+        const result = await client.query(GET_USER_FULL_PROFILE, [id]);
+        return result.rows[0];
+    } catch (error) {
+        console.error("Error in getUserFullProfileRepo:", error);
+        throw error;
+    } finally {
+        client.release();
+    }
+};
+
+/**
+ * Update user editable profile fields and company details (if primary contact)
+ */
+export const updateUserProfileRepo = async (userId, { name, mobile, company_name, gst_number, billing_address, shipping_address }) => {
+    const client = await pool.connect();
+    try {
+        await client.query("BEGIN");
+
+        // 1. Update user fields (name, mobile)
+        const updatedUserResult = await client.query(UPDATE_USER_BASIC_PROFILE, [
+            name ? name.trim() : null,
+            mobile ? mobile.trim() : null,
+            userId
+        ]);
+        const updatedUser = updatedUserResult.rows[0];
+
+        // 2. Check if user is linked to a customer/company
+        const profileCheck = await client.query(GET_USER_FULL_PROFILE, [userId]);
+        const currentProfile = profileCheck.rows[0];
+
+        // 3. Update company details ONLY if user email matches organization email
+        const isCompanyOwner = Boolean(
+            currentProfile?.company_email &&
+            currentProfile?.email &&
+            currentProfile.email.trim().toLowerCase() === currentProfile.company_email.trim().toLowerCase()
+        );
+
+        if (currentProfile?.customer_id && isCompanyOwner) {
+            await client.query(UPDATE_CUSTOMER_DETAILS, [
+                company_name ? company_name.trim() : null,
+                gst_number ? gst_number.trim() : null,
+                billing_address ? billing_address.trim() : null,
+                shipping_address ? shipping_address.trim() : null,
+                currentProfile.customer_id
+            ]);
+        }
+
+        await client.query("COMMIT");
+
+        // Return refreshed profile
+        const freshProfile = await client.query(GET_USER_FULL_PROFILE, [userId]);
+        return freshProfile.rows[0];
+    } catch (error) {
+        console.error("Error in updateUserProfileRepo:", error);
+        await client.query("ROLLBACK");
+        throw error;
+    } finally {
+        client.release();
+    }
+};
+
+export const findUserWithPasswordByIdRepo = async (id) => {
+    const client = await pool.connect();
+    try {
+        const result = await client.query(FIND_USER_WITH_PASSWORD_BY_ID, [id]);
+        return result.rows[0];
+    } catch (error) {
+        console.error("Error in findUserWithPasswordByIdRepo:", error);
+        throw error;
+    } finally {
+        client.release();
+    }
+};
+
+export const changeUserPasswordByIdRepo = async (id, password_hash) => {
+    const client = await pool.connect();
+    try {
+        await client.query("BEGIN");
+        const result = await client.query(UPDATE_USER_PASSWORD_BY_ID, [password_hash, id]);
+        await client.query("COMMIT");
+        return result.rows[0];
+    } catch (error) {
+        console.error("Error in changeUserPasswordByIdRepo:", error);
+        await client.query("ROLLBACK");
         throw error;
     } finally {
         client.release();

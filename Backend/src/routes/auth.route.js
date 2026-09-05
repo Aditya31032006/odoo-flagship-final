@@ -4,7 +4,9 @@ import {
     loginValidation,
     forgotPasswordValidation,
     resetPasswordValidation,
-    completeOnboardingValidation
+    completeOnboardingValidation,
+    updateProfileValidation,
+    changePasswordValidation
 } from "../validation/auth.validation.js";
 import passport from 'passport';
 import {
@@ -16,13 +18,16 @@ import {
     completeOnboardingController,
     forgotPasswordController,
     resetPasswordController,
-    googleAuthCallbackController
+    googleAuthCallbackController,
+    getProfileController,
+    updateProfileController,
+    changePasswordController
 } from '../controllers/auth.controller.js';
 import authMiddleware from '../middleware/auth.middleware.js';
 
 const authRouter = express.Router();
 
-// Direct JSON Body Routes (no unused multer / file upload middleware)
+// Direct Auth & Session Routes
 authRouter.post('/register', registerValidation, registerController);
 authRouter.post('/login', loginValidation, loginController);
 authRouter.get('/logout', authMiddleware, logoutController);
@@ -31,6 +36,11 @@ authRouter.get('/companies', getCompaniesController);
 authRouter.post('/complete-onboarding', authMiddleware, completeOnboardingValidation, completeOnboardingController);
 authRouter.post('/forgot-password', forgotPasswordValidation, forgotPasswordController);
 authRouter.post('/reset-password', resetPasswordValidation, resetPasswordController);
+
+// Profile Management Routes
+authRouter.get('/profile', authMiddleware, getProfileController);
+authRouter.put('/profile', authMiddleware, updateProfileValidation, updateProfileController);
+authRouter.put('/change-password', authMiddleware, changePasswordValidation, changePasswordController);
 
 // Google OAuth Routes
 authRouter.get(

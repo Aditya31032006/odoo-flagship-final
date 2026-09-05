@@ -65,6 +65,30 @@ export const authApi = {
   },
 
   /**
+   * Get full profile details (User + Company)
+   */
+  async getProfile() {
+    const response = await apiClient.get('/auth/profile');
+    return response.data;
+  },
+
+  /**
+   * Update editable profile information
+   */
+  async updateProfile(profileData) {
+    const response = await apiClient.put('/auth/profile', profileData);
+    return response.data;
+  },
+
+  /**
+   * Change user password
+   */
+  async changePassword(passwordData) {
+    const response = await apiClient.put('/auth/change-password', passwordData);
+    return response.data;
+  },
+
+  /**
    * Logout user from backend session & clear httpOnly cookie
    */
   async logout() {

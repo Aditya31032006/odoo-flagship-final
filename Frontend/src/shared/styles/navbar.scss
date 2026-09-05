@@ -3,12 +3,13 @@
 
 // DealFlow360 Slim & Modern Navigation Bar
 .df-navbar-wrapper {
-  position: sticky;
+  position: fixed;
   top: 0;
   left: 0;
   right: 0;
   z-index: 1000;
   width: 100%;
+  height: 54px;
   font-family: vars.$font-family-base;
 }
 
@@ -231,43 +232,6 @@
     flex-shrink: 0;
   }
 
-  &__action-btn {
-    @include mixins.flex-center;
-    width: 32px;
-    height: 32px;
-    border-radius: vars.$border-radius-md;
-    border: 1px solid rgba(255, 255, 255, 0.16);
-    background: rgba(255, 255, 255, 0.08);
-    color: #ffffff;
-    cursor: pointer;
-    position: relative;
-    transition: all vars.$transition-fast;
-
-    svg {
-      width: 16px;
-      height: 16px;
-      opacity: 0.9;
-    }
-
-    &:hover {
-      background: rgba(255, 255, 255, 0.2);
-      border-color: rgba(255, 255, 255, 0.35);
-      transform: translateY(-1px);
-    }
-
-    &.has-indicator::after {
-      content: '';
-      position: absolute;
-      top: 6px;
-      right: 6px;
-      width: 6px;
-      height: 6px;
-      background: #f43f5e;
-      border-radius: vars.$border-radius-full;
-      box-shadow: 0 0 4px #f43f5e;
-    }
-  }
-
   // User Profile Pill in Navbar
   &__user {
     @include mixins.flex-center;
@@ -304,6 +268,41 @@
     &:hover {
       background: rgba(0, 0, 0, 0.3);
       border-color: rgba(255, 255, 255, 0.25);
+    }
+
+    &.active {
+      background: rgba(56, 189, 248, 0.15);
+      border-color: rgba(56, 189, 248, 0.4);
+      box-shadow: 0 0 10px rgba(56, 189, 248, 0.2);
+
+      .df-navbar__user-role {
+        color: #38bdf8;
+        font-weight: vars.$font-weight-semibold;
+      }
+    }
+  }
+
+  &__chevron-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    border: none;
+    padding: 2px;
+    margin: 0;
+    color: rgba(255, 255, 255, 0.7);
+    cursor: pointer;
+    border-radius: vars.$border-radius-sm;
+    transition: all vars.$transition-fast;
+
+    &:hover {
+      background: rgba(255, 255, 255, 0.15);
+      color: #ffffff;
+    }
+
+    svg {
+      width: 13px;
+      height: 13px;
     }
   }
 
@@ -353,6 +352,39 @@
       margin-top: 0.2rem;
     }
 
+    &-item,
+    &-profile-link {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.5rem 0.6rem;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 6px;
+      color: #e2e8f0;
+      font-size: 0.8125rem;
+      font-weight: 500;
+      cursor: pointer;
+      text-decoration: none;
+      margin-bottom: 0.5rem;
+      transition: all 0.2s ease;
+      box-sizing: border-box;
+
+      svg {
+        width: 14px;
+        height: 14px;
+        color: #38bdf8;
+        flex-shrink: 0;
+      }
+
+      &:hover {
+        background: rgba(37, 99, 235, 0.2);
+        border-color: rgba(59, 130, 246, 0.4);
+        color: #ffffff;
+      }
+    }
+
     &-logout {
       width: 100%;
       display: flex;
@@ -367,6 +399,7 @@
       font-weight: 500;
       cursor: pointer;
       transition: all 0.2s ease;
+      box-sizing: border-box;
 
       svg {
         width: 14px;

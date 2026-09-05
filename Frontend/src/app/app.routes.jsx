@@ -10,6 +10,7 @@ import ProductCatalog from '../features/products/pages/ProductCatalog.jsx';
 import ProductDetail from '../features/products/pages/ProductDetail.jsx';
 import Onboarding from '../features/auth/pages/Onboarding.jsx';
 import ForgotPassword from '../features/auth/pages/ForgotPassword.jsx';
+import Profile from '../features/auth/pages/Profile.jsx';
 import './placeholder.scss';
 
 // Lightweight placeholder view component for quick verification
@@ -113,6 +114,10 @@ export const router = createBrowserRouter([
       {
         path: '/products/:id',
         element: <ProductDetail />,
+      },
+      {
+        path: '/profile',
+        element: <Profile />,
       },
     ],
   },

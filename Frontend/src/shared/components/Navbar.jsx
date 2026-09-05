@@ -207,41 +207,45 @@ export default function Navbar() {
 
         {/* Right Action Utilities */}
         <div className="df-navbar__actions">
-          {/* Quick Search Trigger */}
-          <button className="df-navbar__action-btn" title="Search deals & SKUs (Ctrl+K)">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <circle cx="11" cy="11" r="8" />
-              <line x1="21" x2="16.65" y1="21" y2="16.65" />
-            </svg>
-          </button>
-
-          {/* Notifications Bell */}
-          <button className="df-navbar__action-btn has-indicator" title="Notifications & Approvals">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9" />
-              <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0" />
-            </svg>
-          </button>
-
           {/* User Profile / Auth State */}
           {isAuthenticated && user ? (
             <div className="df-navbar__user-container" ref={dropdownRef}>
               <div
-                className="df-navbar__user"
-                onClick={() => setProfileDropdownOpen((prev) => !prev)}
-                title={`${user.name} (${formatRole(user.role)})`}
+                className={`df-navbar__user ${location.pathname === '/profile' ? 'active' : ''}`}
+                onClick={() => {
+                  setProfileDropdownOpen(false);
+                  navigate('/profile');
+                }}
+                title="View & Edit My Profile"
               >
                 <div className="df-navbar__user-avatar">{getInitials(user.name)}</div>
                 <span className="df-navbar__user-role">{formatRole(user.role)}</span>
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="df-navbar__chevron">
-                  <polyline points="6 9 12 15 18 9" />
-                </svg>
+                <button
+                  type="button"
+                  className="df-navbar__chevron-btn"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setProfileDropdownOpen((prev) => !prev);
+                  }}
+                  title="More Profile Options"
+                >
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="df-navbar__chevron">
+                    <polyline points="6 9 12 15 18 9" />
+                  </svg>
+                </button>
               </div>
 
               {/* Profile Dropdown */}
               {profileDropdownOpen && (
                 <div className="df-navbar__dropdown-menu">
-                  <div className="df-navbar__dropdown-menu-header">
+                  <div
+                    className="df-navbar__dropdown-menu-header"
+                    onClick={() => {
+                      setProfileDropdownOpen(false);
+                      navigate('/profile');
+                    }}
+                    title="Open Full Profile"
+                  >
                     <div className="df-navbar__dropdown-menu-name">
                       {user.name}
                     </div>
@@ -254,6 +258,18 @@ export default function Navbar() {
                       </div>
                     )}
                   </div>
+
+                  <Link
+                    to="/profile"
+                    className="df-navbar__dropdown-menu-profile-link"
+                    onClick={() => setProfileDropdownOpen(false)}
+                  >
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                      <circle cx="12" cy="7" r="4" />
+                    </svg>
+                    My Profile & Settings
+                  </Link>
 
                   <button
                     onClick={handleLogout}
