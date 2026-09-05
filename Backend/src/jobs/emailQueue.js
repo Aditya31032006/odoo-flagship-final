@@ -81,7 +81,7 @@ export function initEmailWorker() {
         }
 
         case 'send-quotation-issued': {
-          const { toEmail, customerName, quotationNumber, quotationId, grandTotal, validUntil, items } = data;
+          const { toEmail, customerName, quotationNumber, quotationId, grandTotal, validUntil, items, tempToken } = data;
           const html = generateQuotationIssuedEmail({
             customerName,
             quotationNumber,
@@ -89,6 +89,7 @@ export function initEmailWorker() {
             grandTotal,
             validUntil,
             items,
+            tempToken,
           });
           await sendMail({
             toEmail,
@@ -99,7 +100,7 @@ export function initEmailWorker() {
         }
 
         case 'send-counter-offer': {
-          const { toEmail, customerName, quotationNumber, quotationId, counterDiscount, requestedDeliveryDate, message } = data;
+          const { toEmail, customerName, quotationNumber, quotationId, counterDiscount, requestedDeliveryDate, message, tempToken } = data;
           const html = generateCounterOfferEmail({
             customerName,
             quotationNumber,
@@ -107,6 +108,7 @@ export function initEmailWorker() {
             counterDiscount,
             requestedDeliveryDate,
             message,
+            tempToken,
           });
           await sendMail({
             toEmail,

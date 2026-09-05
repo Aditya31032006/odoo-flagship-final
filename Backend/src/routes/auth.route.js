@@ -6,12 +6,14 @@ import {
     resetPasswordValidation,
     completeOnboardingValidation,
     updateProfileValidation,
-    changePasswordValidation
+    changePasswordValidation,
+    magicLoginValidation
 } from "../validation/auth.validation.js";
 import passport from 'passport';
 import {
     registerController,
     loginController,
+    magicLoginController,
     logoutController,
     getMeController,
     getCompaniesController,
@@ -30,6 +32,7 @@ const authRouter = express.Router();
 // Direct Auth & Session Routes
 authRouter.post('/register', registerValidation, registerController);
 authRouter.post('/login', loginValidation, loginController);
+authRouter.post('/magic-login', magicLoginValidation, magicLoginController);
 authRouter.get('/logout', authMiddleware, logoutController);
 authRouter.get('/me', authMiddleware, getMeController);
 authRouter.get('/companies', getCompaniesController);

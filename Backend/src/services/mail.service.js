@@ -410,10 +410,12 @@ export function generateQuotationIssuedEmail({
   validUntil,
   items = [],
   frontendUrl,
+  tempToken,
 }) {
   const baseFrontend = frontendUrl || config.FRONTEND_ORIGIN || 'http://localhost:5173';
-  const negotiateUrl = `${baseFrontend}/my_quotations?quoteId=${quotationId}`;
-  const confirmUrl = `${baseFrontend}/my_quotations?action=confirm&quoteId=${quotationId}`;
+  const tokenQuery = tempToken ? `&token=${encodeURIComponent(tempToken)}` : '';
+  const negotiateUrl = `${baseFrontend}/my_quotations?quoteId=${quotationId}${tokenQuery}`;
+  const confirmUrl = `${baseFrontend}/my_quotations?action=confirm&quoteId=${quotationId}${tokenQuery}`;
   const formattedTotal = `$${Number(grandTotal || 0).toLocaleString()}`;
   const formattedValid = validUntil ? new Date(validUntil).toLocaleDateString() : '30 Days from issue';
 
@@ -579,9 +581,11 @@ export function generateCounterOfferEmail({
   requestedDeliveryDate,
   message,
   frontendUrl,
+  tempToken,
 }) {
   const baseFrontend = frontendUrl || config.FRONTEND_ORIGIN || 'http://localhost:5173';
-  const portalUrl = `${baseFrontend}/my_quotations?quoteId=${quotationId}`;
+  const tokenQuery = tempToken ? `&token=${encodeURIComponent(tempToken)}` : '';
+  const portalUrl = `${baseFrontend}/my_quotations?quoteId=${quotationId}${tokenQuery}`;
   const formattedDate = requestedDeliveryDate ? new Date(requestedDeliveryDate).toLocaleDateString() : 'As Scheduled';
 
   return `

@@ -436,8 +436,17 @@ export const getCustomerNotificationContactRepo = async (customerId) => {
     try {
         await client.query("BEGIN");
         const result = await client.query(GET_CUSTOMER_NOTIFICATION_CONTACT, [customerId]);
+        let contact = result.rows[0] || null;
+
+        if (contact && !contact.user_id && contact.email) {
+            const userRes = await client.query("SELECT id, email, role, is_active FROM users WHERE LOWER(TRIM(email)) = LOWER(TRIM($1)) LIMIT 1", [contact.email]);
+            if (userRes.rows.length > 0) {
+                contact.user_id = userRes.rows[0].id;
+                contact.role = userRes.rows[0].role;
+            }
+        }
         await client.query("COMMIT");
-        return result.rows[0] || null;
+        return contact;
     } catch (error) {
         console.error("Error in getCustomerNotificationContactRepo:", error);
         await client.query("ROLLBACK");

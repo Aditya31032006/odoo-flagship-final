@@ -49,6 +49,15 @@ export default function MyQuotations() {
     fetchCompanyQuotations();
   }, [fetchCompanyQuotations]);
 
+  // Clean up ?token= from URL search params for clean browser URL
+  useEffect(() => {
+    const url = new URL(window.location.href);
+    if (url.searchParams.has('token')) {
+      url.searchParams.delete('token');
+      window.history.replaceState({}, '', url.pathname + url.search);
+    }
+  }, []);
+
   // Handle URL actions from email links (direct confirm or negotiate)
   useEffect(() => {
     let isMounted = true;

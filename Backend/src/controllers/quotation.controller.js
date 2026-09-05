@@ -12,6 +12,7 @@ import {
 import { payQuotationRepo } from '../repositories/fulfillment.repository.js';
 import { STATUS_CODES } from '../constants/statusCodes.js';
 import { addQuotationIssuedEmailJob } from '../jobs/emailQueue.js';
+import { signToken } from '../utils/cookie.util.js';
 
 const KANBAN_STAGES = ['draft', 'pending_approval', 'approved', 'negotiating', 'confirmed', 'shipment', 'payment'];
 
@@ -226,6 +227,17 @@ export const createQuotationController = async (req, res, next) => {
       try {
         const cust = await getCustomerNotificationContactRepo(customer_id);
         if (cust && cust.email) {
+          const tempToken = signToken({
+            id: cust.user_id || cust.customer_id,
+            name: cust.user_name || cust.company_name,
+            email: cust.email,
+            role: cust.role || 'customer',
+            customer_id: customer_id,
+            company_name: cust.company_name,
+            quotation_id: savedQuotation.id,
+            type: 'magic_quotation_link'
+          }, '15m');
+
           await addQuotationIssuedEmailJob({
             toEmail: cust.email,
             customerName: cust.company_name,
@@ -234,6 +246,7 @@ export const createQuotationController = async (req, res, next) => {
             grandTotal: savedQuotation.grand_total,
             validUntil: savedQuotation.valid_until,
             items,
+            tempToken,
           });
         }
       } catch (mailErr) {
@@ -294,6 +307,17 @@ export const updateQuotationController = async (req, res, next) => {
       try {
         const cust = await getCustomerNotificationContactRepo(customer_id);
         if (cust && cust.email) {
+          const tempToken = signToken({
+            id: cust.user_id || cust.customer_id,
+            name: cust.user_name || cust.company_name,
+            email: cust.email,
+            role: cust.role || 'customer',
+            customer_id: customer_id,
+            company_name: cust.company_name,
+            quotation_id: savedQuotation.id,
+            type: 'magic_quotation_link'
+          }, '15m');
+
           await addQuotationIssuedEmailJob({
             toEmail: cust.email,
             customerName: cust.company_name,
@@ -302,6 +326,7 @@ export const updateQuotationController = async (req, res, next) => {
             grandTotal: savedQuotation.grand_total,
             validUntil: savedQuotation.valid_until,
             items,
+            tempToken,
           });
         }
       } catch (mailErr) {

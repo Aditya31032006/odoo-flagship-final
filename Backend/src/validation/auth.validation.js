@@ -149,3 +149,13 @@ export const changePasswordValidation = [
     .withMessage('New password must be at least 6 characters long'),
   validate
 ];
+
+export const magicLoginValidation = [
+  body('token')
+    .trim()
+    .notEmpty()
+    .withMessage('Magic access token is required')
+    .isJWT()
+    .withMessage('Invalid magic token format'),
+  validate
+];

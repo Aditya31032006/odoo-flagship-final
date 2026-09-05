@@ -9,6 +9,7 @@ import { getQuotationFullDetailRepo } from '../repositories/quotation.repository
 import { getCustomerNotificationContactRepo } from '../repositories/auth.repository.js';
 import { addCounterOfferEmailJob, addQuotationApprovedEmailJob } from '../jobs/emailQueue.js';
 import { resolveUserCustomerId } from './quotation.controller.js';
+import { signToken } from '../utils/cookie.util.js';
 
 
 /**
@@ -105,6 +106,17 @@ export const submitCounterOfferController = async (req, res, next) => {
       try {
         const cust = await getCustomerNotificationContactRepo(quotation.customer_id);
         if (cust && cust.email) {
+          const tempToken = signToken({
+            id: cust.user_id || cust.customer_id,
+            name: cust.user_name || cust.company_name,
+            email: cust.email,
+            role: cust.role || 'customer',
+            customer_id: quotation.customer_id,
+            company_name: cust.company_name,
+            quotation_id: quotation.id,
+            type: 'magic_quotation_link'
+          }, '15m');
+
           await addCounterOfferEmailJob({
             toEmail: cust.email,
             customerName: cust.company_name,
@@ -113,6 +125,7 @@ export const submitCounterOfferController = async (req, res, next) => {
             counterDiscount: counter_discount_percentage !== undefined ? Number(counter_discount_percentage) : null,
             requestedDeliveryDate: requested_delivery_date || null,
             message: message || '',
+            tempToken,
           });
         }
       } catch (mailErr) {

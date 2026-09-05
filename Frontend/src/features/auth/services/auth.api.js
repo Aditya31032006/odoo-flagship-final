@@ -111,6 +111,14 @@ export const authApi = {
     const response = await apiClient.post('/auth/reset-password', data);
     return response.data;
   },
+
+  /**
+   * 15-minute magic quotation access login
+   */
+  async magicLogin(token) {
+    const response = await apiClient.post('/auth/magic-login', { token });
+    return response.data;
+  },
 };
 
 export default apiClient;

@@ -258,6 +258,62 @@ export const getMeController = async (req, res, next) => {
 };
 
 /**
+ * Magic Link verification and auto-login for 15-minute quotation action links
+ */
+export const magicLoginController = async (req, res, next) => {
+    try {
+        const { token } = req.body;
+        if (!token) {
+            return res.status(STATUS_CODES.BAD_REQUEST).json({ message: 'Magic access token is required.' });
+        }
+
+        let decoded;
+        try {
+            decoded = verifyToken(token);
+        } catch (err) {
+            if (err.name === 'TokenExpiredError') {
+                return res.status(STATUS_CODES.UNAUTHORIZED).json({
+                    expired: true,
+                    message: 'This instant-access link has expired (15-minute limit). Please log in with your credentials to view your quotation.'
+                });
+            }
+            return res.status(STATUS_CODES.UNAUTHORIZED).json({
+                message: 'Invalid magic access link. Please log in with your credentials.'
+            });
+        }
+
+        if (!decoded || decoded.type !== 'magic_quotation_link' || !decoded.id) {
+            return res.status(STATUS_CODES.UNAUTHORIZED).json({
+                message: 'This access token is not valid for quotation instant-access.'
+            });
+        }
+
+        const user = await findUserByIdRepo(decoded.id);
+        if (!user) {
+            return res.status(STATUS_CODES.NOT_FOUND).json({ message: 'User account not found.' });
+        }
+
+        if (user.is_active === false) {
+            return res.status(STATUS_CODES.FORBIDDEN).json({ message: 'User account has been deactivated.' });
+        }
+
+        const { password_hash, ...safeUser } = user;
+        // Issue 15-minute temporary session cookie on unauthenticated device
+        const sessionToken = signToken(safeUser, '15m');
+        res.cookie("auth_token", sessionToken, getAccessCookieOptions(15 * 60 * 1000));
+
+        return res.status(STATUS_CODES.OK).json({
+            message: 'Magic access authenticated successfully.',
+            user: safeUser,
+            token: sessionToken,
+            quotation_id: decoded.quotation_id
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
+/**
  * Get detailed profile information (User + Company/Customer details)
  */
 export const getProfileController = async (req, res, next) => {

@@ -221,6 +221,30 @@ export function useAuth() {
     dispatch(clearSuccess());
   }, [dispatch]);
 
+  /**
+   * 15-minute magic quotation access login
+   */
+  const magicLogin = useCallback(
+    async (token) => {
+      dispatch(setLoading(true));
+      try {
+        const response = await authApi.magicLogin(token);
+        dispatch(
+          setAuthSuccess({
+            user: response.user,
+            message: response.message,
+          })
+        );
+        return { success: true, user: response.user, quotation_id: response.quotation_id };
+      } catch (err) {
+        const msg = err.customMessage || 'Magic access link is invalid or has expired (15-minute limit).';
+        dispatch(setError(msg));
+        return { success: false, error: msg, expired: err.response?.data?.expired || false };
+      }
+    },
+    [dispatch]
+  );
+
   return {
     user,
     isAuthenticated,
@@ -228,6 +252,7 @@ export function useAuth() {
     error,
     successMessage,
     login,
+    magicLogin,
     register,
     completeOnboarding,
     getProfile,

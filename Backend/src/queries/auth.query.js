@@ -177,5 +177,16 @@ export const FIND_CUSTOMER_BY_EMAIL = `
 `;
 
 export const GET_CUSTOMER_NOTIFICATION_CONTACT = `
-  SELECT company_name, email FROM customers WHERE id = $1;
+  SELECT 
+    c.id AS customer_id, 
+    c.company_name, 
+    COALESCE(u.email, c.email) AS email, 
+    u.id AS user_id, 
+    u.name AS user_name,
+    u.role
+  FROM customers c
+  LEFT JOIN customer_users cu ON c.id = cu.customer_id AND cu.is_primary_contact = true
+  LEFT JOIN users u ON cu.user_id = u.id
+  WHERE c.id = $1
+  LIMIT 1;
 `;
