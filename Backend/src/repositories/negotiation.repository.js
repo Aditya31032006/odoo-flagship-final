@@ -196,12 +196,89 @@ export const acceptQuotationTermsRepo = async ({ quotationId, userId, userRole }
       quotationId,
       quotation.customer_id,
     ]);
+    const createdOrder = orderRes.rows[0];
+
+    // 5. Transfer quotation items to order_items and generate subscription records
+    const qItemsRes = await client.query('SELECT * FROM quotation_items WHERE quotation_id = $1 ORDER BY line_number ASC', [quotationId]);
+    for (const item of qItemsRes.rows) {
+      // Determine if item is subscription
+      const isSub = item.product_name_snapshot && (
+        item.product_name_snapshot.toLowerCase().includes('plan') ||
+        item.product_name_snapshot.toLowerCase().includes('sla') ||
+        item.product_name_snapshot.toLowerCase().includes('subscription') ||
+        item.product_name_snapshot.toLowerCase().includes('amc') ||
+        item.product_name_snapshot.toLowerCase().includes('care')
+      );
+      const lineType = isSub ? 'subscription' : 'one_time';
+
+      const oiRes = await client.query(`
+        INSERT INTO order_items (
+          order_id, quotation_item_id, product_variant_id, line_type,
+          product_name_snapshot, sku_snapshot, quantity, unit_price,
+          discount_percentage, discount_amount, tax_percentage, tax_amount, line_total
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+        RETURNING id
+      `, [
+        createdOrder.id,
+        item.id,
+        item.product_variant_id,
+        lineType,
+        item.product_name_snapshot,
+        item.sku_snapshot,
+        item.quantity,
+        item.unit_price,
+        item.discount_percentage || 0,
+        item.discount_amount || 0,
+        item.tax_percentage || 0,
+        item.tax_amount || 0,
+        item.line_total,
+      ]);
+      const orderItemId = oiRes.rows[0].id;
+
+      // If subscription line item, automatically generate subscription & schedule
+      if (isSub) {
+        // Find product ID from variant
+        const pvRes = await client.query('SELECT product_id FROM product_variants WHERE id = $1', [item.product_variant_id]);
+        const productId = pvRes.rows[0]?.product_id || null;
+
+        // Find or create subscription plan
+        let planRes = await client.query(`SELECT id, billing_cycle, price FROM subscription_plans WHERE name ILIKE $1 LIMIT 1`, [item.product_name_snapshot]);
+        let planId = planRes.rows[0]?.id;
+        let billingCycle = planRes.rows[0]?.billing_cycle || 'monthly';
+
+        if (!planId) {
+          const newPlan = await client.query(`
+            INSERT INTO subscription_plans (product_id, name, billing_cycle, price, allow_proration, allow_cancellation, allow_partial_refund)
+            VALUES ($1, $2, 'monthly', $3, true, true, true)
+            RETURNING id, billing_cycle
+          `, [productId || 1, item.product_name_snapshot, item.unit_price]);
+          planId = newPlan.rows[0].id;
+          billingCycle = newPlan.rows[0].billing_cycle;
+        }
+
+        const subRes = await client.query(`
+          INSERT INTO subscriptions (
+            order_item_id, customer_id, subscription_plan_id, quantity, unit_price,
+            billing_cycle, start_date, status
+          ) VALUES ($1, $2, $3, $4, $5, $6, CURRENT_DATE, 'active')
+          RETURNING id
+        `, [orderItemId, quotation.customer_id, planId, item.quantity, item.unit_price, billingCycle]);
+        const newSubId = subRes.rows[0].id;
+
+        // Insert initial billing schedule
+        await client.query(`
+          INSERT INTO subscription_billing_lines (
+            subscription_id, billing_period_start, billing_period_end, amount, is_prorated
+          ) VALUES ($1, CURRENT_DATE, CURRENT_DATE + INTERVAL '1 month', $2, false)
+        `, [newSubId, item.line_total]);
+      }
+    }
 
     await client.query('COMMIT');
 
     return {
       quotation: updatedQuoteRes.rows[0],
-      order: orderRes.rows[0],
+      order: createdOrder,
     };
   } catch (error) {
     await client.query('ROLLBACK');

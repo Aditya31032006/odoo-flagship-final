@@ -18,6 +18,9 @@ import ForgotPassword from '../features/auth/pages/ForgotPassword.jsx';
 import Profile from '../features/auth/pages/Profile.jsx';
 import StaffManagement from '../features/staff/pages/StaffManagement.jsx';
 import MyQuotations from '../features/quotations/pages/MyQuotations.jsx';
+import SubscriptionsList from '../features/subscriptions/pages/SubscriptionsList.jsx';
+import SubscriptionDetail from '../features/subscriptions/pages/SubscriptionDetail.jsx';
+import DealHealthDashboard from '../features/dealHealth/pages/DealHealthDashboard.jsx';
 import './placeholder.scss';
 
 // Lightweight placeholder view component for quick verification
@@ -74,12 +77,11 @@ export const router = createBrowserRouter([
       },
       {
         path: '/subscriptions',
-        element: (
-          <PagePlaceholder
-            title="Subscription & AMC Lifecycle"
-            description="Manage recurring billing periods, software licenses, AMC contracts, and prorations."
-          />
-        ),
+        element: <SubscriptionsList />,
+      },
+      {
+        path: '/subscriptions/:id',
+        element: <SubscriptionDetail />,
       },
       {
         path: '/invoices',
@@ -92,12 +94,7 @@ export const router = createBrowserRouter([
       },
       {
         path: '/deal-health',
-        element: (
-          <PagePlaceholder
-            title="Deal Health & Risk Intelligence"
-            description="Blended risk scores, stalled negotiation flags, and discount anomaly warnings."
-          />
-        ),
+        element: <DealHealthDashboard />,
       },
       {
         path: '/reports',
