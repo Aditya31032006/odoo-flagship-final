@@ -146,7 +146,7 @@ export const NegotiationPanel = memo(({
 
   // Pay quotation when in shipment stage
   const handlePayQuotation = async () => {
-    if (!window.confirm(`Proceed to payment of $${Number(quotation?.grand_total || 0).toLocaleString()} for this order?`)) {
+    if (!window.confirm(`Proceed to payment of ₹${Number(quotation?.grand_total || 0).toLocaleString('en-IN')} for this order?`)) {
       return;
     }
 
@@ -236,7 +236,7 @@ export const NegotiationPanel = memo(({
                   onClick={handlePayQuotation}
                   disabled={submitting}
                 >
-                  💳 Pay Now (${Number(quotation?.grand_total || 0).toLocaleString()})
+                  💳 Pay Now (₹{Number(quotation?.grand_total || 0).toLocaleString('en-IN')})
                 </button>
               )}
             </div>

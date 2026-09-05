@@ -21,8 +21,8 @@ const formatDate = (dateStr) => {
 
 const formatCurrency = (val) => {
   const num = parseFloat(val);
-  if (isNaN(num)) return '$0.00';
-  return `$${num.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`;
+  if (isNaN(num)) return '₹0.00';
+  return `₹${num.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 };
 
 const ModifySubscriptionModal = React.memo(({ isOpen, onClose, subscription, availablePlans, onSave, isSubmitting }) => {
@@ -90,7 +90,7 @@ const ModifySubscriptionModal = React.memo(({ isOpen, onClose, subscription, ava
             </div>
 
             <div className="df-sub-modal__field">
-              <label>Price Per Cycle ($)</label>
+              <label>Price Per Cycle (₹)</label>
               <input
                 type="number"
                 step="0.01"
@@ -190,7 +190,7 @@ const CancelSubscriptionModal = React.memo(({ isOpen, onClose, subscription, onC
 
                 {isProrated && (
                   <div className="df-sub-modal__field">
-                    <label>Prorated Credit Amount ($)</label>
+                    <label>Prorated Credit Amount (₹)</label>
                     <input
                       type="number"
                       step="0.01"

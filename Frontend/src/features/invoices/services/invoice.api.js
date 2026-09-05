@@ -36,4 +36,12 @@ export const invoiceApi = {
     const res = await apiClient.post(`/invoices/${id}/payments`, paymentData);
     return res.data;
   },
+
+  getInvoiceById: async (id) => {
+    const res = await apiClient.get(`/invoices/${id}`);
+    return res.data?.data;
+  },
 };
+
+export default invoiceApi;
+

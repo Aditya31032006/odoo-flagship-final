@@ -23,7 +23,7 @@ export const UpsellSuggestionsWidget = memo(({
             ? 'Promo recommendation'
             : sug.minimum_margin_percentage
             ? `Margin +${sug.minimum_margin_percentage}%`
-            : `Price: $${Number(sug.suggested_selling_price || sug.suggested_base_price).toLocaleString()}`;
+            : `Price: ₹${Number(sug.suggested_selling_price || sug.suggested_base_price).toLocaleString('en-IN')}`;
 
           return (
             <div

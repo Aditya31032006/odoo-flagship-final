@@ -84,7 +84,7 @@ function SalesRepLeaderboard({ leaderboard = [] }) {
                   <td>{rep.total_quotes}</td>
                   <td>{rep.deals_closed}</td>
                   <td>
-                    <strong>${Number(rep.total_revenue || 0).toLocaleString()}</strong>
+                    <strong>₹{Number(rep.total_revenue || 0).toLocaleString('en-IN')}</strong>
                   </td>
                   <td>
                     <strong>{rep.win_rate_pct}%</strong>

@@ -5,11 +5,28 @@ import {
   createInvoiceRepo,
   recordPaymentRepo,
 } from '../repositories/invoice.repository.js';
+import { resolveUserCustomerId } from './quotation.controller.js';
 
 export const getInvoicesList = async (req, res, next) => {
   try {
     const { status } = req.query;
-    const data = await getInvoicesListRepo(status);
+    const user = req.user;
+    let customerId = null;
+
+    if (user?.role === 'customer') {
+      customerId = await resolveUserCustomerId(user);
+      if (!customerId) {
+        return res.status(200).json({
+          success: true,
+          data: {
+            invoices: [],
+            statusCounts: { unpaid_count: 0, paid_count: 0, partially_paid_count: 0, total_count: 0 },
+          },
+        });
+      }
+    }
+
+    const data = await getInvoicesListRepo(status, customerId);
     return res.status(200).json({
       success: true,
       data,
@@ -34,13 +51,26 @@ export const getInvoiceMeta = async (req, res, next) => {
 export const getInvoiceDetail = async (req, res, next) => {
   try {
     const { id } = req.params;
+    const user = req.user;
     const data = await getInvoiceDetailRepo(id);
+
     if (!data) {
       return res.status(404).json({
         success: false,
         message: 'Invoice not found',
       });
     }
+
+    if (user?.role === 'customer') {
+      const customerId = await resolveUserCustomerId(user);
+      if (!customerId || String(data.invoice.customer_id) !== String(customerId)) {
+        return res.status(403).json({
+          success: false,
+          message: 'Access denied: You can only view invoices for your own organization.',
+        });
+      }
+    }
+
     return res.status(200).json({
       success: true,
       data,

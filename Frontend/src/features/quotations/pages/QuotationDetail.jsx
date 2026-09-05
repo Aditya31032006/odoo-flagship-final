@@ -10,7 +10,7 @@ import quotationApi from '../services/quotation.api.js';
 import '../styles/quotationDetail.scss';
 
 function formatCurrency(val) {
-  return `$${Number(val || 0).toLocaleString()}`;
+  return `₹${Number(val || 0).toLocaleString('en-IN')}`;
 }
 
 export const QuotationDetail = ({ isNew = false }) => {

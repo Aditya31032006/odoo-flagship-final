@@ -291,3 +291,94 @@ export const COUNT_TOTAL_INVOICES = `
   SELECT COUNT(*)::INT AS count FROM invoices;
 `;
 
+export const GET_ALL_INVOICES_FOR_CUSTOMER = `
+  SELECT 
+    inv.id,
+    inv.invoice_number,
+    inv.order_id,
+    inv.customer_id,
+    inv.status,
+    inv.invoice_date,
+    inv.due_date,
+    inv.subtotal,
+    inv.discount_total,
+    inv.tax_total,
+    inv.grand_total,
+    inv.paid_amount,
+    (inv.grand_total - inv.paid_amount) AS balance_due,
+    inv.created_at,
+    inv.updated_at,
+    c.company_name AS customer_name,
+    c.email AS customer_email,
+    o.order_number
+  FROM invoices inv
+  JOIN customers c ON inv.customer_id = c.id
+  LEFT JOIN orders o ON inv.order_id = o.id
+  WHERE inv.customer_id = $1
+  ORDER BY inv.invoice_date DESC, inv.id DESC;
+`;
+
+export const GET_UNPAID_INVOICES_FOR_CUSTOMER = `
+  SELECT 
+    inv.id,
+    inv.invoice_number,
+    inv.order_id,
+    inv.customer_id,
+    inv.status,
+    inv.invoice_date,
+    inv.due_date,
+    inv.subtotal,
+    inv.discount_total,
+    inv.tax_total,
+    inv.grand_total,
+    inv.paid_amount,
+    (inv.grand_total - inv.paid_amount) AS balance_due,
+    inv.created_at,
+    inv.updated_at,
+    c.company_name AS customer_name,
+    c.email AS customer_email,
+    o.order_number
+  FROM invoices inv
+  JOIN customers c ON inv.customer_id = c.id
+  LEFT JOIN orders o ON inv.order_id = o.id
+  WHERE inv.customer_id = $1 AND (inv.status IN ('draft', 'issued', 'partially_paid') AND inv.paid_amount < inv.grand_total)
+  ORDER BY inv.invoice_date DESC, inv.id DESC;
+`;
+
+export const GET_PAID_INVOICES_FOR_CUSTOMER = `
+  SELECT 
+    inv.id,
+    inv.invoice_number,
+    inv.order_id,
+    inv.customer_id,
+    inv.status,
+    inv.invoice_date,
+    inv.due_date,
+    inv.subtotal,
+    inv.discount_total,
+    inv.tax_total,
+    inv.grand_total,
+    inv.paid_amount,
+    (inv.grand_total - inv.paid_amount) AS balance_due,
+    inv.created_at,
+    inv.updated_at,
+    c.company_name AS customer_name,
+    c.email AS customer_email,
+    o.order_number
+  FROM invoices inv
+  JOIN customers c ON inv.customer_id = c.id
+  LEFT JOIN orders o ON inv.order_id = o.id
+  WHERE inv.customer_id = $1 AND (inv.status = 'paid' OR inv.paid_amount >= inv.grand_total)
+  ORDER BY inv.invoice_date DESC, inv.id DESC;
+`;
+
+export const GET_INVOICE_STATUS_COUNTS_FOR_CUSTOMER = `
+  SELECT 
+    COUNT(*) FILTER (WHERE status IN ('draft', 'issued', 'partially_paid') AND paid_amount < grand_total)::int AS unpaid_count,
+    COUNT(*) FILTER (WHERE status = 'paid' OR paid_amount >= grand_total)::int AS paid_count,
+    COUNT(*) FILTER (WHERE status = 'partially_paid')::int AS partially_paid_count,
+    COUNT(*)::int AS total_count
+  FROM invoices
+  WHERE customer_id = $1;
+`;
+

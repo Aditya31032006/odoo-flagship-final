@@ -18,6 +18,7 @@ import ForgotPassword from '../features/auth/pages/ForgotPassword.jsx';
 import Profile from '../features/auth/pages/Profile.jsx';
 import StaffManagement from '../features/staff/pages/StaffManagement.jsx';
 import MyQuotations from '../features/quotations/pages/MyQuotations.jsx';
+import MyInvoices from '../features/invoices/pages/MyInvoices.jsx';
 import SubscriptionsList from '../features/subscriptions/pages/SubscriptionsList.jsx';
 import SubscriptionDetail from '../features/subscriptions/pages/SubscriptionDetail.jsx';
 import DealHealthDashboard from '../features/dealHealth/pages/DealHealthDashboard.jsx';
@@ -138,6 +139,10 @@ export const router = createBrowserRouter([
       {
         path: '/my_quotations',
         element: <MyQuotations />,
+      },
+      {
+        path: '/my_invoices',
+        element: <MyInvoices />,
       },
     ],
   },

@@ -29,11 +29,13 @@ export default function ProtectedRoute() {
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
-  // Customer Access Policy: Customers can ONLY access /my_quotations and /profile
+  // Customer Access Policy: Customers can access /my_quotations, /my_invoices, and /profile
   if (user?.role === 'customer') {
     const isCustomerAllowedPath =
       location.pathname === '/my_quotations' ||
       location.pathname.startsWith('/my_quotations/') ||
+      location.pathname === '/my_invoices' ||
+      location.pathname.startsWith('/my_invoices/') ||
       location.pathname === '/profile' ||
       location.pathname.startsWith('/profile/');
 
@@ -41,9 +43,12 @@ export default function ProtectedRoute() {
       return <Navigate to="/my_quotations" replace />;
     }
   } else {
-    // Internal staff visiting /my_quotations are redirected to /quotations
+    // Internal staff visiting /my_quotations or /my_invoices are redirected
     if (location.pathname === '/my_quotations' || location.pathname.startsWith('/my_quotations/')) {
       return <Navigate to="/quotations" replace />;
+    }
+    if (location.pathname === '/my_invoices' || location.pathname.startsWith('/my_invoices/')) {
+      return <Navigate to="/invoices" replace />;
     }
   }
 

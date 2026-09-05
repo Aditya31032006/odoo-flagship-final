@@ -119,12 +119,12 @@ function ReportPrintModal({
               </div>
               <div className="df-reports-print-doc__kpi-box">
                 <div className="kpi-lbl">Total Pipeline Value</div>
-                <div className="kpi-val">${Number(summary.total_pipeline_value || 0).toLocaleString()}</div>
+                <div className="kpi-val">₹{Number(summary.total_pipeline_value || 0).toLocaleString('en-IN')}</div>
                 <div className="kpi-sub">Total proposed quotation sum</div>
               </div>
               <div className="df-reports-print-doc__kpi-box">
                 <div className="kpi-lbl">Confirmed Revenue</div>
-                <div className="kpi-val">${Number(summary.confirmed_revenue_value || 0).toLocaleString()}</div>
+                <div className="kpi-val">₹{Number(summary.confirmed_revenue_value || 0).toLocaleString('en-IN')}</div>
                 <div className="kpi-sub">{summary.confirmed_deals_count || 0} closed deals</div>
               </div>
               <div className="df-reports-print-doc__kpi-box">
@@ -198,12 +198,12 @@ function ReportPrintModal({
             <div className="df-reports-print-doc__mix-boxes">
               <div className="mix-card">
                 <div className="mix-type">One-Time Hardware / Products</div>
-                <div className="mix-amt">${Number(onetime).toLocaleString()}</div>
+                <div className="mix-amt">₹{Number(onetime).toLocaleString('en-IN')}</div>
                 <div className="mix-pct">{onetimePct}% of total realization</div>
               </div>
               <div className="mix-card">
                 <div className="mix-type">Recurring Subscriptions & AMC</div>
-                <div className="mix-amt">${Number(recurring).toLocaleString()}</div>
+                <div className="mix-amt">₹{Number(recurring).toLocaleString('en-IN')}</div>
                 <div className="mix-pct">{recurringPct}% of total realization</div>
               </div>
             </div>
@@ -230,7 +230,7 @@ function ReportPrintModal({
                     <td>{p.sku || 'N/A'}</td>
                     <td>{p.category_name}</td>
                     <td>{p.units_sold}</td>
-                    <td>${Number(p.total_revenue || 0).toLocaleString()}</td>
+                    <td>₹{Number(p.total_revenue || 0).toLocaleString('en-IN')}</td>
                     <td>
                       <strong>{p.upsell_attach_rate_pct}%</strong> ({p.upsell_count || 0} attach units)
                     </td>
@@ -262,7 +262,7 @@ function ReportPrintModal({
                     <td><strong>{rep.rep_name}</strong> ({rep.rep_email})</td>
                     <td>{rep.total_quotes}</td>
                     <td>{rep.deals_closed}</td>
-                    <td><strong>${Number(rep.total_revenue || 0).toLocaleString()}</strong></td>
+                    <td><strong>₹{Number(rep.total_revenue || 0).toLocaleString('en-IN')}</strong></td>
                     <td>{rep.win_rate_pct}%</td>
                     <td>{rep.avg_discount_pct}%</td>
                   </tr>

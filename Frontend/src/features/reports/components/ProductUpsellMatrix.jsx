@@ -52,7 +52,7 @@ function ProductUpsellMatrix({ topProducts = [], revenueMix = {} }) {
                       </td>
                       <td>{p.category_name}</td>
                       <td>{p.units_sold}</td>
-                      <td>${Number(p.total_revenue || 0).toLocaleString()}</td>
+                      <td>₹{Number(p.total_revenue || 0).toLocaleString('en-IN')}</td>
                       <td>
                         <div className="attach-bar-wrap">
                           <div className="bar-track">
@@ -124,7 +124,7 @@ function ProductUpsellMatrix({ topProducts = [], revenueMix = {} }) {
                 <span>One-Time Product / Hardware</span>
               </div>
               <div className="item-right">
-                <div className="amt">${Number(onetime).toLocaleString()}</div>
+                <div className="amt">₹{Number(onetime).toLocaleString('en-IN')}</div>
                 <div className="pct">{onetimePct}% of total</div>
               </div>
             </div>
@@ -136,7 +136,7 @@ function ProductUpsellMatrix({ topProducts = [], revenueMix = {} }) {
                 <span>Recurring Subscriptions & AMC</span>
               </div>
               <div className="item-right">
-                <div className="amt">${Number(recurring).toLocaleString()}</div>
+                <div className="amt">₹{Number(recurring).toLocaleString('en-IN')}</div>
                 <div className="pct">{recurringPct}% of total</div>
               </div>
             </div>

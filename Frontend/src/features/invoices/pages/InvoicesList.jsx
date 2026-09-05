@@ -15,8 +15,8 @@ const formatDate = (dateStr) => {
 
 const formatCurrency = (val) => {
   const num = parseFloat(val);
-  if (isNaN(num)) return '$0.00';
-  return `$${num.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`;
+  if (isNaN(num)) return '₹0.00';
+  return `₹${num.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 };
 
 const InvoicesList = () => {

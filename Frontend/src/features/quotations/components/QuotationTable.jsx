@@ -1,8 +1,8 @@
 import React from 'react';
 
 function formatCurrency(amount) {
-  if (amount == null) return '$0';
-  return `$${Number(amount).toLocaleString()}`;
+  if (amount == null) return '₹0';
+  return `₹${Number(amount).toLocaleString('en-IN')}`;
 }
 
 function formatDate(dateString) {

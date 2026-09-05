@@ -2,8 +2,8 @@ import React, { useState } from 'react';
 import { createPortal } from 'react-dom';
 
 function formatCurrency(amount) {
-  if (amount == null) return '$0';
-  return `$${Number(amount).toLocaleString()}`;
+  if (amount == null) return '₹0';
+  return `₹${Number(amount).toLocaleString('en-IN')}`;
 }
 
 export const QuotationLineItemsTable = ({
@@ -61,7 +61,7 @@ export const QuotationLineItemsTable = ({
                   >
                     {products.map((p) => (
                       <option key={p.product_variant_id} value={p.product_variant_id}>
-                        {p.product_name} {p.variant_name ? `(${p.variant_name})` : ''} — ${Number(p.default_selling_price || p.base_price).toLocaleString()} (SKU: {p.sku})
+                        {p.product_name} {p.variant_name ? `(${p.variant_name})` : ''} — ₹{Number(p.default_selling_price || p.base_price).toLocaleString('en-IN')} (SKU: {p.sku})
                       </option>
                     ))}
                   </select>
@@ -175,7 +175,7 @@ export const QuotationLineItemsTable = ({
                         </option>
                         {products.map((p) => (
                           <option key={p.product_variant_id} value={p.product_variant_id}>
-                            {p.product_name} {p.variant_name ? `(${p.variant_name})` : ''} — SKU: {p.sku} (${Number(p.default_selling_price || p.base_price).toLocaleString()})
+                            {p.product_name} {p.variant_name ? `(${p.variant_name})` : ''} — SKU: {p.sku} (₹{Number(p.default_selling_price || p.base_price).toLocaleString('en-IN')})
                           </option>
                         ))}
                       </select>

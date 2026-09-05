@@ -5,8 +5,8 @@ import ManualOverrideModal from '../components/ManualOverrideModal.jsx';
 import '../styles/fulfillment.scss';
 
 function formatCurrency(amount) {
-  if (amount == null) return '$0';
-  return `$${Number(amount).toLocaleString()}`;
+  if (amount == null) return '₹0';
+  return `₹${Number(amount).toLocaleString('en-IN')}`;
 }
 
 export const FulfillmentDetail = () => {

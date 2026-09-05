@@ -8,7 +8,7 @@ import NegotiationPanel from '../components/NegotiationPanel.jsx';
 import '../styles/myQuotations.scss';
 
 function formatCurrency(amount) {
-  return `$${Number(amount || 0).toLocaleString()}`;
+  return `₹${Number(amount || 0).toLocaleString('en-IN')}`;
 }
 
 export default function MyQuotations() {

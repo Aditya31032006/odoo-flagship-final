@@ -254,7 +254,7 @@ const SubscriptionsList = () => {
                 </div>
 
                 <div className="df-sub-modal__field">
-                  <label>Price (₹ / $) *</label>
+                  <label>Price (₹) *</label>
                   <input
                     type="number"
                     step="0.01"

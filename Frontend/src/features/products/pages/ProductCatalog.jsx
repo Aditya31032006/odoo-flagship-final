@@ -5,7 +5,7 @@ import { useDebounce } from '../../../shared/hooks/useDebounce.js';
 import '../styles/products.scss';
 
 function formatCurrency(val) {
-  return `$${Number(val || 0).toLocaleString()}`;
+  return `₹${Number(val || 0).toLocaleString('en-IN')}`;
 }
 
 export const ProductCatalog = () => {

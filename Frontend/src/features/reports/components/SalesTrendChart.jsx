@@ -96,7 +96,7 @@ function SalesTrendChart({ data = [] }) {
         borderWidth: 1,
         padding: 10,
         callbacks: {
-          label: (context) => ` ${context.dataset.label}: $${Number(context.raw).toLocaleString()}`,
+          label: (context) => ` ${context.dataset.label}: ₹${Number(context.raw).toLocaleString('en-IN')}`,
         },
       },
     },
@@ -122,9 +122,9 @@ function SalesTrendChart({ data = [] }) {
             size: 11,
           },
           callback: (val) => {
-            if (val >= 1000000) return `$${(val / 1000000).toFixed(1)}M`;
-            if (val >= 1000) return `$${(val / 1000).toFixed(0)}k`;
-            return `$${val}`;
+            if (val >= 1000000) return `₹${(val / 1000000).toFixed(1)}M`;
+            if (val >= 1000) return `₹${(val / 1000).toFixed(0)}k`;
+            return `₹${val}`;
           },
         },
       },

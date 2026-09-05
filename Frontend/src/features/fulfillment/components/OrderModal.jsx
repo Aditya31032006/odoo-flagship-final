@@ -136,7 +136,7 @@ export const OrderModal = ({
             >
               {variants.map((v) => (
                 <option key={v.variant_id} value={v.variant_id}>
-                  {v.product_name} — SKU: {v.sku} (${Number(v.price).toLocaleString()})
+                  {v.product_name} — SKU: {v.sku} (₹{Number(v.price).toLocaleString('en-IN')})
                 </option>
               ))}
             </select>

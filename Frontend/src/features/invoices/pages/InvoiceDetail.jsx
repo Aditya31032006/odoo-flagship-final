@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router';
 import { useForm } from 'react-hook-form';
 import { invoiceApi } from '../services/invoice.api.js';
+import InvoicePrintModal from '../components/InvoicePrintModal.jsx';
 import '../styles/invoices.scss';
 
 const formatDate = (dateStr) => {
@@ -16,8 +17,8 @@ const formatDate = (dateStr) => {
 
 const formatCurrency = (val) => {
   const num = parseFloat(val);
-  if (isNaN(num)) return '$0.00';
-  return `$${num.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`;
+  if (isNaN(num)) return '₹0.00';
+  return `₹${num.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 };
 
 const RecordPaymentModal = React.memo(({ isOpen, onClose, balanceDue, onRecordPayment, isSubmitting }) => {
@@ -54,7 +55,7 @@ const RecordPaymentModal = React.memo(({ isOpen, onClose, balanceDue, onRecordPa
             </div>
 
             <div className="df-sub-modal__field">
-              <label>Payment Amount ($)</label>
+              <label>Payment Amount (₹)</label>
               <input
                 type="number"
                 step="0.01"
@@ -62,7 +63,7 @@ const RecordPaymentModal = React.memo(({ isOpen, onClose, balanceDue, onRecordPa
                 {...register('amount', {
                   required: 'Payment amount is required',
                   min: { value: 0.01, message: 'Amount must be greater than zero' },
-                  max: { value: balanceDue, message: `Amount cannot exceed balance due of $${balanceDue}` },
+                  max: { value: balanceDue, message: `Amount cannot exceed balance due of ₹${balanceDue}` },
                 })}
               />
               {errors.amount && <span style={{ color: '#fb7185', fontSize: '0.75rem' }}>{errors.amount.message}</span>}
@@ -122,6 +123,11 @@ const InvoiceDetail = () => {
   // Payment Modal
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
   const [isSubmittingPayment, setIsSubmittingPayment] = useState(false);
+  const [isPrintPreviewOpen, setIsPrintPreviewOpen] = useState(false);
+
+  const handlePrintInvoice = () => {
+    window.print();
+  };
 
   const fetchDetail = useCallback(async () => {
     try {
@@ -457,7 +463,28 @@ const InvoiceDetail = () => {
           <button
             type="button"
             className="df-invoices__btn-download"
-            onClick={handleDownloadSummary}
+            onClick={() => setIsPrintPreviewOpen(true)}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '0.5rem',
+              background: '#0284c7',
+              borderColor: '#38bdf8',
+              color: '#ffffff',
+              fontWeight: 600,
+            }}
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="16" height="16">
+              <polyline points="6 9 6 2 18 2 18 9" />
+              <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" />
+              <rect x="6" y="14" width="12" height="8" />
+            </svg>
+            Print / Save as PDF
+          </button>
+          <button
+            type="button"
+            className="df-invoices__btn-download"
+            onClick={() => setIsPrintPreviewOpen(true)}
           >
             Download Summary
           </button>
@@ -468,6 +495,14 @@ const InvoiceDetail = () => {
           Partial invoicing stays reconciled with partial delivery, nothing is billed before it ships.
         </div>
       </div>
+
+      {/* Invoice Print & PDF Export Modal */}
+      <InvoicePrintModal
+        isOpen={isPrintPreviewOpen}
+        onClose={() => setIsPrintPreviewOpen(false)}
+        invoice={invoice}
+        items={items}
+      />
 
       {/* Modal: Record Payment */}
       <RecordPaymentModal

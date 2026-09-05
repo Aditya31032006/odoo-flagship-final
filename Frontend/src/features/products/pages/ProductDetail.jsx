@@ -188,7 +188,7 @@ export const ProductDetail = ({ isNew = false }) => {
                 </div>
 
                 <div className="df-product-detail__field">
-                  <label htmlFor="base_price">Price ($) *</label>
+                  <label htmlFor="base_price">Price (₹) *</label>
                   <input
                     id="base_price"
                     type="number"

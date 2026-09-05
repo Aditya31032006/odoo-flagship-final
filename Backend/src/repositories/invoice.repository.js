@@ -17,23 +17,29 @@ import {
   GET_UNPAID_INVOICES,
   GET_PAID_INVOICES,
   COUNT_TOTAL_INVOICES,
+  GET_ALL_INVOICES_FOR_CUSTOMER,
+  GET_UNPAID_INVOICES_FOR_CUSTOMER,
+  GET_PAID_INVOICES_FOR_CUSTOMER,
+  GET_INVOICE_STATUS_COUNTS_FOR_CUSTOMER,
 } from '../queries/invoice.query.js';
 
-export const getInvoicesListRepo = async (statusFilter = null) => {
-  let query = GET_ALL_INVOICES;
-  const params = [];
+export const getInvoicesListRepo = async (statusFilter = null, customerId = null) => {
+  let query = customerId ? GET_ALL_INVOICES_FOR_CUSTOMER : GET_ALL_INVOICES;
+  const params = customerId ? [customerId] : [];
 
   if (statusFilter === 'unpaid') {
-    query = GET_UNPAID_INVOICES;
+    query = customerId ? GET_UNPAID_INVOICES_FOR_CUSTOMER : GET_UNPAID_INVOICES;
   } else if (statusFilter === 'paid') {
-    query = GET_PAID_INVOICES;
+    query = customerId ? GET_PAID_INVOICES_FOR_CUSTOMER : GET_PAID_INVOICES;
   }
 
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
     const invoicesRes = await client.query(query, params);
-    const statusCountsRes = await client.query(GET_INVOICE_STATUS_COUNTS);
+    const countQuery = customerId ? GET_INVOICE_STATUS_COUNTS_FOR_CUSTOMER : GET_INVOICE_STATUS_COUNTS;
+    const countParams = customerId ? [customerId] : [];
+    const statusCountsRes = await client.query(countQuery, countParams);
     await client.query('COMMIT');
 
     return {
