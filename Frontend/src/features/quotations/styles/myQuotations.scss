@@ -363,4 +363,67 @@
       }
     }
   }
+
+  // Loading & Empty States
+  &__empty {
+    padding: 3.5rem 2rem;
+    text-align: center;
+    background: #ffffff;
+    border: 1px solid #e5e7eb;
+    border-radius: vars.$radius-xs;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+
+    h3 {
+      font-size: 1.125rem;
+      font-weight: 600;
+      color: #09090b;
+      margin: 0 0 0.5rem 0;
+    }
+
+    p {
+      color: #71717a;
+      font-size: 0.875rem;
+      margin: 0;
+    }
+  }
+
+  // Action Notification Banner
+  .df-action-banner {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.875rem 1.25rem;
+    margin-bottom: 1.5rem;
+    border-radius: vars.$radius-xs;
+    font-size: 0.875rem;
+    font-weight: 600;
+
+    &--success {
+      background: #ecfdf5;
+      border: 1px solid #a7f3d0;
+      color: #047857;
+    }
+
+    &--error {
+      background: #fef2f2;
+      border: 1px solid #fecaca;
+      color: #dc2626;
+    }
+
+    &--info {
+      background: #eff6ff;
+      border: 1px solid #bfdbfe;
+      color: #1d4ed8;
+    }
+
+    button {
+      background: transparent;
+      border: none;
+      color: currentColor;
+      cursor: pointer;
+      font-size: 1rem;
+      font-weight: bold;
+      padding: 0 0.25rem;
+    }
+  }
 }

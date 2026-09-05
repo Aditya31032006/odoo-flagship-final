@@ -175,46 +175,12 @@ export default function MyQuotations() {
 
       {/* Action Notification Banner */}
       {actionAlert && (
-        <div style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          padding: '1rem 1.25rem',
-          marginBottom: '1.5rem',
-          borderRadius: '10px',
-          background: actionAlert.type === 'success' 
-            ? 'rgba(16, 185, 129, 0.15)' 
-            : actionAlert.type === 'error' 
-            ? 'rgba(239, 68, 68, 0.15)' 
-            : 'rgba(56, 189, 248, 0.15)',
-          border: `1px solid ${
-            actionAlert.type === 'success' 
-              ? 'rgba(16, 185, 129, 0.4)' 
-              : actionAlert.type === 'error' 
-              ? 'rgba(239, 68, 68, 0.4)' 
-              : 'rgba(56, 189, 248, 0.4)'
-          }`,
-          color: actionAlert.type === 'success' 
-            ? '#34d399' 
-            : actionAlert.type === 'error' 
-            ? '#fca5a5' 
-            : '#38bdf8',
-          fontWeight: 600,
-          fontSize: '0.9375rem'
-        }}>
+        <div className={`df-action-banner df-action-banner--${actionAlert.type || 'info'}`}>
           <span>{actionAlert.message}</span>
           <button
             type="button"
             onClick={() => setActionAlert(null)}
-            style={{
-              background: 'transparent',
-              border: 'none',
-              color: 'currentColor',
-              cursor: 'pointer',
-              fontSize: '1rem',
-              fontWeight: 'bold',
-              padding: '0 0.5rem'
-            }}
+            aria-label="Close notification"
           >
             ✕
           </button>
@@ -234,6 +200,27 @@ export default function MyQuotations() {
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
+          {searchQuery && (
+            <button
+              type="button"
+              onClick={() => setSearchQuery('')}
+              title="Clear search"
+              style={{
+                position: 'absolute',
+                right: '0.65rem',
+                top: '50%',
+                transform: 'translateY(-50%)',
+                background: 'transparent',
+                border: 'none',
+                color: '#94a3b8',
+                cursor: 'pointer',
+                fontSize: '12px',
+                padding: '0.2rem',
+              }}
+            >
+              ✕
+            </button>
+          )}
         </div>
 
         <div className="status-filters">
@@ -260,13 +247,13 @@ export default function MyQuotations() {
 
       {/* Quotation Cards Grid */}
       {loading ? (
-        <div style={{ textAlign: 'center', padding: '3rem', color: '#94a3b8' }}>
-          Loading your company quotations...
+        <div className="df-my-quotes__empty">
+          <p>Loading your company quotations...</p>
         </div>
       ) : filteredQuotations.length === 0 ? (
-        <div style={{ textAlign: 'center', padding: '4rem 2rem', background: 'rgba(15,23,42,0.6)', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)' }}>
-          <h3 style={{ color: '#f8fafc', marginBottom: '0.5rem' }}>No quotations found</h3>
-          <p style={{ color: '#94a3b8', margin: 0 }}>There are currently no quotations matching your filter criteria.</p>
+        <div className="df-my-quotes__empty">
+          <h3>No quotations found</h3>
+          <p>There are currently no quotations matching your filter criteria.</p>
         </div>
       ) : (
         <div className="df-my-quotes__grid">

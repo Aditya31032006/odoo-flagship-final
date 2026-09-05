@@ -1,12 +1,19 @@
 import { getDeliveryCalendarRepo } from '../repositories/deliveryCalendar.repository.js';
+import { resolveUserCustomerId } from './quotation.controller.js';
 
 export const getDeliveryCalendarController = async (req, res) => {
   try {
-    const userId = req.user?.id;
-    const userRole = req.user?.role;
-    const userEmail = req.user?.email || '';
+    const user = req.user;
+    const userId = user?.id;
+    const userRole = user?.role;
+    const userEmail = user?.email || '';
+    let customerId = null;
 
-    const data = await getDeliveryCalendarRepo(userId, userRole, userEmail);
+    if (userRole === 'customer') {
+      customerId = await resolveUserCustomerId(user);
+    }
+
+    const data = await getDeliveryCalendarRepo(userId, userRole, userEmail, customerId);
 
     return res.status(200).json({
       success: true,

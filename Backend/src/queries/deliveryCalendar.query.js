@@ -141,10 +141,16 @@ export const GET_DELIVERY_CALENDAR_EVENTS_BY_CUSTOMER_USER = `
   FROM orders o
   JOIN customers c ON o.customer_id = c.id
   LEFT JOIN quotations q ON o.quotation_id = q.id
-  WHERE c.user_id = $1 OR c.email = $2
+  WHERE c.id IN (SELECT customer_id FROM customer_users WHERE user_id = $1)
+     OR c.email = $2
+     OR ($3::INT IS NOT NULL AND c.id = $3)
   ORDER BY o.created_at DESC;
 `;
 
 export const GET_CUSTOMER_INFO_BY_USER_ID = `
-  SELECT id, company_name, email FROM customers WHERE user_id = $1 OR email = $2 LIMIT 1;
+  SELECT id, company_name, email FROM customers 
+  WHERE id IN (SELECT customer_id FROM customer_users WHERE user_id = $1) 
+     OR email = $2 
+     OR ($3::INT IS NOT NULL AND id = $3)
+  LIMIT 1;
 `;

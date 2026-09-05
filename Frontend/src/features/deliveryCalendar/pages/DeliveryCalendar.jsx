@@ -195,7 +195,10 @@ export const DeliveryCalendar = () => {
     <div className="df-calendar-page">
       <div className="df-calendar-page__container">
         {/* Uniform Back Navigation */}
-        <BackButton to="/dashboard" label="Back to Dashboard" />
+        <BackButton
+          to={calendarData.isCustomer ? '/my_quotations' : '/dashboard'}
+          label={calendarData.isCustomer ? 'Back to My Quotations' : 'Back to Dashboard'}
+        />
 
         {/* Header matching Reference */}
         <div className="df-calendar-page__header">
@@ -487,13 +490,13 @@ export const DeliveryCalendar = () => {
               </div>
               <div className="df-calendar-page__modal-info-item">
                 <label>Linked Quotation</label>
-                <span style={{ color: '#38bdf8' }}>
+                <span style={{ color: '#2563eb', fontWeight: 600 }}>
                   {selectedEvent.quotation_number || 'Direct Order'}
                 </span>
               </div>
               <div className="df-calendar-page__modal-info-item">
                 <label>Total Order Amount</label>
-                <span style={{ color: '#10b981', fontWeight: 700 }}>
+                <span style={{ color: '#059669', fontWeight: 700 }}>
                   {formatCurrency(selectedEvent.grand_total)}
                 </span>
               </div>

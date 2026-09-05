@@ -63,13 +63,19 @@ export default function ProtectedRoute() {
     );
   }
 
-  // Customer Access Policy: Customers can access /my_quotations, /my_invoices, and /profile
+  // Customer Access Policy: Customers can access /my_quotations, /my_invoices, /calendar (/my_deliveries), and /profile
   if (user?.role === 'customer') {
     const isCustomerAllowedPath =
       location.pathname === '/my_quotations' ||
       location.pathname.startsWith('/my_quotations/') ||
       location.pathname === '/my_invoices' ||
       location.pathname.startsWith('/my_invoices/') ||
+      location.pathname === '/my_deliveries' ||
+      location.pathname.startsWith('/my_deliveries/') ||
+      location.pathname === '/calendar' ||
+      location.pathname.startsWith('/calendar/') ||
+      location.pathname === '/delivery-calendar' ||
+      location.pathname.startsWith('/delivery-calendar/') ||
       location.pathname === '/profile' ||
       location.pathname.startsWith('/profile/');
 
@@ -77,12 +83,15 @@ export default function ProtectedRoute() {
       return <Navigate to="/my_quotations" replace />;
     }
   } else {
-    // Internal staff visiting /my_quotations or /my_invoices are redirected
+    // Internal staff visiting customer-specific URLs are redirected to staff views
     if (location.pathname === '/my_quotations' || location.pathname.startsWith('/my_quotations/')) {
       return <Navigate to="/quotations" replace />;
     }
     if (location.pathname === '/my_invoices' || location.pathname.startsWith('/my_invoices/')) {
       return <Navigate to="/invoices" replace />;
+    }
+    if (location.pathname === '/my_deliveries' || location.pathname.startsWith('/my_deliveries/')) {
+      return <Navigate to="/calendar" replace />;
     }
   }
 

@@ -12,24 +12,57 @@ export const ApprovalsList = () => {
     approvals,
     isLoadingList,
     error,
-    filterPendingOnly,
-    handleTogglePendingOnly,
   } = useApprovals();
 
+  const [selectedFilter, setSelectedFilter] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
   const debouncedSearch = useDebounce(searchQuery, 300);
 
+  const handleFilterClick = (filter) => {
+    setSelectedFilter((prev) => (prev === filter ? 'all' : filter));
+  };
+
   const filteredApprovals = useMemo(() => {
-    if (!debouncedSearch.trim()) return approvals;
+    let list = approvals || [];
+
+    if (selectedFilter === 'pending') {
+      list = list.filter(
+        (item) =>
+          item.status === 'pending_approval' ||
+          item.stage === 'Sales Manager' ||
+          item.stage === 'Finance' ||
+          item.stage === 'Operations' ||
+          item.stage === 'Admin'
+      );
+    } else if (selectedFilter === 'returned') {
+      list = list.filter(
+        (item) =>
+          item.stage === 'Returned for Revision' ||
+          item.status === 'returned' ||
+          (item.status === 'draft' && item.stage === 'Returned for Revision')
+      );
+    } else if (selectedFilter === 'approved') {
+      list = list.filter(
+        (item) =>
+          item.status === 'approved' ||
+          item.status === 'confirmed' ||
+          item.status === 'sent' ||
+          item.stage === 'Auto-Approved' ||
+          item.stage === 'Approved'
+      );
+    }
+
+    if (!debouncedSearch.trim()) return list;
     const q = debouncedSearch.trim().toLowerCase();
-    return approvals.filter(
+    return list.filter(
       (item) =>
         item.quotation_number?.toLowerCase().includes(q) ||
         item.customer_name?.toLowerCase().includes(q) ||
         item.stage?.toLowerCase().includes(q) ||
-        item.assigned_to?.toLowerCase().includes(q)
+        item.assigned_to?.toLowerCase().includes(q) ||
+        item.risk_level?.toLowerCase().includes(q)
     );
-  }, [approvals, debouncedSearch]);
+  }, [approvals, selectedFilter, debouncedSearch]);
 
   const handleRowClick = (quotationId) => {
     navigate(`/approvals/${quotationId}`);
@@ -78,15 +111,36 @@ export const ApprovalsList = () => {
         {/* KPI Badges / Counts Bar & Search Input */}
         <div className="df-toolbar-row">
           <div className="df-approvals__kpis" style={{ margin: 0 }}>
-            <div className="df-approvals__kpi-card df-approvals__kpi-card--pending">
-              <span>{counts?.pending_count || 0} Pending</span>
-            </div>
-            <div className="df-approvals__kpi-card df-approvals__kpi-card--returned">
-              <span>{counts?.returned_count || 0} Returned</span>
-            </div>
-            <div className="df-approvals__kpi-card df-approvals__kpi-card--approved">
-              <span>{counts?.approved_count || 0} Approved</span>
-            </div>
+            <button
+              type="button"
+              className={`df-approvals__kpi-card df-approvals__kpi-card--pending ${selectedFilter === 'pending' ? 'is-selected' : ''}`}
+              onClick={() => handleFilterClick('pending')}
+            >
+              {counts?.pending_count || 0} Pending
+            </button>
+            <button
+              type="button"
+              className={`df-approvals__kpi-card df-approvals__kpi-card--returned ${selectedFilter === 'returned' ? 'is-selected' : ''}`}
+              onClick={() => handleFilterClick('returned')}
+            >
+              {counts?.returned_count || 0} Returned
+            </button>
+            <button
+              type="button"
+              className={`df-approvals__kpi-card df-approvals__kpi-card--approved ${selectedFilter === 'approved' ? 'is-selected' : ''}`}
+              onClick={() => handleFilterClick('approved')}
+            >
+              {counts?.approved_count || 0} Approved
+            </button>
+            {selectedFilter !== 'all' && (
+              <button
+                type="button"
+                className="df-approvals__kpi-card df-approvals__kpi-card--all"
+                onClick={() => setSelectedFilter('all')}
+              >
+                Show All ({counts?.total_count ?? (approvals?.length || 0)})
+              </button>
+            )}
           </div>
 
           <div className="df-search-wrap">
@@ -103,7 +157,7 @@ export const ApprovalsList = () => {
               onChange={(e) => setSearchQuery(e.target.value)}
             />
             {searchQuery && (
-              <button type="button" className="df-search-clear" onClick={() => setSearchQuery('')}>
+              <button type="button" className="df-search-clear" onClick={() => setSearchQuery('')} title="Clear search">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                   <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
                 </svg>
@@ -111,7 +165,6 @@ export const ApprovalsList = () => {
             )}
           </div>
         </div>
-
 
         {/* Approvals Table Card */}
         <div className="df-approvals__card">
@@ -122,7 +175,7 @@ export const ApprovalsList = () => {
           ) : filteredApprovals.length === 0 ? (
             <div className="df-approvals__empty">
               <div className="df-approvals__empty-title">No quotations found</div>
-              <p>{searchQuery ? 'No approval requests match your search criteria.' : 'No quotation discount approval requests match your criteria.'}</p>
+              <p>{searchQuery ? 'No approval requests match your search criteria.' : 'No quotation discount approval requests match your selected filter.'}</p>
             </div>
           ) : (
             <table className="df-approvals__table">
@@ -194,20 +247,6 @@ export const ApprovalsList = () => {
               </tbody>
             </table>
           )}
-        </div>
-
-        {/* Info Banner */}
-        
-
-        {/* Filter Button */}
-        <div>
-          <button
-            type="button"
-            className={`df-approvals__filter-btn ${filterPendingOnly ? 'is-active' : ''}`}
-            onClick={handleTogglePendingOnly}
-          >
-            Filter: {filterPendingOnly ? 'Showing Pending Only' : 'Pending Only'}
-          </button>
         </div>
       </div>
     </div>

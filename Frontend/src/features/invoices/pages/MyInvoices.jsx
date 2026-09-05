@@ -173,32 +173,12 @@ export default function MyInvoices() {
 
       {/* Action Notification Banner */}
       {actionAlert && (
-        <div style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          padding: '1rem 1.25rem',
-          marginBottom: '1.5rem',
-          borderRadius: '10px',
-          background: actionAlert.type === 'success' ? 'rgba(16, 185, 129, 0.15)' : 'rgba(239, 68, 68, 0.15)',
-          border: `1px solid ${actionAlert.type === 'success' ? 'rgba(16, 185, 129, 0.4)' : 'rgba(239, 68, 68, 0.4)'}`,
-          color: actionAlert.type === 'success' ? '#34d399' : '#fca5a5',
-          fontWeight: 600,
-          fontSize: '0.9375rem'
-        }}>
+        <div className={`df-action-banner df-action-banner--${actionAlert.type}`}>
           <span>{actionAlert.message}</span>
           <button
             type="button"
             onClick={() => setActionAlert(null)}
-            style={{
-              background: 'transparent',
-              border: 'none',
-              color: 'currentColor',
-              cursor: 'pointer',
-              fontSize: '1rem',
-              fontWeight: 'bold',
-              padding: '0 0.5rem'
-            }}
+            aria-label="Close notification"
           >
             ✕
           </button>
@@ -221,16 +201,9 @@ export default function MyInvoices() {
           {searchQuery && (
             <button
               type="button"
+              className="btn-clear-search"
               onClick={() => setSearchQuery('')}
               title="Clear search"
-              style={{
-                background: 'transparent',
-                border: 'none',
-                color: '#94a3b8',
-                cursor: 'pointer',
-                fontSize: '13px',
-                padding: '0 0.5rem',
-              }}
             >
               ✕
             </button>
@@ -257,13 +230,13 @@ export default function MyInvoices() {
 
       {/* Invoices Cards Grid */}
       {loading ? (
-        <div style={{ textAlign: 'center', padding: '3rem', color: '#94a3b8' }}>
-          Loading your company invoices...
+        <div className="df-my-invoices__empty">
+          <p>Loading your company invoices...</p>
         </div>
       ) : filteredInvoices.length === 0 ? (
-        <div style={{ textAlign: 'center', padding: '4rem 2rem', background: 'rgba(15,23,42,0.6)', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)' }}>
-          <h3 style={{ color: '#f8fafc', marginBottom: '0.5rem' }}>No invoices found</h3>
-          <p style={{ color: '#94a3b8', margin: 0 }}>There are currently no invoices matching your search or filter criteria.</p>
+        <div className="df-my-invoices__empty">
+          <h3>No invoices found</h3>
+          <p>There are currently no invoices matching your search or filter criteria.</p>
         </div>
       ) : (
         <div className="df-my-invoices__grid">
@@ -353,19 +326,6 @@ export default function MyInvoices() {
                   type="button"
                   className="btn-print-action"
                   onClick={() => setIsPrintModalOpen(true)}
-                  style={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: '0.4rem',
-                    background: 'rgba(56, 189, 248, 0.15)',
-                    border: '1px solid rgba(56, 189, 248, 0.4)',
-                    color: '#38bdf8',
-                    padding: '0.4rem 0.85rem',
-                    borderRadius: '8px',
-                    fontSize: '0.8125rem',
-                    fontWeight: 600,
-                    cursor: 'pointer',
-                  }}
                   title="Print official tax invoice"
                 >
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="14" height="14">

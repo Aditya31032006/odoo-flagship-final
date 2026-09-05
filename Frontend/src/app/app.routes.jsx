@@ -217,6 +217,10 @@ export const router = createBrowserRouter([
             path: '/my_invoices',
             element: withSuspense(MyInvoices),
           },
+          {
+            path: '/my_deliveries',
+            element: withSuspense(DeliveryCalendar),
+          },
         ],
       },
     ],

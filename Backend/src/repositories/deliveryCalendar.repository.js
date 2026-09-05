@@ -4,14 +4,18 @@ import {
   GET_DELIVERY_CALENDAR_EVENTS_BY_CUSTOMER_USER,
 } from '../queries/deliveryCalendar.query.js';
 
-export const getDeliveryCalendarRepo = async (userId, userRole, userEmail = '') => {
+export const getDeliveryCalendarRepo = async (userId, userRole, userEmail = '', customerId = null) => {
   const client = await pool.connect();
   try {
     let result;
     const isCustomer = userRole === 'customer';
 
     if (isCustomer) {
-      result = await client.query(GET_DELIVERY_CALENDAR_EVENTS_BY_CUSTOMER_USER, [userId, userEmail]);
+      result = await client.query(GET_DELIVERY_CALENDAR_EVENTS_BY_CUSTOMER_USER, [
+        userId || 0,
+        userEmail || '',
+        customerId || null,
+      ]);
     } else {
       result = await client.query(GET_DELIVERY_CALENDAR_EVENTS_ALL);
     }

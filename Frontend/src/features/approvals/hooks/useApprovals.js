@@ -68,7 +68,7 @@ export const useApprovals = (quotationId = null) => {
 
   return {
     counts,
-    approvals: filteredApprovals,
+    approvals,
     allApprovals: approvals,
     currentDetail,
     isLoadingList,
