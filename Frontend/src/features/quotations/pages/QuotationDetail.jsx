@@ -281,7 +281,7 @@ export const QuotationDetail = ({ isNew = false }) => {
                     fontWeight: 600,
                     fontSize: '0.9375rem'
                   }}>
-                    ✓ Status: Approved &amp; Sent to Customer
+                    ✓ Status: Approved
                   </div>
 
                   <button
@@ -301,7 +301,7 @@ export const QuotationDetail = ({ isNew = false }) => {
                     onClick={handleSaveDraft}
                     disabled={isSaving}
                   >
-                    {isSaving ? 'Saving...' : 'Save Changes'}
+                    {isSaving ? 'Saving...' : 'Save Draft'}
                   </button>
 
                   <button
@@ -310,7 +310,7 @@ export const QuotationDetail = ({ isNew = false }) => {
                     onClick={handleSubmitApproval}
                     disabled={isSaving}
                   >
-                    {isSaving ? 'Processing...' : 'Approve & Send to Customer'}
+                    {isSaving ? 'Processing...' : 'File Pending Quotation'}
                   </button>
                 </>
               )}

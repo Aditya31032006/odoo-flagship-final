@@ -16,7 +16,7 @@ export const useQuotationForm = ({ quotationId = null } = {}) => {
   const [customerId, setCustomerId] = useState('');
   const [selectedCustomer, setSelectedCustomer] = useState(null);
   const [priceListId, setPriceListId] = useState('');
-  const [status, setStatus] = useState('approved');
+  const [status, setStatus] = useState('pending_approval');
   const [validUntil, setValidUntil] = useState(() => {
     const d = new Date();
     d.setDate(d.getDate() + 30);
@@ -427,8 +427,8 @@ export const useQuotationForm = ({ quotationId = null } = {}) => {
       const targetId = quotationId && quotationId !== 'new' ? quotationId : 'new';
       const result = await quotationApi.submitForApproval(targetId, payload);
 
-      setSuccessMessage('Quotation approved & email notification sent to customer!');
-      setStatus('approved');
+      setSuccessMessage('Quotation submitted for approval successfully!');
+      setStatus('pending_approval');
       return result;
     } catch (err) {
       setError(err.customMessage || 'Failed to submit quotation for approval');

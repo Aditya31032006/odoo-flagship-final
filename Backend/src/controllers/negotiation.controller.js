@@ -7,6 +7,7 @@ import {
   acceptQuotationTermsRepo,
 } from '../repositories/negotiation.repository.js';
 import { getQuotationFullDetailRepo } from '../repositories/quotation.repository.js';
+import { addCounterOfferEmailJob, addQuotationApprovedEmailJob } from '../jobs/emailQueue.js';
 
 async function resolveUserCustomerId(user) {
   if (user.customer_id) return user.customer_id;
@@ -108,6 +109,26 @@ export const submitCounterOfferController = async (req, res, next) => {
       message,
     });
 
+    // When sales team submits counter offer to customer, dispatch notification email
+    if (user.role !== 'customer') {
+      try {
+        const custRes = await pool.query('SELECT company_name, email FROM customers WHERE id = $1', [quotation.customer_id]);
+        if (custRes.rows.length > 0 && custRes.rows[0].email) {
+          await addCounterOfferEmailJob({
+            toEmail: custRes.rows[0].email,
+            customerName: custRes.rows[0].company_name,
+            quotationNumber: quotation.quotation_number,
+            quotationId: quotation.id,
+            counterDiscount: counter_discount_percentage !== undefined ? Number(counter_discount_percentage) : null,
+            requestedDeliveryDate: requested_delivery_date || null,
+            message: message || '',
+          });
+        }
+      } catch (mailErr) {
+        console.warn('⚠️ Failed to dispatch counter-offer email:', mailErr.message);
+      }
+    }
+
     return res.status(STATUS_CODES.OK).json({
       success: true,
       message: 'Counter-offer submitted successfully. Status updated to negotiating.',
@@ -170,7 +191,7 @@ export const addMessageController = async (req, res, next) => {
 };
 
 /**
- * Accept quotation terms, confirming deal into an order
+ * Accept quotation terms, confirming deal into approved status
  */
 export const acceptQuotationController = async (req, res, next) => {
   try {
@@ -201,9 +222,26 @@ export const acceptQuotationController = async (req, res, next) => {
       userRole: user.role,
     });
 
+    // Dispatch approved quotation email
+    try {
+      const custRes = await pool.query('SELECT company_name, email FROM customers WHERE id = $1', [quotation.customer_id]);
+      if (custRes.rows.length > 0 && custRes.rows[0].email) {
+        await addQuotationApprovedEmailJob({
+          toEmail: custRes.rows[0].email,
+          customerName: custRes.rows[0].company_name,
+          quotationNumber: quotation.quotation_number,
+          quotationId: quotation.id,
+          grandTotal: quotation.grand_total,
+          validUntil: quotation.valid_until,
+        });
+      }
+    } catch (mailErr) {
+      console.warn('⚠️ Failed to dispatch quotation approved email:', mailErr.message);
+    }
+
     return res.status(STATUS_CODES.OK).json({
       success: true,
-      message: 'Quotation accepted and confirmed into a new order successfully.',
+      message: 'Quotation terms accepted and status updated to Approved successfully.',
       data: result,
     });
   } catch (error) {

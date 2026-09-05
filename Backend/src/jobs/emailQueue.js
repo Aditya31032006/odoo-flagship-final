@@ -5,6 +5,8 @@ import {
   generateWelcomeEmail,
   generateOtpEmail,
   generateStaffInvitationEmail,
+  generateQuotationIssuedEmail,
+  generateCounterOfferEmail,
   generateQuotationApprovedEmail,
 } from '../services/mail.service.js';
 
@@ -78,9 +80,9 @@ export function initEmailWorker() {
           break;
         }
 
-        case 'send-quotation-approved': {
+        case 'send-quotation-issued': {
           const { toEmail, customerName, quotationNumber, quotationId, grandTotal, validUntil, items } = data;
-          const html = generateQuotationApprovedEmail({
+          const html = generateQuotationIssuedEmail({
             customerName,
             quotationNumber,
             quotationId,
@@ -90,7 +92,42 @@ export function initEmailWorker() {
           });
           await sendMail({
             toEmail,
-            subject: `✅ Quotation Approved & Ready for Review (#${quotationNumber})`,
+            subject: `📄 New Quotation Issued: ${quotationNumber}`,
+            html,
+          });
+          break;
+        }
+
+        case 'send-counter-offer': {
+          const { toEmail, customerName, quotationNumber, quotationId, counterDiscount, requestedDeliveryDate, message } = data;
+          const html = generateCounterOfferEmail({
+            customerName,
+            quotationNumber,
+            quotationId,
+            counterDiscount,
+            requestedDeliveryDate,
+            message,
+          });
+          await sendMail({
+            toEmail,
+            subject: `💬 New Counter-Offer for Quotation: ${quotationNumber}`,
+            html,
+          });
+          break;
+        }
+
+        case 'send-quotation-approved': {
+          const { toEmail, customerName, quotationNumber, quotationId, grandTotal, validUntil } = data;
+          const html = generateQuotationApprovedEmail({
+            customerName,
+            quotationNumber,
+            quotationId,
+            grandTotal,
+            validUntil,
+          });
+          await sendMail({
+            toEmail,
+            subject: `✅ Quotation Approved: ${quotationNumber}`,
             html,
           });
           break;
@@ -134,9 +171,6 @@ export function initEmailWorker() {
 
 /**
  * Enqueues a welcome email job upon user registration.
- * @param {Object} params
- * @param {string} params.name
- * @param {string} params.email
  */
 export const addWelcomeEmailJob = async ({ name, email }) => {
   return await emailQueue.add('send-welcome-email', { name, email });
@@ -144,9 +178,6 @@ export const addWelcomeEmailJob = async ({ name, email }) => {
 
 /**
  * Enqueues a password reset OTP email job.
- * @param {Object} params
- * @param {string} params.email
- * @param {string} params.otp
  */
 export const addOtpEmailJob = async ({ email, otp }) => {
   return await emailQueue.add('send-otp-email', { email, otp });
@@ -154,70 +185,67 @@ export const addOtpEmailJob = async ({ email, otp }) => {
 
 /**
  * Enqueues a staff invitation email job.
- * @param {Object} params
- * @param {string} params.name
- * @param {string} params.email
- * @param {string} params.role
- * @param {string} params.tempPassword
  */
 export const addStaffInvitationJob = async ({ name, email, role, tempPassword }) => {
   return await emailQueue.add('send-staff-invitation', { name, email, role, tempPassword });
 };
 
 /**
- * Enqueues a custom generic email job.
- * @param {Object} params
- * @param {string} params.toEmail
- * @param {string} params.subject
- * @param {string} params.html
- * @param {string} [params.text]
+ * Enqueues an email job when a pending quotation is issued to customer
  */
-/**
- * Enqueues a quotation approved notification email job with fallback.
- * @param {Object} params
- * @param {string} params.toEmail
- * @param {string} params.customerName
- * @param {string} params.quotationNumber
- * @param {string|number} params.quotationId
- * @param {number} params.grandTotal
- * @param {string} [params.validUntil]
- * @param {Array} [params.items]
- */
-export const addQuotationApprovedEmailJob = async ({
-  toEmail,
-  customerName,
-  quotationNumber,
-  quotationId,
-  grandTotal,
-  validUntil,
-  items,
-}) => {
+export const addQuotationIssuedEmailJob = async (data) => {
   try {
-    return await emailQueue.add('send-quotation-approved', {
-      toEmail,
-      customerName,
-      quotationNumber,
-      quotationId,
-      grandTotal,
-      validUntil,
-      items,
-    });
+    return await emailQueue.add('send-quotation-issued', data);
   } catch (err) {
-    console.warn('⚠️ BullMQ enqueue failed, falling back to direct email dispatch:', err.message);
-    const html = generateQuotationApprovedEmail({
-      customerName,
-      quotationNumber,
-      quotationId,
-      grandTotal,
-      validUntil,
-      items,
-    });
+    console.warn('⚠️ BullMQ offline, attempting direct mail dispatch for quotation issued:', err.message);
+    const html = generateQuotationIssuedEmail(data);
     return await sendMail({
-      toEmail,
-      subject: `✅ Quotation Approved & Ready for Review (#${quotationNumber})`,
+      toEmail: data.toEmail,
+      subject: `📄 New Quotation Issued: ${data.quotationNumber}`,
       html,
     });
   }
+};
+
+/**
+ * Enqueues an email job when sales rep submits a counter-offer
+ */
+export const addCounterOfferEmailJob = async (data) => {
+  try {
+    return await emailQueue.add('send-counter-offer', data);
+  } catch (err) {
+    console.warn('⚠️ BullMQ offline, attempting direct mail dispatch for counter offer:', err.message);
+    const html = generateCounterOfferEmail(data);
+    return await sendMail({
+      toEmail: data.toEmail,
+      subject: `💬 New Counter-Offer for Quotation: ${data.quotationNumber}`,
+      html,
+    });
+  }
+};
+
+/**
+ * Enqueues an email job when a quotation is approved/confirmed
+ */
+export const addQuotationApprovedEmailJob = async (data) => {
+  try {
+    return await emailQueue.add('send-quotation-approved', data);
+  } catch (err) {
+    console.warn('⚠️ BullMQ offline, attempting direct mail dispatch for quotation approved:', err.message);
+    const html = generateQuotationApprovedEmail(data);
+    return await sendMail({
+      toEmail: data.toEmail,
+      subject: `✅ Quotation Approved: ${data.quotationNumber}`,
+      html,
+    });
+  }
+};
+
+/**
+ * Enqueues a custom generic email job.
+ */
+export const addGenericEmailJob = async ({ toEmail, subject, html, text }) => {
+  return await emailQueue.add('send-generic-mail', { toEmail, subject, html, text });
 };
 
 /**

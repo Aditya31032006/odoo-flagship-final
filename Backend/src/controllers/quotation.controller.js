@@ -6,6 +6,7 @@ import {
   saveQuotationRepo,
 } from '../repositories/quotation.repository.js';
 import { STATUS_CODES } from '../constants/statusCodes.js';
+import { addQuotationIssuedEmailJob } from '../jobs/emailQueue.js';
 
 const KANBAN_STAGES = ['draft', 'pending_approval', 'approved', 'negotiating', 'confirmed'];
 
@@ -15,7 +16,7 @@ export const getQuotationsController = async (req, res, next) => {
     const salesRepId = user.role === 'sales_rep' ? user.id : null;
     let customerId = user.customer_id || null;
 
-    if (user.role === 'customer' && !customerId) {
+    if (user.role === 'customer' && !customerId && user.email) {
       const custRes = await pool.query('SELECT id FROM customers WHERE email = $1', [user.email]);
       if (custRes.rows.length > 0) {
         customerId = custRes.rows[0].id;
@@ -79,7 +80,15 @@ export const getQuotationsSummaryController = async (req, res, next) => {
   try {
     const user = req.user;
     const salesRepId = user.role === 'sales_rep' ? user.id : null;
-    const customerId = user.role === 'customer' ? user.customer_id : null;
+    let customerId = user.customer_id || null;
+
+    if (user.role === 'customer' && !customerId && user.email) {
+      const custRes = await pool.query('SELECT id FROM customers WHERE email = $1', [user.email]);
+      if (custRes.rows.length > 0) {
+        customerId = custRes.rows[0].id;
+      }
+    }
+
     const summary = await getQuotationsKanbanSummaryRepo({ salesRepId, customerId });
     return res.status(STATUS_CODES.OK).json({ success: true, data: summary });
   } catch (error) {
@@ -101,11 +110,18 @@ export const getQuotationDetailController = async (req, res, next) => {
     }
 
     // Ensure customer accounts can only view quotations belonging to their company
-    if (user.role === 'customer' && String(quotation.customer_id) !== String(user.customer_id)) {
-      return res.status(STATUS_CODES.FORBIDDEN).json({
-        success: false,
-        message: 'Access denied: You can only view quotations for your own organization.',
-      });
+    if (user.role === 'customer') {
+      let custId = user.customer_id;
+      if (!custId && user.email) {
+        const custRes = await pool.query('SELECT id FROM customers WHERE email = $1', [user.email]);
+        if (custRes.rows.length > 0) custId = custRes.rows[0].id;
+      }
+      if (String(quotation.customer_id) !== String(custId)) {
+        return res.status(STATUS_CODES.FORBIDDEN).json({
+          success: false,
+          message: 'Access denied: You can only view quotations for your own organization.',
+        });
+      }
     }
 
     return res.status(STATUS_CODES.OK).json({
@@ -124,7 +140,7 @@ export const createQuotationController = async (req, res, next) => {
       customer_id,
       tier_id,
       price_list_id,
-      status = 'approved',
+      status = 'pending_approval',
       blended_risk_score = 0,
       risk_level = 'low',
       subtotal = 0,
@@ -133,7 +149,7 @@ export const createQuotationController = async (req, res, next) => {
       grand_total = 0,
       valid_until = null,
       items = [],
-      action_reason = null,
+      action_reason = 'Quotation created and pending customer review',
     } = req.body;
 
     if (!customer_id) {
@@ -155,7 +171,7 @@ export const createQuotationController = async (req, res, next) => {
       sales_rep_id: user.id,
       tier_id,
       price_list_id,
-      status: status || 'approved',
+      status: status || 'pending_approval',
       blended_risk_score,
       risk_level,
       subtotal,
@@ -168,12 +184,12 @@ export const createQuotationController = async (req, res, next) => {
       user_id: user.id,
     });
 
-    // Send email to customer whenever a quotation is created/placed in 'approved' status
-    if (status === 'approved' && savedQuotation) {
+    // Send email to customer when pending quotation is filed to them
+    if (savedQuotation) {
       try {
         const custRes = await pool.query('SELECT company_name, email FROM customers WHERE id = $1', [customer_id]);
         if (custRes.rows.length > 0 && custRes.rows[0].email) {
-          await addQuotationApprovedEmailJob({
+          await addQuotationIssuedEmailJob({
             toEmail: custRes.rows[0].email,
             customerName: custRes.rows[0].company_name,
             quotationNumber: savedQuotation.quotation_number,
@@ -184,7 +200,7 @@ export const createQuotationController = async (req, res, next) => {
           });
         }
       } catch (mailErr) {
-        console.warn('⚠️ Failed to dispatch quotation approved email:', mailErr.message);
+        console.warn('⚠️ Failed to dispatch quotation issued email:', mailErr.message);
       }
     }
 
@@ -205,7 +221,7 @@ export const updateQuotationController = async (req, res, next) => {
       customer_id,
       tier_id,
       price_list_id,
-      status = 'approved',
+      status = 'pending_approval',
       blended_risk_score = 0,
       risk_level = 'low',
       subtotal = 0,
@@ -236,26 +252,6 @@ export const updateQuotationController = async (req, res, next) => {
       user_id: user.id,
     });
 
-    // Send email to customer if updated into 'approved' status
-    if (status === 'approved' && savedQuotation) {
-      try {
-        const custRes = await pool.query('SELECT company_name, email FROM customers WHERE id = $1', [customer_id]);
-        if (custRes.rows.length > 0 && custRes.rows[0].email) {
-          await addQuotationApprovedEmailJob({
-            toEmail: custRes.rows[0].email,
-            customerName: custRes.rows[0].company_name,
-            quotationNumber: savedQuotation.quotation_number,
-            quotationId: savedQuotation.id,
-            grandTotal: savedQuotation.grand_total,
-            validUntil: savedQuotation.valid_until,
-            items,
-          });
-        }
-      } catch (mailErr) {
-        console.warn('⚠️ Failed to dispatch quotation approved email:', mailErr.message);
-      }
-    }
-
     return res.status(STATUS_CODES.OK).json({
       success: true,
       data: savedQuotation,
@@ -281,7 +277,7 @@ export const submitApprovalController = async (req, res, next) => {
       grand_total = 0,
       valid_until = null,
       items = [],
-      action_reason = 'Approved and issued to customer',
+      action_reason = 'Filed pending quotation for customer review',
     } = req.body;
 
     const submitted = await saveQuotationRepo({
@@ -290,7 +286,7 @@ export const submitApprovalController = async (req, res, next) => {
       sales_rep_id: user.id,
       tier_id,
       price_list_id,
-      status: 'approved',
+      status: 'pending_approval',
       blended_risk_score,
       risk_level,
       subtotal,
@@ -307,7 +303,7 @@ export const submitApprovalController = async (req, res, next) => {
       try {
         const custRes = await pool.query('SELECT company_name, email FROM customers WHERE id = $1', [customer_id]);
         if (custRes.rows.length > 0 && custRes.rows[0].email) {
-          await addQuotationApprovedEmailJob({
+          await addQuotationIssuedEmailJob({
             toEmail: custRes.rows[0].email,
             customerName: custRes.rows[0].company_name,
             quotationNumber: submitted.quotation_number,
@@ -318,13 +314,13 @@ export const submitApprovalController = async (req, res, next) => {
           });
         }
       } catch (mailErr) {
-        console.warn('⚠️ Failed to dispatch quotation approved email:', mailErr.message);
+        console.warn('⚠️ Failed to dispatch quotation issued email:', mailErr.message);
       }
     }
 
     return res.status(STATUS_CODES.OK).json({
       success: true,
-      message: 'Quotation approved successfully and notification sent to customer',
+      message: 'Pending quotation filed and sent to customer for review',
       data: submitted,
     });
   } catch (error) {
