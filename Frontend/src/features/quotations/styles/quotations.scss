@@ -3,43 +3,54 @@
 // ============================================================
 
 .df-quotations {
-  min-height: calc(100vh - 64px);
+  height: calc(100vh - 54px);
+  max-height: calc(100vh - 54px);
   background-color: #0b0f19;
   background-image: 
     radial-gradient(at 0% 0%, rgba(56, 189, 248, 0.08) 0px, transparent 50%),
     radial-gradient(at 100% 0%, rgba(99, 102, 241, 0.08) 0px, transparent 50%),
     radial-gradient(at 50% 100%, rgba(15, 23, 42, 0.9) 0px, transparent 50%);
   color: #f1f5f9;
-  padding: 2.25rem 2rem 4rem 2rem;
+  padding: 0.85rem 1.25rem;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-sizing: border-box;
 
   &__container {
-    max-width: 1440px;
+    width: 100%;
+    max-width: 100%;
     margin: 0 auto;
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
   }
 
   // Header Section
   &__header {
-    margin-bottom: 1.75rem;
+    margin-bottom: 0.5rem;
     display: flex;
     justify-content: space-between;
-    align-items: flex-start;
-    flex-wrap: wrap;
+    align-items: center;
+    flex-shrink: 0;
     gap: 1rem;
   }
 
   &__title-group {
     h1 {
-      font-size: 2rem;
+      font-size: 1.35rem;
       font-weight: 700;
       color: #ffffff;
       letter-spacing: -0.025em;
-      margin: 0 0 0.4rem 0;
+      margin: 0 0 0.15rem 0;
     }
 
     p {
       color: #94a3b8;
-      font-size: 1rem;
+      font-size: 0.8rem;
       margin: 0;
     }
   }
@@ -49,13 +60,13 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    flex-wrap: wrap;
+    flex-shrink: 0;
     gap: 1rem;
-    margin-bottom: 2rem;
-    padding: 0.875rem 1.25rem;
+    margin-bottom: 0.65rem;
+    padding: 0.45rem 0.8rem;
     background: rgba(15, 23, 42, 0.65);
     border: 1px solid rgba(255, 255, 255, 0.08);
-    border-radius: 12px;
+    border-radius: 10px;
     backdrop-filter: blur(10px);
   }
 
@@ -64,8 +75,8 @@
     align-items: center;
     gap: 0.75rem;
     flex: 1;
-    min-width: 260px;
-    max-width: 480px;
+    min-width: 220px;
+    max-width: 440px;
   }
 
   &__search-input-wrapper {
@@ -77,8 +88,8 @@
       left: 0.85rem;
       top: 50%;
       transform: translateY(-50%);
-      width: 16px;
-      height: 16px;
+      width: 15px;
+      height: 15px;
       color: #64748b;
     }
 
@@ -86,10 +97,10 @@
       width: 100%;
       background: rgba(30, 41, 59, 0.6);
       border: 1px solid rgba(255, 255, 255, 0.1);
-      padding: 0.55rem 0.85rem 0.55rem 2.4rem;
+      padding: 0.45rem 0.85rem 0.45rem 2.3rem;
       border-radius: 8px;
       color: #ffffff;
-      font-size: 0.875rem;
+      font-size: 0.8125rem;
       outline: none;
       transition: all 0.2s ease;
 
@@ -108,20 +119,20 @@
   &__controls-group {
     display: flex;
     align-items: center;
-    gap: 0.75rem;
-    flex-wrap: wrap;
+    gap: 0.65rem;
+    flex-wrap: nowrap;
   }
 
   &__toggle-view-btn {
     display: inline-flex;
     align-items: center;
     gap: 0.45rem;
-    padding: 0.55rem 1rem;
+    padding: 0.4rem 0.8rem;
     background: rgba(30, 41, 59, 0.7);
     border: 1px solid rgba(255, 255, 255, 0.12);
     color: #e2e8f0;
     border-radius: 8px;
-    font-size: 0.875rem;
+    font-size: 0.8rem;
     font-weight: 500;
     cursor: pointer;
     transition: all 0.2s ease;
@@ -133,21 +144,21 @@
     }
 
     svg {
-      width: 16px;
-      height: 16px;
+      width: 14px;
+      height: 14px;
     }
   }
 
   &__btn-primary {
     display: inline-flex;
     align-items: center;
-    gap: 0.45rem;
+    gap: 0.4rem;
     background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
     color: #ffffff;
-    padding: 0.55rem 1.15rem;
+    padding: 0.4rem 0.85rem;
     border-radius: 8px;
     font-weight: 600;
-    font-size: 0.875rem;
+    font-size: 0.8rem;
     border: 1px solid rgba(56, 189, 248, 0.3);
     text-decoration: none;
     cursor: pointer;
@@ -166,50 +177,61 @@
 // ------------------------------------------------------------
 
 .df-kanban-board {
+  flex: 1;
+  min-height: 0;
   display: grid;
-  grid-template-columns: repeat(5, minmax(260px, 1fr));
-  gap: 1.25rem;
-  overflow-x: auto;
-  padding-bottom: 1.5rem;
-  align-items: start;
-
-  @media (max-width: 1300px) {
-    grid-template-columns: repeat(5, 280px);
-  }
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 0.65rem;
+  overflow: hidden;
+  height: 100%;
+  padding-bottom: 0;
+  box-sizing: border-box;
 }
 
 .df-kanban-column {
   background: rgba(15, 23, 42, 0.7);
   border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 12px;
+  border-radius: 10px;
   display: flex;
   flex-direction: column;
-  min-height: 480px;
+  height: 100%;
+  max-height: 100%;
+  min-height: 0;
+  min-width: 0;
   backdrop-filter: blur(10px);
+  overflow: hidden;
+  box-sizing: border-box;
 
   &__header {
-    padding: 1rem 1.15rem;
+    flex-shrink: 0;
+    padding: 0.65rem 0.75rem;
     border-bottom: 1px solid rgba(255, 255, 255, 0.08);
     display: flex;
     justify-content: space-between;
     align-items: center;
+    background: rgba(15, 23, 42, 0.85);
 
     h3 {
-      font-size: 0.9375rem;
+      font-size: 0.8125rem;
       font-weight: 600;
       color: #ffffff;
       margin: 0;
       display: flex;
       align-items: center;
-      gap: 0.5rem;
+      gap: 0.35rem;
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
   }
 
   &__dot {
-    width: 8px;
-    height: 8px;
+    width: 7px;
+    height: 7px;
     border-radius: 50%;
     display: inline-block;
+    flex-shrink: 0;
 
     &--draft { background: #94a3b8; }
     &--pending_approval { background: #f59e0b; }
@@ -218,39 +240,64 @@
     &--confirmed { background: #34d399; }
   }
 
-
   &__badge {
-    font-size: 0.75rem;
+    font-size: 0.675rem;
     font-weight: 700;
-    padding: 0.15rem 0.55rem;
+    padding: 0.05rem 0.4rem;
     border-radius: 9999px;
     background: rgba(255, 255, 255, 0.1);
     color: #cbd5e1;
+    flex-shrink: 0;
   }
 
   &__total {
-    font-size: 0.8125rem;
+    font-size: 0.725rem;
     color: #94a3b8;
     font-weight: 500;
+    flex-shrink: 0;
+    margin-left: 0.25rem;
   }
 
   &__cards-container {
-    padding: 0.875rem;
+    padding: 0.7rem;
     display: flex;
     flex-direction: column;
-    gap: 0.75rem;
+    gap: 0.65rem;
     flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+
+    // Visible, sleek custom scrollbar for overflowing columns
+    &::-webkit-scrollbar {
+      width: 6px;
+    }
+    &::-webkit-scrollbar-track {
+      background: rgba(15, 23, 42, 0.6);
+      border-radius: 6px;
+    }
+    &::-webkit-scrollbar-thumb {
+      background: rgba(56, 189, 248, 0.45);
+      border-radius: 6px;
+      transition: background 0.2s ease;
+
+      &:hover {
+        background: rgba(56, 189, 248, 0.75);
+      }
+    }
+    scrollbar-width: thin;
+    scrollbar-color: rgba(56, 189, 248, 0.45) rgba(15, 23, 42, 0.6);
   }
 
   &__empty-state {
-    padding: 2rem 1rem;
+    padding: 1.5rem 0.75rem;
     text-align: center;
     color: #64748b;
     font-size: 0.8125rem;
     font-style: italic;
-    border: 1px dashed rgba(255, 255, 255, 0.06);
+    border: 1px dashed rgba(255, 255, 255, 0.08);
     border-radius: 8px;
-    margin-top: 0.5rem;
+    margin-top: 0.25rem;
   }
 }
 
@@ -259,60 +306,72 @@
 // ------------------------------------------------------------
 
 .df-quote-card {
-  background: rgba(30, 41, 59, 0.65);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(30, 41, 59, 0.75);
+  border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 10px;
-  padding: 1rem;
+  padding: 1rem 1.1rem;
   cursor: pointer;
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+  flex-shrink: 0; // Ensures card height is never squished by flex container
+  width: 100%;
+  min-height: fit-content;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
 
   &:hover {
     transform: translateY(-2px);
-    border-color: rgba(56, 189, 248, 0.4);
-    background: rgba(30, 41, 59, 0.9);
-    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.35);
+    border-color: rgba(56, 189, 248, 0.5);
+    background: rgba(30, 41, 59, 0.95);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4), 0 0 12px rgba(56, 189, 248, 0.15);
   }
 
   &__header {
     display: flex;
     justify-content: space-between;
     align-items: flex-start;
-    margin-bottom: 0.4rem;
+    margin-bottom: 0.45rem;
+    gap: 0.5rem;
   }
 
   &__company {
-    font-size: 0.9375rem;
+    font-size: 0.95rem;
     font-weight: 600;
     color: #ffffff;
     line-height: 1.3;
+    word-break: break-word;
+    flex: 1;
   }
 
   &__amount {
-    font-size: 1rem;
+    font-size: 1.05rem;
     font-weight: 700;
     color: #38bdf8;
     white-space: nowrap;
-    margin-left: 0.5rem;
+    flex-shrink: 0;
   }
 
   &__quote-no {
-    font-size: 0.75rem;
+    font-size: 0.8rem;
     color: #94a3b8;
     margin-bottom: 0.75rem;
     display: flex;
     align-items: center;
     gap: 0.35rem;
+    word-break: break-all;
   }
 
   &__footer {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    border-top: 1px solid rgba(255, 255, 255, 0.06);
-    padding-top: 0.6rem;
-    margin-top: 0.6rem;
-    font-size: 0.75rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    padding-top: 0.65rem;
+    margin-top: 0.65rem;
+    font-size: 0.8rem;
+    gap: 0.5rem;
+    flex-wrap: wrap; // Wraps so nothing is ever truncated or squished
   }
 
   &__rep {
@@ -320,16 +379,17 @@
     display: flex;
     align-items: center;
     gap: 0.35rem;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    max-width: 120px;
+    font-size: 0.775rem;
+    font-weight: 500;
+    word-break: break-word;
   }
 
   &__badges {
     display: flex;
     align-items: center;
     gap: 0.35rem;
+    flex-wrap: wrap;
+    flex-shrink: 0;
   }
 }
 
@@ -409,10 +469,13 @@
 // ------------------------------------------------------------
 
 .df-quotations-table-wrapper {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: auto;
   background: rgba(15, 23, 42, 0.75);
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 12px;
-  overflow: hidden;
   backdrop-filter: blur(10px);
 }
 

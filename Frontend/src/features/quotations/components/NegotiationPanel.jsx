@@ -149,9 +149,16 @@ export const NegotiationPanel = memo(({
     <div className="df-negotiation-panel">
       {/* Header Banner */}
       <div className="df-negotiation-panel__header">
-        <div className="header-info">
+        <div className="title-group">
           <h3>
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              className="panel-icon"
+              style={{ width: '20px', height: '20px', minWidth: '20px', flexShrink: 0 }}
+            >
               <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
             </svg>
             Deal Negotiation &amp; Messaging Hub
