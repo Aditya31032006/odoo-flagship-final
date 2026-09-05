@@ -1,11 +1,13 @@
 import React from 'react';
 import { Link } from 'react-router';
 import useDashboard from '../hook/useDashboard.js';
+import useAuth from '../../auth/hook/useAuth.js';
 import DashboardStatsCard from '../components/DashboardStatsCard.jsx';
 import RecentActivityFeed from '../components/RecentActivityFeed.jsx';
 import '../styles/dashboard.scss';
 
 export const Dashboard = () => {
+  const { user } = useAuth();
   const {
     stats,
     activities,
@@ -15,6 +17,8 @@ export const Dashboard = () => {
     refresh
   } = useDashboard();
 
+  const currentRole = user?.role || stats?.role;
+
   return (
     <div className="df-dashboard">
       <div className="df-dashboard__container">
@@ -23,32 +27,12 @@ export const Dashboard = () => {
           <div className="df-dashboard__title-group">
             <h1>
               Sales Dashboard / Home
-              {stats.role && (
-                <span className="badge-role">{stats.role.replace('_', ' ')}</span>
+              {currentRole && (
+                <span className="badge-role">{currentRole.replace(/_/g, ' ').toUpperCase()}</span>
               )}
             </h1>
             <p>Central hub, links out to every module below</p>
           </div>
-
-          <button
-            className="df-dashboard__refresh-btn"
-            onClick={refresh}
-            title="Refresh dashboard metrics"
-            disabled={isLoading}
-          >
-            <svg
-              className={isLoading ? 'spinning' : ''}
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67" />
-            </svg>
-            {isLoading ? 'Updating...' : 'Sync Live'}
-          </button>
         </header>
 
         {/* 3 Summary KPI Cards matching Wireframe #2 */}
