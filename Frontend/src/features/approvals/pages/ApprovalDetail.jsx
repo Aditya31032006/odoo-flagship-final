@@ -3,11 +3,14 @@ import { useParams, useNavigate } from 'react-router';
 import useApprovals from '../hooks/useApprovals.js';
 import ApprovalActionModal from '../components/ApprovalActionModal.jsx';
 import PermissionGate from '../../../shared/components/PermissionGate.jsx';
+import BackButton from '../../../shared/components/BackButton.jsx';
+import { useToast } from '../../../shared/context/ToastContext.jsx';
 import '../styles/approvals.scss';
 
 export const ApprovalDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { toast } = useToast();
   const {
     currentDetail,
     isLoadingDetail,
@@ -39,9 +42,11 @@ export const ApprovalDetail = () => {
   const handleConfirmDecision = async ({ action, reason }) => {
     try {
       await makeDecision(action, reason);
+      toast.success(`Quotation successfully ${action === 'approve' ? 'approved' : action === 'reject' ? 'rejected' : 'returned'}`);
       handleCloseModal();
     } catch (err) {
       console.error('Error submitting approval decision:', err);
+      toast.error(err.message || 'Error submitting approval decision');
     }
   };
 
@@ -63,13 +68,7 @@ export const ApprovalDetail = () => {
         <div className="df-approvals__container">
           <div className="df-approvals__empty">
             <div className="df-approvals__empty-title">Quotation Approval Record Not Found</div>
-            <button
-              type="button"
-              className="df-approvals__back-btn"
-              onClick={() => navigate('/approvals')}
-            >
-              &larr; Back to Approvals List
-            </button>
+            <BackButton to="/approvals" label="Back to Approvals" />
           </div>
         </div>
       </div>
@@ -86,19 +85,15 @@ export const ApprovalDetail = () => {
   return (
     <div className="df-approvals">
       <div className="df-approvals__container">
+        {/* Uniform Back Navigation placed in Left Top Corner */}
+        <BackButton to="/approvals" label="Back to Approvals" />
+
         {/* Navigation & Header */}
         <div className="df-approvals__header">
           <div className="df-approvals__title-row">
             <h1 className="df-approvals__title">
               Approval Detail: {header?.quotation_number || `Q-${id}`} ({header?.customer_name || 'Customer'})
             </h1>
-            <button
-              type="button"
-              className="df-approvals__back-btn"
-              onClick={() => navigate('/approvals')}
-            >
-              &larr; Back to Approvals
-            </button>
           </div>
           <p className="df-approvals__subtitle">
             Opened by clicking a row on the Approvals list

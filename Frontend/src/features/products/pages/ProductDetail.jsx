@@ -3,6 +3,7 @@ import { useParams, useNavigate, Link } from 'react-router';
 import { useForm } from 'react-hook-form';
 import useProducts from '../hook/useProducts.js';
 import PermissionGate from '../../../shared/components/PermissionGate.jsx';
+import BackButton from '../../../shared/components/BackButton.jsx';
 import '../styles/productDetail.scss';
 
 export const ProductDetail = ({ isNew = false }) => {
@@ -115,12 +116,8 @@ export const ProductDetail = ({ isNew = false }) => {
   return (
     <div className="df-product-detail">
       <div className="df-product-detail__container">
-        <Link to="/products" className="df-product-detail__back-link">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <polyline points="15 18 9 12 15 6" />
-          </svg>
-          Back to Product Catalog
-        </Link>
+        {/* Uniform Back Navigation placed in Left Top Corner */}
+        <BackButton to="/products" label="Back to Product Catalog" />
 
         {/* Title matching Wireframe #17 */}
         <div className="df-product-detail__header-row">

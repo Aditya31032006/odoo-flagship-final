@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router';
 import { useForm } from 'react-hook-form';
 import useAuth from '../hook/useAuth.js';
+import BackButton from '../../../shared/components/BackButton.jsx';
 import '../styles/auth.scss';
 
 export default function ForgotPassword() {
@@ -61,13 +62,15 @@ export default function ForgotPassword() {
     if (result.success) {
       setLocalMessage({
         type: 'success',
-        text: 'Verification code sent to your email. Please check your inbox.',
+        text: 'A 6-digit OTP code has been sent to your email address.',
       });
-      setStep('verify_reset');
+      setTimeout(() => {
+        setStep('verify_reset');
+      }, 1000);
     } else {
       setLocalMessage({
         type: 'error',
-        text: result.error || 'Failed to send OTP. Please verify your email.',
+        text: result.error || 'Failed to send OTP. Please check your email.',
       });
     }
   };
@@ -107,6 +110,8 @@ export default function ForgotPassword() {
   return (
     <div className="df-auth-container">
       <div className="df-auth-card">
+        <BackButton to="/login" label="Back to Login" />
+
         {/* ===================== STEP 1: REQUEST OTP ===================== */}
         {step === 'request_otp' && (
           <>

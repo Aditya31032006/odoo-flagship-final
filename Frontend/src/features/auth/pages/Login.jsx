@@ -9,15 +9,12 @@ export default function Login() {
   const location = useLocation();
   const { login, loading, error, isAuthenticated, resetError } = useAuth();
 
-  const [loginMethod, setLoginMethod] = useState('email'); // 'email' | 'mobile'
   const [showPassword, setShowPassword] = useState(false);
 
-  // React Hook Form instance
+  // React Hook Form instance with single identifier field
   const {
     register,
     handleSubmit,
-    setValue,
-    clearErrors,
     formState: { errors }
   } = useForm({
     defaultValues: { identifier: '', password: '' }
@@ -41,13 +38,9 @@ export default function Login() {
   const onLogin = async (data) => {
     if (error) resetError();
     const payload = {
+      identifier: data.identifier.trim(),
       password: data.password,
     };
-    if (loginMethod === 'email') {
-      payload.email = data.identifier;
-    } else {
-      payload.mobile = data.identifier;
-    }
 
     const result = await login(payload);
 
@@ -75,7 +68,7 @@ export default function Login() {
             DealFlow360 Enterprise
           </div>
           <h1>Welcome Back</h1>
-          <p>Sign in to your sales operations and deal governance portal</p>
+          <p>Sign in with your registered email address or mobile number</p>
         </div>
 
         {/* Error Alert */}
@@ -90,99 +83,39 @@ export default function Login() {
           </div>
         )}
 
-        {/* Login Method Toggle */}
-        <div className="df-auth-card__role-selector">
-          <div className="role-grid">
-            <button
-              type="button"
-              className={`role-chip ${loginMethod === 'email' ? 'active' : ''}`}
-              onClick={() => {
-                setLoginMethod('email');
-                setValue('identifier', '');
-                clearErrors();
-              }}
-            >
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
-                <polyline points="22,6 12,13 2,6" />
-              </svg>
-              <span>Email Address</span>
-            </button>
-
-            <button
-              type="button"
-              className={`role-chip ${loginMethod === 'mobile' ? 'active' : ''}`}
-              onClick={() => {
-                setLoginMethod('mobile');
-                setValue('identifier', '');
-                clearErrors();
-              }}
-            >
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <rect x="5" y="2" width="14" height="20" rx="2" ry="2" />
-                <line x1="12" y1="18" x2="12.01" y2="18" />
-              </svg>
-              <span>Mobile Number</span>
-            </button>
-          </div>
-        </div>
-
-        {/* Login Form */}
+        {/* Single Field Dynamic Login Form */}
         <form className="df-auth-card__form" onSubmit={handleSubmit(onLogin)} noValidate>
-          {loginMethod === 'email' ? (
-            <div className="form-group">
-              <label htmlFor="identifier">Email Address</label>
-              <div className="input-wrapper">
-                <input
-                  id="identifier"
-                  type="email"
-                  autoComplete="email"
-                  placeholder="name@company.com"
-                  {...register('identifier', {
-                    required: 'Email address is required',
-                    pattern: {
-                      value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
-                      message: 'Please enter a valid email address'
+          <div className="form-group">
+            <label htmlFor="identifier">Email or Mobile Number</label>
+            <div className="input-wrapper">
+              <input
+                id="identifier"
+                type="text"
+                autoComplete="username"
+                placeholder="name@company.com or 9876543210"
+                {...register('identifier', {
+                  required: 'Please enter your email or mobile number',
+                  validate: (value) => {
+                    const trimmed = value.trim();
+                    if (!trimmed) return 'Please enter your email or mobile number';
+                    const isEmail = /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i.test(trimmed);
+                    const isMobile = /^[6-9]\d{9}$/.test(trimmed);
+                    if (!isEmail && !isMobile) {
+                      return 'Enter a valid email address or 10-digit mobile number';
                     }
-                  })}
-                />
-                <svg className="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
-                  <polyline points="22,6 12,13 2,6" />
-                </svg>
-              </div>
-              {errors.identifier && (
-                <span className="field-error">{errors.identifier.message}</span>
-              )}
+                    return true;
+                  }
+                })}
+              />
+              <svg className="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                <circle cx="12" cy="7" r="4" />
+              </svg>
             </div>
-          ) : (
-            <div className="form-group">
-              <label htmlFor="identifier">Mobile Number</label>
-              <div className="input-wrapper">
-                <input
-                  id="identifier"
-                  type="tel"
-                  autoComplete="tel"
-                  placeholder="9876543210 (10 digits)"
-                  maxLength={10}
-                  {...register('identifier', {
-                    required: 'Mobile number is required',
-                    pattern: {
-                      value: /^[6-9]\d{9}$/,
-                      message: 'Mobile number must be 10 digits starting with 6, 7, 8, or 9'
-                    }
-                  })}
-                />
-                <svg className="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <rect x="5" y="2" width="14" height="20" rx="2" ry="2" />
-                  <line x1="12" y1="18" x2="12.01" y2="18" />
-                </svg>
-              </div>
-              {errors.identifier && (
-                <span className="field-error">{errors.identifier.message}</span>
-              )}
-            </div>
-          )}
+            {errors.identifier && (
+              <span className="field-error">{errors.identifier.message}</span>
+            )}
+          </div>
 
           <div className="form-group">
             <div className="form-label-row">
@@ -280,4 +213,4 @@ export default function Login() {
       </div>
     </div>
   );
-}
+}

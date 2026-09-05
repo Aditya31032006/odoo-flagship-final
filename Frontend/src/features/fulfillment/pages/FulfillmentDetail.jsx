@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router';
 import useFulfillment from '../hooks/useFulfillment.js';
 import ManualOverrideModal from '../components/ManualOverrideModal.jsx';
 import PermissionGate from '../../../shared/components/PermissionGate.jsx';
+import BackButton from '../../../shared/components/BackButton.jsx';
 import '../styles/fulfillment.scss';
 
 function formatCurrency(amount) {
@@ -65,13 +66,7 @@ export const FulfillmentDetail = () => {
         <div className="df-fulfillment__container">
           <div className="df-fulfillment__empty">
             <div className="df-fulfillment__empty-title">Order Fulfillment Record Not Found</div>
-            <button
-              type="button"
-              className="df-fulfillment__back-btn"
-              onClick={() => navigate('/fulfillment')}
-            >
-              &larr; Back to Fulfillment List
-            </button>
+            <BackButton to="/fulfillment" label="Back to Fulfillment" />
           </div>
         </div>
       </div>
@@ -81,19 +76,15 @@ export const FulfillmentDetail = () => {
   return (
     <div className="df-fulfillment">
       <div className="df-fulfillment__container">
+        {/* Uniform Back Navigation placed in Left Top Corner */}
+        <BackButton to="/fulfillment" label="Back to Fulfillment" />
+
         {/* Header matching Wireframe #8 */}
         <div className="df-fulfillment__header">
           <div className="df-fulfillment__title-row">
             <h1 className="df-fulfillment__title">
               Fulfillment Detail: {header?.order_number || `ORD-${orderId}`} ({header?.customer_name || 'Customer'})
             </h1>
-            <button
-              type="button"
-              className="df-fulfillment__back-btn"
-              onClick={() => navigate('/fulfillment')}
-            >
-              &larr; Back to Fulfillment List
-            </button>
           </div>
           <p className="df-fulfillment__subtitle">
             Opened by clicking an order row on the Fulfillment list
