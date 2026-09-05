@@ -29,7 +29,8 @@ export const QuotationLineItemsTable = ({
   const handleConfirmAdd = () => {
     const variant = products.find((p) => String(p.product_variant_id) === String(selectedVariantId));
     if (variant) {
-      onAddLine(variant, selectedQty);
+      const effectiveQty = Math.max(1, parseInt(selectedQty, 10) || 1);
+      onAddLine(variant, effectiveQty);
     }
     setIsAddModalOpen(false);
   };
@@ -71,8 +72,12 @@ export const QuotationLineItemsTable = ({
                   <input
                     type="number"
                     min="1"
+                    placeholder="0"
                     value={selectedQty}
-                    onChange={(e) => setSelectedQty(Math.max(1, parseInt(e.target.value, 10) || 1))}
+                    onChange={(e) => {
+                      const v = e.target.value;
+                      setSelectedQty(v === '' ? '' : v);
+                    }}
                   />
                 </div>
 
@@ -87,7 +92,7 @@ export const QuotationLineItemsTable = ({
                     <div className="summary-price-col">
                       <div className="summary-label">Estimated Line Price</div>
                       <div className="summary-price-val">
-                        {formatCurrency(Number(chosenPreview.default_selling_price || chosenPreview.base_price) * selectedQty)}
+                        {formatCurrency(Number(chosenPreview.default_selling_price || chosenPreview.base_price) * (Number(selectedQty) || 0))}
                       </div>
                     </div>
                   </div>
@@ -113,6 +118,11 @@ export const QuotationLineItemsTable = ({
                 type="button"
                 className="df-modal-btn-add"
                 onClick={handleConfirmAdd}
+                disabled={!selectedQty || isNaN(Number(selectedQty)) || Number(selectedQty) <= 0}
+                style={{
+                  opacity: (!selectedQty || isNaN(Number(selectedQty)) || Number(selectedQty) <= 0) ? 0.45 : 1,
+                  cursor: (!selectedQty || isNaN(Number(selectedQty)) || Number(selectedQty) <= 0) ? 'not-allowed' : 'pointer'
+                }}
               >
                 Add to Quotation
               </button>
@@ -182,8 +192,13 @@ export const QuotationLineItemsTable = ({
                         type="number"
                         min="1"
                         className="input-qty"
-                        value={item.quantity || 1}
+                        value={item.quantity !== undefined ? item.quantity : 1}
                         onChange={(e) => onUpdateLine(index, 'quantity', e.target.value)}
+                        onBlur={() => {
+                          if (item.quantity === '' || Number(item.quantity) < 1) {
+                            onUpdateLine(index, 'quantity', 1);
+                          }
+                        }}
                       />
                     </td>
 
@@ -204,8 +219,13 @@ export const QuotationLineItemsTable = ({
                           max="100"
                           step="1"
                           className="input-discount"
-                          value={item.discount_percentage ?? 0}
+                          value={item.discount_percentage !== undefined ? item.discount_percentage : 0}
                           onChange={(e) => onUpdateLine(index, 'discount_percentage', e.target.value)}
+                          onBlur={() => {
+                            if (item.discount_percentage === '' || isNaN(Number(item.discount_percentage))) {
+                              onUpdateLine(index, 'discount_percentage', 0);
+                            }
+                          }}
                         />
                         <span>%</span>
                       </div>

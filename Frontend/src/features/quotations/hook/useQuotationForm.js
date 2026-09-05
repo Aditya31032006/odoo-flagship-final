@@ -152,10 +152,16 @@ export const useQuotationForm = ({ quotationId = null } = {}) => {
   // Helper to re-evaluate line item calculations & limits
   const calculateLineItem = useCallback(
     (item, tierMaxDiscount) => {
-      const qty = Math.max(1, Number(item.quantity) || 1);
+      const rawQty = item.quantity;
+      const parsedQty = Number(rawQty);
+      const effectiveQty = rawQty === '' || isNaN(parsedQty) || parsedQty < 0 ? 0 : parsedQty;
+
+      const rawDiscount = item.discount_percentage;
+      const parsedDiscount = Number(rawDiscount);
+      const effectiveDiscount = rawDiscount === '' || isNaN(parsedDiscount) ? 0 : Math.min(100, Math.max(0, parsedDiscount));
+
       const unitPrice = Number(item.unit_price) || 0;
       const listPrice = Number(item.list_price) || unitPrice;
-      const discountPct = Math.min(100, Math.max(0, Number(item.discount_percentage) || 0));
       const taxPct = Number(item.tax_percentage) || 0;
 
       // Calculate discount limit: min(tier limit, category limit)
@@ -164,20 +170,20 @@ export const useQuotationForm = ({ quotationId = null } = {}) => {
       const allowedDiscount = Math.min(tierLimit, categoryLimit);
 
       // Excess discount percentage
-      const excessDiscount = Math.max(0, discountPct - allowedDiscount);
+      const excessDiscount = Math.max(0, effectiveDiscount - allowedDiscount);
 
-      const grossAmount = unitPrice * qty;
-      const discountAmount = grossAmount * (discountPct / 100);
+      const grossAmount = unitPrice * effectiveQty;
+      const discountAmount = grossAmount * (effectiveDiscount / 100);
       const taxableAmount = Math.max(0, grossAmount - discountAmount);
       const taxAmount = taxableAmount * (taxPct / 100);
       const lineTotal = taxableAmount + taxAmount;
 
       return {
         ...item,
-        quantity: qty,
+        quantity: rawQty !== undefined ? rawQty : 1,
         unit_price: unitPrice,
         list_price: listPrice,
-        discount_percentage: discountPct,
+        discount_percentage: rawDiscount !== undefined ? rawDiscount : 0,
         discount_amount: Number(discountAmount.toFixed(2)),
         tax_percentage: taxPct,
         tax_amount: Number(taxAmount.toFixed(2)),
@@ -300,7 +306,9 @@ export const useQuotationForm = ({ quotationId = null } = {}) => {
     let hasExcess = false;
 
     lineItems.forEach((item) => {
-      const gross = (Number(item.unit_price) || 0) * (Number(item.quantity) || 1);
+      const parsedQty = Number(item.quantity);
+      const effectiveQty = item.quantity === '' || isNaN(parsedQty) || parsedQty < 0 ? 0 : parsedQty;
+      const gross = (Number(item.unit_price) || 0) * effectiveQty;
       subtotal += gross;
       discountTotal += Number(item.discount_amount) || 0;
       taxTotal += Number(item.tax_amount) || 0;
@@ -361,6 +369,12 @@ export const useQuotationForm = ({ quotationId = null } = {}) => {
       setError(null);
       setSuccessMessage(null);
 
+      const sanitizedItems = lineItems.map((it) => ({
+        ...it,
+        quantity: Math.max(1, Number(it.quantity) || 1),
+        discount_percentage: Math.min(100, Math.max(0, Number(it.discount_percentage) || 0)),
+      }));
+
       const payload = {
         customer_id: customerId,
         tier_id: selectedCustomer?.tier_id || null,
@@ -373,7 +387,7 @@ export const useQuotationForm = ({ quotationId = null } = {}) => {
         tax_total: calculatedTotals.taxTotal,
         grand_total: calculatedTotals.grandTotal,
         valid_until: validUntil,
-        items: lineItems,
+        items: sanitizedItems,
       };
 
       let result;
@@ -410,6 +424,12 @@ export const useQuotationForm = ({ quotationId = null } = {}) => {
       setError(null);
       setSuccessMessage(null);
 
+      const sanitizedItems = lineItems.map((it) => ({
+        ...it,
+        quantity: Math.max(1, Number(it.quantity) || 1),
+        discount_percentage: Math.min(100, Math.max(0, Number(it.discount_percentage) || 0)),
+      }));
+
       const payload = {
         customer_id: customerId,
         tier_id: selectedCustomer?.tier_id || null,
@@ -421,7 +441,7 @@ export const useQuotationForm = ({ quotationId = null } = {}) => {
         tax_total: calculatedTotals.taxTotal,
         grand_total: calculatedTotals.grandTotal,
         valid_until: validUntil,
-        items: lineItems,
+        items: sanitizedItems,
         action_reason: 'Submitted for approval by Sales Representative',
       };
 
