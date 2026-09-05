@@ -2,6 +2,7 @@ import app from './src/app.js';
 import connectDB from './src/config/database.js';
 import config from './src/config/config.js';
 import { initEmailWorker } from './src/jobs/emailQueue.js';
+import { seedAdminUser } from './src/utils/seeder.js';
 
 
 const PORT = config.PORT || 3000;
@@ -11,9 +12,7 @@ async function startServer() {
     await connectDB();
     console.log('Database connection established successfully.');
 
- 
-   
-
+    await seedAdminUser();
 
     initEmailWorker();
 
