@@ -194,54 +194,21 @@ export const addStaffInvitationJob = async ({ name, email, role, tempPassword })
  * Enqueues an email job when a pending quotation is issued to customer
  */
 export const addQuotationIssuedEmailJob = async (data) => {
-  try {
-    const html = generateQuotationIssuedEmail(data);
-    const result = await sendMail({
-      toEmail: data.toEmail,
-      subject: `📄 New Quotation Issued: ${data.quotationNumber}`,
-      html,
-    });
-    console.log(`📧 Direct quotation issued email dispatched to: ${data.toEmail}`);
-    return result;
-  } catch (err) {
-    console.error('⚠️ Failed to dispatch quotation issued email:', err.message);
-  }
+  return await emailQueue.add('send-quotation-issued', data);
 };
 
 /**
  * Enqueues an email job when sales rep submits a counter-offer
  */
 export const addCounterOfferEmailJob = async (data) => {
-  try {
-    const html = generateCounterOfferEmail(data);
-    const result = await sendMail({
-      toEmail: data.toEmail,
-      subject: `💬 New Counter-Offer for Quotation: ${data.quotationNumber}`,
-      html,
-    });
-    console.log(`📧 Direct counter-offer email dispatched to: ${data.toEmail}`);
-    return result;
-  } catch (err) {
-    console.error('⚠️ Failed to dispatch counter offer email:', err.message);
-  }
+  return await emailQueue.add('send-counter-offer', data);
 };
 
 /**
  * Enqueues an email job when a quotation is approved/confirmed
  */
 export const addQuotationApprovedEmailJob = async (data) => {
-  try {
-    const html = generateQuotationApprovedEmail(data);
-    const result = await sendMail({
-      toEmail: data.toEmail,
-      subject: `✅ Quotation Approved: ${data.quotationNumber}`,
-      html,
-    });
-    console.log(`📧 Direct quotation approved email dispatched to: ${data.toEmail}`);
-    return result;
-  } catch (err) {
-    console.error('⚠️ Failed to dispatch quotation approved email:', err.message);
-  }
+  return await emailQueue.add('send-quotation-approved', data);
 };
 
 /**
