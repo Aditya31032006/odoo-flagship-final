@@ -241,7 +241,7 @@ export default function Onboarding() {
                       type="text"
                       maxLength={15}
                       placeholder="27AABCU9603R1ZM"
-                      style={{ textTransform: 'uppercase' }}
+                      className="input-uppercase"
                       {...register('gst_number', {
                         validate: (value) => {
                           if (!value || !value.trim()) return true;
@@ -352,7 +352,7 @@ export default function Onboarding() {
                   id="name"
                   type="text"
                   readOnly
-                  style={{ background: 'rgba(255, 255, 255, 0.05)', color: '#93c5fd' }}
+                  className="input-readonly"
                   {...register('name')}
                 />
                 <svg className="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -369,7 +369,7 @@ export default function Onboarding() {
                   id="email"
                   type="email"
                   readOnly
-                  style={{ background: 'rgba(255, 255, 255, 0.05)', color: '#93c5fd' }}
+                  className="input-readonly"
                   {...register('email')}
                 />
                 <svg className="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">

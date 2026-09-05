@@ -110,18 +110,9 @@ export default function Login() {
           </div>
 
           <div className="form-group">
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div className="form-label-row">
               <label htmlFor="password">Password</label>
-              <Link
-                to="/forgot-password"
-                style={{
-                  color: '#38bdf8',
-                  fontSize: '0.775rem',
-                  fontWeight: 600,
-                  textDecoration: 'none',
-                  transition: 'color 0.15s ease'
-                }}
-              >
+              <Link to="/forgot-password" className="forgot-password-link">
                 Forgot password?
               </Link>
             </div>

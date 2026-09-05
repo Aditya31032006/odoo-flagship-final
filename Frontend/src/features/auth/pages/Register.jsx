@@ -255,7 +255,7 @@ export default function Register() {
                       type="text"
                       maxLength={15}
                       placeholder="27AABCU9603R1ZM"
-                      style={{ textTransform: 'uppercase' }}
+                      className="input-uppercase"
                       {...register('gst_number', {
                         validate: (value) => {
                           if (!value || !value.trim()) return true;

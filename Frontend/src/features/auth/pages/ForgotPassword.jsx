@@ -227,7 +227,7 @@ export default function ForgotPassword() {
                     type="text"
                     maxLength={6}
                     placeholder="123456"
-                    style={{ letterSpacing: '4px', textAlign: 'center', fontWeight: 700, fontSize: '1.1rem' }}
+                    className="input-otp"
                     {...registerReset('otp', {
                       required: '6-digit OTP is required',
                       minLength: { value: 6, message: 'OTP must be 6 digits' },
@@ -304,7 +304,7 @@ export default function ForgotPassword() {
               >
                 Resend OTP
               </button>
-              <span style={{ margin: '0 0.5rem', color: '#64748b' }}>•</span>
+              <span className="footer-dot">•</span>
               <Link to="/login">Back to Sign In</Link>
             </div>
           </>
