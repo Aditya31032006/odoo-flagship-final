@@ -8,6 +8,11 @@ import QuotationsList from '../features/quotations/pages/QuotationsList.jsx';
 import QuotationDetail from '../features/quotations/pages/QuotationDetail.jsx';
 import ProductCatalog from '../features/products/pages/ProductCatalog.jsx';
 import ProductDetail from '../features/products/pages/ProductDetail.jsx';
+import DiscountRulesSetup from '../features/discountRules/pages/DiscountRulesSetup.jsx';
+import ApprovalsList from '../features/approvals/pages/ApprovalsList.jsx';
+import ApprovalDetail from '../features/approvals/pages/ApprovalDetail.jsx';
+import FulfillmentList from '../features/fulfillment/pages/FulfillmentList.jsx';
+import FulfillmentDetail from '../features/fulfillment/pages/FulfillmentDetail.jsx';
 import Onboarding from '../features/auth/pages/Onboarding.jsx';
 import ForgotPassword from '../features/auth/pages/ForgotPassword.jsx';
 import Profile from '../features/auth/pages/Profile.jsx';
@@ -52,21 +57,19 @@ export const router = createBrowserRouter([
       },
       {
         path: '/approvals',
-        element: (
-          <PagePlaceholder
-            title="Discount & Deal Approvals"
-            description="Review high-risk deal discount requests against tier limits and category ceilings."
-          />
-        ),
+        element: <ApprovalsList />,
+      },
+      {
+        path: '/approvals/:id',
+        element: <ApprovalDetail />,
       },
       {
         path: '/fulfillment',
-        element: (
-          <PagePlaceholder
-            title="Warehouse Fulfillment"
-            description="SKU-level multi-warehouse split fulfillment and backorder management."
-          />
-        ),
+        element: <FulfillmentList />,
+      },
+      {
+        path: '/fulfillment/:orderId',
+        element: <FulfillmentDetail />,
       },
       {
         path: '/subscriptions',
@@ -123,6 +126,12 @@ export const router = createBrowserRouter([
       {
         path: '/staff',
         element: <StaffManagement />,
+        path: '/discount-rules',
+        element: <DiscountRulesSetup />,
+      },
+      {
+        path: '/discount-tiers',
+        element: <DiscountRulesSetup />,
       },
     ],
   },

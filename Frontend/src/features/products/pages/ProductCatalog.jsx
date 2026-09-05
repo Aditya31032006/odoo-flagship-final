@@ -31,13 +31,12 @@ export const ProductCatalog = () => {
              New Product
           </Link>
 
-          <button
-            type="button"
+          <Link
+            to="/discount-rules"
             className="df-products__btn-secondary"
-            onClick={() => alert('Price list management panel')}
           >
-            Manage Price fields
-          </button>
+            Discount Tiers & Rules
+          </Link>
         </div>
 
         {/* 3 Summary Cards matching Wireframe #16 */}
@@ -129,9 +128,7 @@ export const ProductCatalog = () => {
         </div>
 
         {/* Bottom Banner matching Wireframe #16 */}
-        <div className="df-products__notice-banner">
-          Click a product row to open general info, variants and tier/currency price lists.
-        </div>
+      
       </div>
     </div>
   );

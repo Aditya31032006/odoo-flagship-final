@@ -67,9 +67,7 @@ export const ProductDetail = ({ isNew = false }) => {
   const onFormSubmit = async (formData) => {
     const res = await saveProduct(formData);
     if (res?.success) {
-      if (!isEditingExisting) {
-        navigate('/products');
-      }
+      navigate('/products');
     }
   };
 

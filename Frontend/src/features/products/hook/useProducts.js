@@ -59,13 +59,27 @@ export const useProducts = ({ id = null, isEditingExisting = false, autoFetch = 
 
             if (p.variants && p.variants.length > 0) {
               setVariants(
-                p.variants.map((v, i) => ({
-                  id: v.variant_id || v.id || i + 1,
-                  attribute: v.variant_name || 'Standard',
-                  values: v.sku || `SKU-${i + 1}`,
-                  extra_price: v.selling_price ? `$${v.selling_price}` : '0',
-                  isEditing: false,
-                }))
+                p.variants.map((v, i) => {
+                  let attribute = v.variant_name || 'Standard';
+                  let values = '';
+                  if (attribute.includes(':')) {
+                    const colonIdx = attribute.indexOf(':');
+                    values = attribute.substring(colonIdx + 1).trim();
+                    attribute = attribute.substring(0, colonIdx).trim();
+                  }
+                  const baseNum = Number(p.base_price) || 0;
+                  const sellNum = Number(v.selling_price) || baseNum;
+                  const diff = sellNum - baseNum;
+                  const extraPrice = diff > 0 ? `+${diff}` : diff < 0 ? `${diff}` : '0';
+
+                  return {
+                    id: v.variant_id || v.id || i + 1,
+                    attribute,
+                    values,
+                    extra_price: extraPrice,
+                    isEditing: false,
+                  };
+                })
               );
             }
           }
@@ -145,7 +159,7 @@ export const useProducts = ({ id = null, isEditingExisting = false, autoFetch = 
       {
         id: Date.now(),
         tier: 'Silver',
-        currency: 'USD',
+        currency: 'INR',
         price_rule: 'Price minus 5 percent base',
         isEditing: true,
         isNew: true,
@@ -204,12 +218,21 @@ export const useProducts = ({ id = null, isEditingExisting = false, autoFetch = 
         unit: formData.is_subscription ? 'Recurring' : (formData.unit || 'Each'),
         description: formData.description || '',
         tax_percentage: Number(formData.tax_percentage) || 0,
-        variants: variants.map((v) => ({
-          id: v.id,
-          sku: `${formData.name.replace(/[^a-zA-Z0-9]/g, '').toUpperCase().slice(0, 4)}-${v.attribute.toUpperCase().slice(0, 3)}-${Math.floor(Math.random() * 900 + 100)}`,
-          variant_name: `${v.attribute}${v.values ? `: ${v.values}` : ''}`,
-          selling_price: Number(formData.base_price) + (parseFloat(String(v.extra_price).replace(/[^0-9.]/g, '')) || 0),
-        })),
+        variants: variants.map((v) => {
+          const attr = (v.attribute || '').trim();
+          const val = (v.values || '').trim();
+          const variantName = val ? `${attr}: ${val}` : attr || 'Standard';
+          const extraPriceNum = parseFloat(String(v.extra_price).replace(/[^0-9.-]/g, '')) || 0;
+          const baseNum = Number(formData.base_price) || 0;
+          const sellingPrice = baseNum + extraPriceNum;
+
+          return {
+            id: v.id,
+            sku: `${formData.name.replace(/[^a-zA-Z0-9]/g, '').toUpperCase().slice(0, 4)}-${attr.replace(/[^a-zA-Z0-9]/g, '').toUpperCase().slice(0, 3) || 'VAR'}-${Math.floor(Math.random() * 900 + 100)}`,
+            variant_name: variantName,
+            selling_price: sellingPrice,
+          };
+        }),
         pricelists,
       };
 

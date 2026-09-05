@@ -172,19 +172,38 @@ export const updateProductRepo = async (productId, {
     const updatedProduct = updateProdRes.rows[0];
 
     // If variants were provided, sync them
-    if (variants && variants.length > 0) {
-      // Keep existing or insert new
+    if (variants && Array.isArray(variants)) {
+      const existingVariantIds = variants
+        .filter((v) => v.id && typeof v.id === 'number' && v.id < 1000000000000)
+        .map((v) => v.id);
+
+      if (existingVariantIds.length > 0) {
+        // Delete variants that were removed from the product
+        await client.query(
+          `DELETE FROM product_variants 
+           WHERE product_id = $1 AND id != ALL($2::int[])`,
+          [productId, existingVariantIds]
+        );
+      } else if (variants.length > 0) {
+        // All variants are newly added, remove all old variants for this product
+        await client.query(
+          'DELETE FROM product_variants WHERE product_id = $1',
+          [productId]
+        );
+      }
+
+      // Upsert/Insert the current list of variants
       for (const v of variants) {
         if (v.id && typeof v.id === 'number' && v.id < 1000000000000) {
-          // Existing variant ID
+          // Update existing variant
           await client.query(
             `UPDATE product_variants 
              SET variant_name = $1, selling_price = $2, is_active = TRUE
              WHERE id = $3 AND product_id = $4`,
-            [v.variant_name, v.selling_price || base_price, v.id, productId]
+            [v.variant_name || 'Standard', v.selling_price || base_price, v.id, productId]
           );
         } else {
-          // New variant
+          // Insert new variant
           const sku = v.sku || `${name.replace(/[^a-zA-Z0-9]/g, '').toUpperCase().slice(0, 4)}-${Math.floor(Math.random() * 9000 + 1000)}`;
           await client.query(
             `INSERT INTO product_variants (product_id, sku, variant_name, selling_price, is_active)
@@ -196,7 +215,7 @@ export const updateProductRepo = async (productId, {
     }
 
     const finalVariants = await client.query(
-      'SELECT * FROM product_variants WHERE product_id = $1 AND is_active = TRUE ORDER BY sku ASC',
+      'SELECT * FROM product_variants WHERE product_id = $1 AND is_active = TRUE ORDER BY id ASC',
       [productId]
     );
 
@@ -214,18 +233,41 @@ export const updateProductRepo = async (productId, {
 };
 
 export const deleteProductRepo = async (productId) => {
-  const result = await pool.query(
-    'UPDATE products SET is_active = FALSE, updated_at = NOW() WHERE id = $1 RETURNING id',
-    [productId]
-  );
-  return result.rows[0];
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    try {
+      await client.query('DELETE FROM product_variants WHERE product_id = $1', [productId]);
+      const res = await client.query('DELETE FROM products WHERE id = $1 RETURNING id', [productId]);
+      await client.query('COMMIT');
+      return res.rows[0];
+    } catch (fkErr) {
+      await client.query('ROLLBACK');
+      const softRes = await pool.query(
+        'UPDATE products SET is_active = FALSE, updated_at = NOW() WHERE id = $1 RETURNING id',
+        [productId]
+      );
+      await pool.query(
+        'UPDATE product_variants SET is_active = FALSE WHERE product_id = $1',
+        [productId]
+      );
+      return softRes.rows[0];
+    }
+  } finally {
+    client.release();
+  }
 };
 
 export const deleteProductVariantRepo = async (variantId) => {
-  const result = await pool.query(
-    'UPDATE product_variants SET is_active = FALSE WHERE id = $1 RETURNING id',
-    [variantId]
-  );
-  return result.rows[0];
+  try {
+    const res = await pool.query('DELETE FROM product_variants WHERE id = $1 RETURNING id', [variantId]);
+    return res.rows[0];
+  } catch (err) {
+    const result = await pool.query(
+      'UPDATE product_variants SET is_active = FALSE WHERE id = $1 RETURNING id',
+      [variantId]
+    );
+    return result.rows[0];
+  }
 };
 

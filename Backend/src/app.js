@@ -9,6 +9,9 @@ import dashboardRouter from './routes/dashboard.route.js';
 import quotationRouter from './routes/quotation.route.js';
 import catalogRouter from './routes/catalog.route.js';
 import staffRouter from './routes/staff.route.js';
+import discountRulesRouter from './routes/discountRules.route.js';
+import approvalRouter from './routes/approval.route.js';
+import fulfillmentRouter from './routes/fulfillment.route.js';
 import handleError from './middleware/error.middleware.js';
 import config from './config/config.js';
 
@@ -30,8 +33,14 @@ app.use('/api/auth', authRouter);
 app.use('/api/dashboard', dashboardRouter);
 app.use('/api/quotations', quotationRouter);
 app.use('/api/catalog', catalogRouter);
+<<<<<<< HEAD
 app.use('/api/staff', staffRouter);
 app.use('/staff', staffRouter);
+=======
+app.use('/api/discount-rules', discountRulesRouter);
+app.use('/api/approvals', approvalRouter);
+app.use('/api/fulfillment', fulfillmentRouter);
+>>>>>>> e196ad3a5e7c50c3525b272c3fef6815f32fd60f
 
 // Global Error Handler
 app.use(handleError);
