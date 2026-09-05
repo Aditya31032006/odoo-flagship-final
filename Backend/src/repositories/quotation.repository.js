@@ -14,17 +14,21 @@ import {
 } from '../queries/quotation.query.js';
 import { GET_ACTIVE_APPROVAL_RULES } from '../queries/catalog.query.js';
 
-export const getQuotationsListRepo = async ({ salesRepId = null, status = null, searchQuery = null } = {}) => {
+export const getQuotationsListRepo = async ({ salesRepId = null, customerId = null, status = null, searchQuery = null } = {}) => {
   const result = await pool.query(GET_QUOTATIONS_LIST, [
     salesRepId,
     status || null,
     searchQuery || null,
+    customerId || null,
   ]);
   return result.rows;
 };
 
-export const getQuotationsKanbanSummaryRepo = async (salesRepId = null) => {
-  const result = await pool.query(GET_QUOTATIONS_KANBAN_SUMMARY, [salesRepId]);
+export const getQuotationsKanbanSummaryRepo = async ({ salesRepId = null, customerId = null } = {}) => {
+  const result = await pool.query(GET_QUOTATIONS_KANBAN_SUMMARY, [
+    salesRepId || null,
+    customerId || null,
+  ]);
   return result.rows;
 };
 

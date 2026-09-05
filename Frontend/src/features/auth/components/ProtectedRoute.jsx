@@ -9,7 +9,7 @@ import Navbar from '../../../shared/components/Navbar.jsx';
  * If authenticated, renders the private shell layout with Navbar and Outlet.
  */
 export default function ProtectedRoute() {
-  const { isAuthenticated, loading } = useAuth();
+  const { user, isAuthenticated, loading } = useAuth();
   const location = useLocation();
 
   if (loading) {
@@ -27,6 +27,24 @@ export default function ProtectedRoute() {
   if (!isAuthenticated) {
     // Redirect unauthenticated visitors to login, preserving intended destination
     return <Navigate to="/login" state={{ from: location }} replace />;
+  }
+
+  // Customer Access Policy: Customers can ONLY access /my_quotations and /profile
+  if (user?.role === 'customer') {
+    const isCustomerAllowedPath =
+      location.pathname === '/my_quotations' ||
+      location.pathname.startsWith('/my_quotations/') ||
+      location.pathname === '/profile' ||
+      location.pathname.startsWith('/profile/');
+
+    if (!isCustomerAllowedPath) {
+      return <Navigate to="/my_quotations" replace />;
+    }
+  } else {
+    // Internal staff visiting /my_quotations are redirected to /quotations
+    if (location.pathname === '/my_quotations' || location.pathname.startsWith('/my_quotations/')) {
+      return <Navigate to="/quotations" replace />;
+    }
   }
 
   return (

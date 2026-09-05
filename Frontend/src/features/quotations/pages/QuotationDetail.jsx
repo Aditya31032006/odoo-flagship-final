@@ -1,9 +1,11 @@
 import React from 'react';
 import { useParams, useNavigate, Link } from 'react-router';
 import useQuotationForm from '../hook/useQuotationForm.js';
+import useAuth from '../../auth/hook/useAuth.js';
 import QuotationLineItemsTable from '../components/QuotationLineItemsTable.jsx';
 import DiscountAlertBanner from '../components/DiscountAlertBanner.jsx';
 import UpsellSuggestionsWidget from '../components/UpsellSuggestionsWidget.jsx';
+import NegotiationPanel from '../components/NegotiationPanel.jsx';
 import '../styles/quotationDetail.scss';
 
 function formatCurrency(val) {
@@ -13,6 +15,8 @@ function formatCurrency(val) {
 export const QuotationDetail = ({ isNew = false }) => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const isCustomer = user?.role === 'customer';
   const targetId = isNew ? 'new' : id;
 
   const {
@@ -189,7 +193,25 @@ export const QuotationDetail = ({ isNew = false }) => {
           onAddSuggestion={addUpsellSuggestion}
         />
 
-        {/* Bottom Actions Bar matching Wireframe #4 */}
+        {/* Real-time Deal Negotiation Hub (Active for existing quotes) */}
+        {!isNew && targetId !== 'new' && (
+          <NegotiationPanel
+            quotationId={targetId}
+            quotation={{
+              id: targetId,
+              status,
+              quotation_number: quotationNumber,
+              grand_total: calculatedTotals.grandTotal,
+            }}
+            quotationItems={lineItems}
+            onQuotationUpdated={() => {
+              // Reload page to reflect confirmed/negotiating state updates
+              window.location.reload();
+            }}
+          />
+        )}
+
+        {/* Bottom Actions Bar */}
         <footer className="df-quotation-detail__actions-bar">
           <div className="totals-summary">
             <div className="total-group">
@@ -223,26 +245,27 @@ export const QuotationDetail = ({ isNew = false }) => {
             </div>
           </div>
 
+          {!isCustomer && (
+            <div className="buttons-group">
+              <button
+                type="button"
+                className="df-quotation-detail__btn-draft"
+                onClick={handleSaveDraft}
+                disabled={isSaving}
+              >
+                {isSaving ? 'Saving...' : 'Save Draft'}
+              </button>
 
-          <div className="buttons-group">
-            <button
-              type="button"
-              className="df-quotation-detail__btn-draft"
-              onClick={handleSaveDraft}
-              disabled={isSaving}
-            >
-              {isSaving ? 'Saving...' : 'Save Draft'}
-            </button>
-
-            <button
-              type="button"
-              className="df-quotation-detail__btn-submit"
-              onClick={handleSubmitApproval}
-              disabled={isSaving}
-            >
-              {isSaving ? 'Processing...' : 'Submit for Approval'}
-            </button>
-          </div>
+              <button
+                type="button"
+                className="df-quotation-detail__btn-submit"
+                onClick={handleSubmitApproval}
+                disabled={isSaving}
+              >
+                {isSaving ? 'Processing...' : 'Submit for Approval'}
+              </button>
+            </div>
+          )}
         </footer>
       </div>
     </div>
