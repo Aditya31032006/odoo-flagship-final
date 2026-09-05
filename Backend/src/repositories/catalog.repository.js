@@ -198,9 +198,9 @@ export const updateProductRepo = async (productId, {
           // Update existing variant
           await client.query(
             `UPDATE product_variants 
-             SET variant_name = $1, selling_price = $2, is_active = TRUE
+             SET variant_name = $1, selling_price = $2, sku = COALESCE($5, sku), is_active = TRUE
              WHERE id = $3 AND product_id = $4`,
-            [v.variant_name || 'Standard', v.selling_price || base_price, v.id, productId]
+            [v.variant_name || 'Standard', v.selling_price || base_price, v.id, productId, v.sku || null]
           );
         } else {
           // Insert new variant

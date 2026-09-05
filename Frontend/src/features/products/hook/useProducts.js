@@ -74,6 +74,7 @@ export const useProducts = ({ id = null, isEditingExisting = false, autoFetch = 
 
                   return {
                     id: v.variant_id || v.id || i + 1,
+                    sku: v.sku || '',
                     attribute,
                     values,
                     extra_price: extraPrice,
@@ -99,6 +100,7 @@ export const useProducts = ({ id = null, isEditingExisting = false, autoFetch = 
       ...prev,
       {
         id: Date.now(),
+        sku: '',
         attribute: '',
         values: '',
         extra_price: '0',
@@ -225,10 +227,11 @@ export const useProducts = ({ id = null, isEditingExisting = false, autoFetch = 
           const extraPriceNum = parseFloat(String(v.extra_price).replace(/[^0-9.-]/g, '')) || 0;
           const baseNum = Number(formData.base_price) || 0;
           const sellingPrice = baseNum + extraPriceNum;
+          const autoSku = `${formData.name.replace(/[^a-zA-Z0-9]/g, '').toUpperCase().slice(0, 4)}-${attr.replace(/[^a-zA-Z0-9]/g, '').toUpperCase().slice(0, 3) || 'VAR'}-${Math.floor(Math.random() * 900 + 100)}`;
 
           return {
             id: v.id,
-            sku: `${formData.name.replace(/[^a-zA-Z0-9]/g, '').toUpperCase().slice(0, 4)}-${attr.replace(/[^a-zA-Z0-9]/g, '').toUpperCase().slice(0, 3) || 'VAR'}-${Math.floor(Math.random() * 900 + 100)}`,
+            sku: (v.sku && v.sku.trim()) || autoSku,
             variant_name: variantName,
             selling_price: sellingPrice,
           };

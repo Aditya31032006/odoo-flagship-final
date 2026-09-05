@@ -313,6 +313,7 @@ export const ProductDetail = ({ isNew = false }) => {
             <table className="df-product-detail__subtable">
               <thead>
                 <tr>
+                  <th className="col-sku">SKU Code</th>
                   <th className="col-attribute">Attribute</th>
                   <th className="col-values">Values</th>
                   <th className="col-extra">Extra price</th>
@@ -322,13 +323,29 @@ export const ProductDetail = ({ isNew = false }) => {
               <tbody>
                 {variants.length === 0 ? (
                   <tr>
-                    <td colSpan="4" className="df-product-detail__empty-table">
+                    <td colSpan="5" className="df-product-detail__empty-table">
                       No variants added. Click "+ Add Variant Attribute" to define custom attributes.
                     </td>
                   </tr>
                 ) : (
                   variants.map((v, index) => (
                     <tr key={v.id || index} className={v.isEditing ? 'df-row-editing' : ''}>
+                      {/* SKU Code Column */}
+                      <td>
+                        {v.isEditing ? (
+                          <input
+                            type="text"
+                            placeholder="e.g. LP14-16GB-SLV"
+                            value={v.sku || ''}
+                            onChange={(e) => updateVariantField(index, 'sku', e.target.value)}
+                            className="df-table-input df-table-input--sku"
+                            autoFocus
+                          />
+                        ) : (
+                          <span className="df-variant-sku-tag">{v.sku || 'Auto-generated'}</span>
+                        )}
+                      </td>
+
                       {/* Attribute Column */}
                       <td>
                         {v.isEditing ? (
@@ -338,7 +355,6 @@ export const ProductDetail = ({ isNew = false }) => {
                             value={v.attribute}
                             onChange={(e) => updateVariantField(index, 'attribute', e.target.value)}
                             className="df-table-input"
-                            autoFocus
                           />
                         ) : (
                           <span className="df-variant-attribute-title">{v.attribute}</span>
