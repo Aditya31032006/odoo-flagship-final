@@ -11,6 +11,7 @@ import ProductDetail from '../features/products/pages/ProductDetail.jsx';
 import Onboarding from '../features/auth/pages/Onboarding.jsx';
 import ForgotPassword from '../features/auth/pages/ForgotPassword.jsx';
 import Profile from '../features/auth/pages/Profile.jsx';
+import StaffManagement from '../features/staff/pages/StaffManagement.jsx';
 import './placeholder.scss';
 
 // Lightweight placeholder view component for quick verification
@@ -118,6 +119,10 @@ export const router = createBrowserRouter([
       {
         path: '/profile',
         element: <Profile />,
+      },
+      {
+        path: '/staff',
+        element: <StaffManagement />,
       },
     ],
   },

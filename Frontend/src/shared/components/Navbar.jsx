@@ -104,6 +104,19 @@ const NAV_ITEMS = [
       </svg>
     ),
   },
+  {
+    name: 'Manage Staff',
+    path: '/staff',
+    adminOnly: true,
+    icon: (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="nav-icon">
+        <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+        <circle cx="9" cy="7" r="4" />
+        <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
+        <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+      </svg>
+    ),
+  },
 ];
 
 // Format user initials
@@ -154,6 +167,10 @@ export default function Navbar() {
     location.pathname === route || location.pathname.startsWith(`${route}/`)
   );
 
+  const visibleNavItems = NAV_ITEMS.filter(
+    (item) => !item.adminOnly || user?.role === 'admin'
+  );
+
   if (isAuthRoute) {
     return null;
   }
@@ -187,7 +204,7 @@ export default function Navbar() {
         {/* Desktop Navigation Links */}
         <div className="df-navbar__nav-container">
           <ul className="df-navbar__nav-links">
-            {NAV_ITEMS.map((item) => (
+            {visibleNavItems.map((item) => (
               <li key={item.path} className="df-navbar__nav-item">
                 <NavLink
                   to={item.path}
@@ -270,6 +287,22 @@ export default function Navbar() {
                     </svg>
                     My Profile & Settings
                   </Link>
+
+                  {user.role === 'admin' && (
+                    <Link
+                      to="/staff"
+                      className="df-navbar__dropdown-menu-profile-link"
+                      onClick={() => setProfileDropdownOpen(false)}
+                    >
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+                        <circle cx="9" cy="7" r="4" />
+                        <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
+                        <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+                      </svg>
+                      Manage Staff & Access
+                    </Link>
+                  )}
 
                   <button
                     onClick={handleLogout}

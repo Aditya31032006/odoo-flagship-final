@@ -1,6 +1,6 @@
 import { Queue, Worker } from 'bullmq';
 import { redisConnection } from '../config/redis.js';
-import { sendMail, generateWelcomeEmail, generateOtpEmail } from '../services/mail.service.js';
+import { sendMail, generateWelcomeEmail, generateOtpEmail, generateStaffInvitationEmail } from '../services/mail.service.js';
 
 /**
  * BullMQ Email Queue for offloading email dispatching.
@@ -61,6 +61,17 @@ export function initEmailWorker() {
           break;
         }
 
+        case 'send-staff-invitation': {
+          const { name: staffName, email, role, tempPassword } = data;
+          const html = generateStaffInvitationEmail({ name: staffName, email, role, tempPassword });
+          await sendMail({
+            toEmail: email,
+            subject: `🎉 You've Been Invited to DealFlow360 (${role})`,
+            html,
+          });
+          break;
+        }
+
         case 'send-generic-mail': {
           const { toEmail, subject, html, text } = data;
           await sendMail({ toEmail, subject, html, text });
@@ -115,6 +126,18 @@ export const addWelcomeEmailJob = async ({ name, email }) => {
  */
 export const addOtpEmailJob = async ({ email, otp }) => {
   return await emailQueue.add('send-otp-email', { email, otp });
+};
+
+/**
+ * Enqueues a staff invitation email job.
+ * @param {Object} params
+ * @param {string} params.name
+ * @param {string} params.email
+ * @param {string} params.role
+ * @param {string} params.tempPassword
+ */
+export const addStaffInvitationJob = async ({ name, email, role, tempPassword }) => {
+  return await emailQueue.add('send-staff-invitation', { name, email, role, tempPassword });
 };
 
 /**

@@ -37,4 +37,18 @@ export const authMiddleware = (req, res, next) => {
   }
 };
 
+/**
+ * Role-based authorization middleware
+ */
+export const authorizeRoles = (...allowedRoles) => {
+  return (req, res, next) => {
+    if (!req.user || !allowedRoles.includes(req.user.role)) {
+      return res.status(STATUS_CODES.FORBIDDEN).json({
+        message: 'Access forbidden: You do not have the required role permissions.'
+      });
+    }
+    next();
+  };
+};
+
 export default authMiddleware;

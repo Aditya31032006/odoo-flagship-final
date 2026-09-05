@@ -265,3 +265,136 @@ export function generateOtpEmail({ otp }) {
   </html>
   `;
 }
+
+/**
+ * Generates an HTML staff invitation email with generated credentials
+ */
+export function generateStaffInvitationEmail({ name, email, role, tempPassword }) {
+  const roleNames = {
+    sales_rep: 'Sales Representative',
+    sales_manager: 'Sales Manager',
+    finance: 'Finance Controller',
+    operations: 'Operations Lead',
+    admin: 'System Administrator',
+  };
+  const displayRole = roleNames[role] || role;
+  const loginUrl = config.FRONTEND_ORIGIN ? `${config.FRONTEND_ORIGIN}/login` : 'http://localhost:5173/login';
+
+  return `
+  <!DOCTYPE html>
+  <html>
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>You've Been Invited to DealFlow360</title>
+    <style>
+      body {
+        margin: 0;
+        padding: 0;
+        background-color: #0b0f19;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+        color: #f1f5f9;
+      }
+      .email-container {
+        max-width: 580px;
+        margin: 40px auto;
+        background-color: #1e293b;
+        border-radius: 12px;
+        overflow: hidden;
+        border: 1px solid #334155;
+      }
+      .email-header {
+        background: linear-gradient(135deg, #2563eb 0%, #38bdf8 100%);
+        padding: 30px 20px;
+        text-align: center;
+        color: #ffffff;
+      }
+      .email-header h1 {
+        margin: 0;
+        font-size: 24px;
+        font-weight: 700;
+      }
+      .email-body {
+        padding: 30px 28px;
+        line-height: 1.6;
+        color: #cbd5e1;
+      }
+      .credentials-box {
+        background-color: #0f172a;
+        border: 1px solid rgba(56, 189, 248, 0.3);
+        border-radius: 10px;
+        padding: 18px 20px;
+        margin: 20px 0;
+      }
+      .cred-row {
+        margin: 8px 0;
+        font-size: 14px;
+      }
+      .cred-label {
+        color: #94a3b8;
+        display: inline-block;
+        width: 110px;
+      }
+      .cred-value {
+        color: #ffffff;
+        font-weight: 600;
+        font-family: monospace;
+      }
+      .cred-highlight {
+        color: #38bdf8;
+        background: rgba(56, 189, 248, 0.1);
+        padding: 3px 8px;
+        border-radius: 4px;
+      }
+      .btn {
+        display: inline-block;
+        background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+        color: #ffffff !important;
+        text-decoration: none;
+        padding: 12px 24px;
+        border-radius: 8px;
+        font-weight: 600;
+        margin-top: 15px;
+      }
+      .footer {
+        padding: 18px;
+        text-align: center;
+        font-size: 12px;
+        color: #64748b;
+        background-color: #0f172a;
+        border-top: 1px solid #334155;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="email-container">
+      <div class="email-header">
+        <h1>👋 Welcome to the Team!</h1>
+      </div>
+      <div class="email-body">
+        <p style="font-size: 16px; color: #f8fafc;">Hello <strong>${name}</strong>,</p>
+        <p>An administrator has invited you to join <strong>DealFlow360</strong> as a <strong>${displayRole}</strong>.</p>
+        
+        <p>Here are your temporary login credentials:</p>
+        <div class="credentials-box">
+          <div class="cred-row"><span class="cred-label">Role:</span> <span class="cred-value" style="color: #38bdf8;">${displayRole}</span></div>
+          <div class="cred-row"><span class="cred-label">Login Email:</span> <span class="cred-value">${email}</span></div>
+          <div class="cred-row"><span class="cred-label">Password:</span> <span class="cred-value cred-highlight">${tempPassword}</span></div>
+        </div>
+
+        <p style="font-size: 13px; color: #94a3b8;">For security, we recommend changing your password from your Profile settings immediately after your first sign-in.</p>
+
+        <div style="text-align: center; margin: 25px 0 15px 0;">
+          <a href="${loginUrl}" class="btn">Sign In to DealFlow360 &rarr;</a>
+        </div>
+
+        <p style="margin-top: 24px; color: #f8fafc;">Best regards,<br><strong>The DealFlow360 Team</strong></p>
+      </div>
+      <div class="footer">
+        &copy; ${new Date().getFullYear()} DealFlow360. All rights reserved.
+      </div>
+    </div>
+  </body>
+  </html>
+  `;
+}

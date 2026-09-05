@@ -10,7 +10,7 @@ export const seedAdminUser = async () => {
     try {
         const adminCheck = await client.query(FIND_ADMIN_USER);
         if (adminCheck.rows.length === 0) {
-            const defaultAdminEmail = (process.env.ADMIN_EMAIL || 'admin@dealflow360.com').toLowerCase().trim();
+            const defaultAdminEmail = (process.env.ADMIN_EMAIL || 'techshock01@gmail.com').toLowerCase().trim();
             const defaultAdminPassword = process.env.ADMIN_PASSWORD || 'Admin@123';
             const defaultAdminName = process.env.ADMIN_NAME || 'System Administrator';
             const defaultAdminMobile = process.env.ADMIN_MOBILE || '9999999999';
