@@ -1,0 +1,73 @@
+import {
+  getInvoicesListRepo,
+  getInvoiceDetailRepo,
+  recordPaymentRepo,
+} from '../repositories/invoice.repository.js';
+
+export const getInvoicesList = async (req, res, next) => {
+  try {
+    const { status } = req.query;
+    const data = await getInvoicesListRepo(status);
+    return res.status(200).json({
+      success: true,
+      data,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const getInvoiceDetail = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const data = await getInvoiceDetailRepo(id);
+    if (!data) {
+      return res.status(404).json({
+        success: false,
+        message: 'Invoice not found',
+      });
+    }
+    return res.status(200).json({
+      success: true,
+      data,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const recordPayment = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { amount, paymentMethod, transactionReference } = req.body;
+
+    if (!amount || parseFloat(amount) <= 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'A valid payment amount is required',
+      });
+    }
+
+    const result = await recordPaymentRepo({
+      invoiceId: id,
+      amount,
+      paymentMethod,
+      transactionReference,
+    });
+
+    if (!result) {
+      return res.status(404).json({
+        success: false,
+        message: 'Invoice not found',
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: 'Payment recorded successfully',
+      data: result,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
