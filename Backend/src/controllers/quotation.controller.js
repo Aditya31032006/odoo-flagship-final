@@ -124,7 +124,7 @@ export const createQuotationController = async (req, res, next) => {
       customer_id,
       tier_id,
       price_list_id,
-      status = 'draft',
+      status = 'approved',
       blended_risk_score = 0,
       risk_level = 'low',
       subtotal = 0,
@@ -155,7 +155,7 @@ export const createQuotationController = async (req, res, next) => {
       sales_rep_id: user.id,
       tier_id,
       price_list_id,
-      status,
+      status: status || 'approved',
       blended_risk_score,
       risk_level,
       subtotal,
@@ -167,6 +167,26 @@ export const createQuotationController = async (req, res, next) => {
       action_reason,
       user_id: user.id,
     });
+
+    // Send email to customer whenever a quotation is created/placed in 'approved' status
+    if (status === 'approved' && savedQuotation) {
+      try {
+        const custRes = await pool.query('SELECT company_name, email FROM customers WHERE id = $1', [customer_id]);
+        if (custRes.rows.length > 0 && custRes.rows[0].email) {
+          await addQuotationApprovedEmailJob({
+            toEmail: custRes.rows[0].email,
+            customerName: custRes.rows[0].company_name,
+            quotationNumber: savedQuotation.quotation_number,
+            quotationId: savedQuotation.id,
+            grandTotal: savedQuotation.grand_total,
+            validUntil: savedQuotation.valid_until,
+            items,
+          });
+        }
+      } catch (mailErr) {
+        console.warn('⚠️ Failed to dispatch quotation approved email:', mailErr.message);
+      }
+    }
 
     return res.status(STATUS_CODES.CREATED).json({
       success: true,
@@ -185,7 +205,7 @@ export const updateQuotationController = async (req, res, next) => {
       customer_id,
       tier_id,
       price_list_id,
-      status = 'draft',
+      status = 'approved',
       blended_risk_score = 0,
       risk_level = 'low',
       subtotal = 0,
@@ -215,6 +235,26 @@ export const updateQuotationController = async (req, res, next) => {
       action_reason,
       user_id: user.id,
     });
+
+    // Send email to customer if updated into 'approved' status
+    if (status === 'approved' && savedQuotation) {
+      try {
+        const custRes = await pool.query('SELECT company_name, email FROM customers WHERE id = $1', [customer_id]);
+        if (custRes.rows.length > 0 && custRes.rows[0].email) {
+          await addQuotationApprovedEmailJob({
+            toEmail: custRes.rows[0].email,
+            customerName: custRes.rows[0].company_name,
+            quotationNumber: savedQuotation.quotation_number,
+            quotationId: savedQuotation.id,
+            grandTotal: savedQuotation.grand_total,
+            validUntil: savedQuotation.valid_until,
+            items,
+          });
+        }
+      } catch (mailErr) {
+        console.warn('⚠️ Failed to dispatch quotation approved email:', mailErr.message);
+      }
+    }
 
     return res.status(STATUS_CODES.OK).json({
       success: true,

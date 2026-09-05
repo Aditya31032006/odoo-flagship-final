@@ -16,7 +16,7 @@ export const useQuotationForm = ({ quotationId = null } = {}) => {
   const [customerId, setCustomerId] = useState('');
   const [selectedCustomer, setSelectedCustomer] = useState(null);
   const [priceListId, setPriceListId] = useState('');
-  const [status, setStatus] = useState('draft');
+  const [status, setStatus] = useState('approved');
   const [validUntil, setValidUntil] = useState(() => {
     const d = new Date();
     d.setDate(d.getDate() + 30);

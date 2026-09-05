@@ -1,3 +1,4 @@
+import { pool } from '../config/database.js';
 import { STATUS_CODES } from '../constants/statusCodes.js';
 import {
   getNegotiationWithMessagesRepo,
@@ -6,6 +7,17 @@ import {
   acceptQuotationTermsRepo,
 } from '../repositories/negotiation.repository.js';
 import { getQuotationFullDetailRepo } from '../repositories/quotation.repository.js';
+
+async function resolveUserCustomerId(user) {
+  if (user.customer_id) return user.customer_id;
+  if (user.role === 'customer' && user.email) {
+    const custRes = await pool.query('SELECT id FROM customers WHERE email = $1', [user.email]);
+    if (custRes.rows.length > 0) {
+      return custRes.rows[0].id;
+    }
+  }
+  return null;
+}
 
 /**
  * Get active negotiation and message thread for a quotation
@@ -23,11 +35,14 @@ export const getNegotiationController = async (req, res, next) => {
       });
     }
 
-    if (user.role === 'customer' && String(quotation.customer_id) !== String(user.customer_id)) {
-      return res.status(STATUS_CODES.FORBIDDEN).json({
-        success: false,
-        message: 'Access denied: You can only view negotiations for your own organization.',
-      });
+    if (user.role === 'customer') {
+      const userCustId = await resolveUserCustomerId(user);
+      if (String(quotation.customer_id) !== String(userCustId)) {
+        return res.status(STATUS_CODES.FORBIDDEN).json({
+          success: false,
+          message: 'Access denied: You can only view negotiations for your own organization.',
+        });
+      }
     }
 
     const negotiation = await getNegotiationWithMessagesRepo(quotationId);
@@ -64,11 +79,14 @@ export const submitCounterOfferController = async (req, res, next) => {
       });
     }
 
-    if (user.role === 'customer' && String(quotation.customer_id) !== String(user.customer_id)) {
-      return res.status(STATUS_CODES.FORBIDDEN).json({
-        success: false,
-        message: 'Access denied: You can only submit offers for your own organization.',
-      });
+    if (user.role === 'customer') {
+      const userCustId = await resolveUserCustomerId(user);
+      if (String(quotation.customer_id) !== String(userCustId)) {
+        return res.status(STATUS_CODES.FORBIDDEN).json({
+          success: false,
+          message: 'Access denied: You can only submit offers for your own organization.',
+        });
+      }
     }
 
     if (
@@ -124,11 +142,14 @@ export const addMessageController = async (req, res, next) => {
       });
     }
 
-    if (user.role === 'customer' && String(quotation.customer_id) !== String(user.customer_id)) {
-      return res.status(STATUS_CODES.FORBIDDEN).json({
-        success: false,
-        message: 'Access denied: You can only participate in negotiations for your own organization.',
-      });
+    if (user.role === 'customer') {
+      const userCustId = await resolveUserCustomerId(user);
+      if (String(quotation.customer_id) !== String(userCustId)) {
+        return res.status(STATUS_CODES.FORBIDDEN).json({
+          success: false,
+          message: 'Access denied: You can only participate in negotiations for your own organization.',
+        });
+      }
     }
 
     const updatedNegotiation = await addNegotiationMessageRepo({
@@ -164,11 +185,14 @@ export const acceptQuotationController = async (req, res, next) => {
       });
     }
 
-    if (user.role === 'customer' && String(quotation.customer_id) !== String(user.customer_id)) {
-      return res.status(STATUS_CODES.FORBIDDEN).json({
-        success: false,
-        message: 'Access denied: You can only accept quotations for your own organization.',
-      });
+    if (user.role === 'customer') {
+      const userCustId = await resolveUserCustomerId(user);
+      if (String(quotation.customer_id) !== String(userCustId)) {
+        return res.status(STATUS_CODES.FORBIDDEN).json({
+          success: false,
+          message: 'Access denied: You can only accept quotations for your own organization.',
+        });
+      }
     }
 
     const result = await acceptQuotationTermsRepo({

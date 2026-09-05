@@ -1,6 +1,12 @@
 import { Queue, Worker } from 'bullmq';
 import { redisConnection } from '../config/redis.js';
-import { sendMail, generateWelcomeEmail, generateOtpEmail, generateStaffInvitationEmail } from '../services/mail.service.js';
+import {
+  sendMail,
+  generateWelcomeEmail,
+  generateOtpEmail,
+  generateStaffInvitationEmail,
+  generateQuotationApprovedEmail,
+} from '../services/mail.service.js';
 
 /**
  * BullMQ Email Queue for offloading email dispatching.
@@ -67,6 +73,24 @@ export function initEmailWorker() {
           await sendMail({
             toEmail: email,
             subject: `🎉 You've Been Invited to DealFlow360 (${role})`,
+            html,
+          });
+          break;
+        }
+
+        case 'send-quotation-approved': {
+          const { toEmail, customerName, quotationNumber, quotationId, grandTotal, validUntil, items } = data;
+          const html = generateQuotationApprovedEmail({
+            customerName,
+            quotationNumber,
+            quotationId,
+            grandTotal,
+            validUntil,
+            items,
+          });
+          await sendMail({
+            toEmail,
+            subject: `✅ Quotation Approved & Ready for Review (#${quotationNumber})`,
             html,
           });
           break;
@@ -148,8 +172,52 @@ export const addStaffInvitationJob = async ({ name, email, role, tempPassword })
  * @param {string} params.html
  * @param {string} [params.text]
  */
-export const addGenericEmailJob = async ({ toEmail, subject, html, text }) => {
-  return await emailQueue.add('send-generic-mail', { toEmail, subject, html, text });
+/**
+ * Enqueues a quotation approved notification email job with fallback.
+ * @param {Object} params
+ * @param {string} params.toEmail
+ * @param {string} params.customerName
+ * @param {string} params.quotationNumber
+ * @param {string|number} params.quotationId
+ * @param {number} params.grandTotal
+ * @param {string} [params.validUntil]
+ * @param {Array} [params.items]
+ */
+export const addQuotationApprovedEmailJob = async ({
+  toEmail,
+  customerName,
+  quotationNumber,
+  quotationId,
+  grandTotal,
+  validUntil,
+  items,
+}) => {
+  try {
+    return await emailQueue.add('send-quotation-approved', {
+      toEmail,
+      customerName,
+      quotationNumber,
+      quotationId,
+      grandTotal,
+      validUntil,
+      items,
+    });
+  } catch (err) {
+    console.warn('⚠️ BullMQ enqueue failed, falling back to direct email dispatch:', err.message);
+    const html = generateQuotationApprovedEmail({
+      customerName,
+      quotationNumber,
+      quotationId,
+      grandTotal,
+      validUntil,
+      items,
+    });
+    return await sendMail({
+      toEmail,
+      subject: `✅ Quotation Approved & Ready for Review (#${quotationNumber})`,
+      html,
+    });
+  }
 };
 
 /**
