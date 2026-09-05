@@ -4,8 +4,7 @@ import config from './src/config/config.js';
 import { initEmailWorker } from './src/jobs/emailQueue.js';
 import { seedAdminUser } from './src/utils/seeder.js';
 
-
-const PORT = config.PORT || 3000;
+const PORT = Number(config.PORT) || 3000;
 
 async function startServer() {
   try {

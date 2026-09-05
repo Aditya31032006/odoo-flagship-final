@@ -14,6 +14,7 @@ export const FIND_USER = `
     u.mobile, 
     u.role, 
     u.is_active, 
+    u.avatar_url,
     u.created_at,
     c.id AS customer_id, 
     c.company_name, 
@@ -43,6 +44,7 @@ export const FIND_USER_BY_IDENTIFIER = `
     u.mobile, 
     u.role, 
     u.is_active, 
+    u.avatar_url,
     u.created_at,
     c.id AS customer_id, 
     c.company_name, 
@@ -72,6 +74,7 @@ export const FIND_USER_BY_ID = `
     u.mobile, 
     u.role, 
     u.is_active, 
+    u.avatar_url,
     u.created_at,
     c.id AS customer_id, 
     c.company_name, 
@@ -100,6 +103,7 @@ export const GET_USER_FULL_PROFILE = `
     u.mobile, 
     u.role, 
     u.is_active, 
+    u.avatar_url,
     u.created_at,
     u.updated_at,
     c.id AS customer_id, 
@@ -131,7 +135,7 @@ export const UPDATE_USER_BASIC_PROFILE = `
     mobile = $2,
     updated_at = CURRENT_TIMESTAMP
   WHERE id = $3
-  RETURNING id, name, email, mobile, role, is_active, created_at, updated_at
+  RETURNING id, name, email, mobile, role, is_active, avatar_url, created_at, updated_at
 `;
 
 export const UPDATE_CUSTOMER_DETAILS = `

@@ -18,6 +18,7 @@ import dealHealthRouter from './routes/dealHealth.route.js';
 import invoiceRouter from './routes/invoice.route.js';
 import reportRouter from './routes/report.route.js';
 import deliveryCalendarRouter from './routes/deliveryCalendar.route.js';
+import paymentRouter from './routes/payment.route.js';
 import handleError from './middleware/error.middleware.js';
 import config from './config/config.js';
 
@@ -36,6 +37,7 @@ app.use(morgan('dev'));
 
 // Mount Feature API Routes
 app.use('/api/auth', authRouter);
+app.use('/api/payments', paymentRouter);
 app.use('/api/dashboard', dashboardRouter);
 app.use('/api/quotations', quotationRouter);
 app.use('/api/catalog', catalogRouter);
