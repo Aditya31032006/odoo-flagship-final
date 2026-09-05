@@ -1,247 +1,82 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router';
-import { productsApi } from '../services/products.api.js';
+import { useForm } from 'react-hook-form';
+import useProducts from '../hook/useProducts.js';
 import '../styles/productDetail.scss';
 
 export const ProductDetail = ({ isNew = false }) => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const isEditingExisting = Boolean(id && id !== 'new' && !isNew);
 
-  const isEditingExisting = Boolean(id && id !== 'new');
+  // React 4-Layer Architecture: Single Unified Hook
+  const {
+    categories,
+    variants,
+    pricelists,
+    isLoading,
+    isSaving,
+    isDeleting,
+    error,
+    successMsg,
+    loadProductData,
+    addVariant,
+    toggleEditVariant,
+    updateVariantField,
+    saveVariantRow,
+    deleteVariant,
+    addPricelist,
+    toggleEditPricelist,
+    updatePricelistField,
+    savePricelistRow,
+    deletePricelist,
+    saveProduct,
+    deleteProduct,
+  } = useProducts({ id, isEditingExisting });
 
-  const [categories, setCategories] = useState([]);
-  const [name, setName] = useState('');
-  const [categoryId, setCategoryId] = useState('');
-  const [basePrice, setBasePrice] = useState('');
-  const [unit, setUnit] = useState('Each');
-  const [description, setDescription] = useState('');
-  const [taxPercentage, setTaxPercentage] = useState('18');
-  const [isSubscription, setIsSubscription] = useState(false);
-  const [recurringCycle, setRecurringCycle] = useState('Monthly');
-  const [quantityOnHand, setQuantityOnHand] = useState('10');
+  // Presentation Layer: React Hook Form
+  const {
+    register,
+    handleSubmit,
+    watch,
+    setValue,
+    reset,
+    formState: { errors },
+  } = useForm({
+    defaultValues: {
+      name: '',
+      category_id: '',
+      base_price: '',
+      unit: 'Each',
+      description: '',
+      tax_percentage: '18',
+      is_subscription: false,
+      recurring_cycle: 'Monthly',
+      quantity_on_hand: '10',
+    },
+  });
 
-  // Editable & Deletable Product Variants matching Wireframe #17
-  const [variants, setVariants] = useState([]);
+  const isSubscription = watch('is_subscription');
+  const productName = watch('name');
 
-  // Editable & Deletable Pricelists matching Wireframe #17
-  const [pricelists, setPricelists] = useState([]);
-
-  const [isLoading, setIsLoading] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
-  const [isDeleting, setIsDeleting] = useState(false);
-  const [error, setError] = useState(null);
-  const [successMsg, setSuccessMsg] = useState(null);
-
+  // Initial load
   useEffect(() => {
-    productsApi.getCategories().then((cats) => {
-      setCategories(cats);
-      if (cats.length > 0 && !categoryId) {
-        setCategoryId(cats[0].id);
-      }
-    });
+    loadProductData(reset);
+  }, [loadProductData, reset]);
 
-    if (isEditingExisting) {
-      setIsLoading(true);
-      productsApi
-        .getProductDetail(id)
-        .then((p) => {
-          if (p) {
-            setName(p.name || '');
-            setCategoryId(p.category_id || '');
-            setBasePrice(p.base_price || '');
-            setUnit(p.unit || 'Each');
-            setDescription(p.description || '');
-            setTaxPercentage(p.tax_percentage || '0');
-            if (p.unit === 'Recurring') {
-              setIsSubscription(true);
-            }
-            if (p.variants && p.variants.length > 0) {
-              setVariants(
-                p.variants.map((v, i) => ({
-                  id: v.variant_id || v.id || i + 1,
-                  attribute: v.variant_name || 'Standard',
-                  values: v.sku || 'SKU-' + (i + 1),
-                  extra_price: v.selling_price ? `$${v.selling_price}` : '0',
-                  isEditing: false,
-                }))
-              );
-            }
-          }
-        })
-        .catch((err) => {
-          setError(err.message || 'Failed to load product details');
-        })
-        .finally(() => setIsLoading(false));
-    }
-  }, [id, isEditingExisting]);
-
-  // ==========================================
-  // VARIANT ADD / EDIT / DELETE HANDLERS
-  // ==========================================
-  const handleAddVariant = () => {
-    const newVariant = {
-      id: Date.now(),
-      attribute: '',
-      values: '',
-      extra_price: '0',
-      isEditing: true,
-      isNew: true,
-    };
-    setVariants((prev) => [...prev, newVariant]);
-  };
-
-  const handleToggleEditVariant = (index, shouldEdit = true) => {
-    setVariants((prev) => {
-      const copy = [...prev];
-      copy[index] = { ...copy[index], isEditing: shouldEdit };
-      return copy;
-    });
-  };
-
-  const handleUpdateVariantField = (index, field, value) => {
-    setVariants((prev) => {
-      const copy = [...prev];
-      copy[index] = { ...copy[index], [field]: value };
-      return copy;
-    });
-  };
-
-  const handleSaveVariantRow = (index) => {
-    const v = variants[index];
-    if (!v.attribute.trim()) {
-      alert('Attribute name is required');
-      return;
-    }
-    setVariants((prev) => {
-      const copy = [...prev];
-      copy[index] = { ...copy[index], isEditing: false, isNew: false };
-      return copy;
-    });
-  };
-
-  const handleDeleteVariant = async (index) => {
-    const v = variants[index];
-    if (window.confirm(`Are you sure you want to delete the variant attribute "${v.attribute || 'this entry'}"?`)) {
-      if (v.id && typeof v.id === 'number' && v.id < 1000000000000 && isEditingExisting) {
-        try {
-          await productsApi.deleteVariant(v.id);
-        } catch (e) {
-          console.warn('Variant deleted locally:', e.message);
-        }
-      }
-      setVariants((prev) => prev.filter((_, i) => i !== index));
-    }
-  };
-
-  // ==========================================
-  // PRICELIST ADD / EDIT / DELETE HANDLERS
-  // ==========================================
-  const handleAddPricelist = () => {
-    const newRule = {
-      id: Date.now(),
-      tier: 'Silver',
-      currency: 'USD',
-      price_rule: 'Price minus 5 percent base',
-      isEditing: true,
-      isNew: true,
-    };
-    setPricelists((prev) => [...prev, newRule]);
-  };
-
-  const handleToggleEditPricelist = (index, shouldEdit = true) => {
-    setPricelists((prev) => {
-      const copy = [...prev];
-      copy[index] = { ...copy[index], isEditing: shouldEdit };
-      return copy;
-    });
-  };
-
-  const handleUpdatePricelistField = (index, field, value) => {
-    setPricelists((prev) => {
-      const copy = [...prev];
-      copy[index] = { ...copy[index], [field]: value };
-      return copy;
-    });
-  };
-
-  const handleSavePricelistRow = (index) => {
-    const pl = pricelists[index];
-    if (!pl.price_rule.trim()) {
-      alert('Price rule description is required');
-      return;
-    }
-    setPricelists((prev) => {
-      const copy = [...prev];
-      copy[index] = { ...copy[index], isEditing: false, isNew: false };
-      return copy;
-    });
-  };
-
-  const handleDeletePricelist = (index) => {
-    const pl = pricelists[index];
-    if (window.confirm(`Delete pricelist rule for "${pl.tier}" tier?`)) {
-      setPricelists((prev) => prev.filter((_, i) => i !== index));
-    }
-  };
-
-  // ==========================================
-  // PRODUCT SAVE / UPDATE / DELETE HANDLERS
-  // ==========================================
-  const handleSave = async (e) => {
-    e.preventDefault();
-    if (!name.trim()) {
-      setError('Product name is required');
-      return;
-    }
-
-    try {
-      setIsSaving(true);
-      setError(null);
-      setSuccessMsg(null);
-
-      const payload = {
-        name: name.trim(),
-        category_id: categoryId,
-        base_price: Number(basePrice) || 0,
-        unit: isSubscription ? 'Recurring' : unit,
-        description,
-        tax_percentage: Number(taxPercentage) || 0,
-        variants: variants.map((v) => ({
-          id: v.id,
-          sku: `${name.replace(/[^a-zA-Z0-9]/g, '').toUpperCase().slice(0, 4)}-${v.attribute.toUpperCase().slice(0, 3)}-${Math.floor(Math.random() * 900 + 100)}`,
-          variant_name: `${v.attribute}${v.values ? `: ${v.values}` : ''}`,
-          selling_price: Number(basePrice) + (parseFloat(String(v.extra_price).replace(/[^0-9.]/g, '')) || 0),
-        })),
-        pricelists,
-      };
-
-      if (isEditingExisting) {
-        await productsApi.updateProduct(id, payload);
-        setSuccessMsg('Product updated successfully!');
-      } else {
-        await productsApi.createProduct(payload);
+  const onFormSubmit = async (formData) => {
+    const res = await saveProduct(formData);
+    if (res?.success) {
+      if (!isEditingExisting) {
         navigate('/products');
       }
-    } catch (err) {
-      setError(err.message || 'Failed to save product');
-    } finally {
-      setIsSaving(false);
     }
   };
 
-  const handleDeleteProduct = async () => {
-    if (!window.confirm(`Are you sure you want to delete product "${name}"? This action cannot be undone.`)) {
-      return;
-    }
-
-    try {
-      setIsDeleting(true);
-      await productsApi.deleteProduct(id);
+  const onDeleteClick = async () => {
+    const res = await deleteProduct(productName || 'Product');
+    if (res?.success) {
       navigate('/products');
-    } catch (err) {
-      setError(err.message || 'Failed to delete product');
-    } finally {
-      setIsDeleting(false);
     }
   };
 
@@ -255,7 +90,7 @@ export const ProductDetail = ({ isNew = false }) => {
     );
   }
 
-  if (isEditingExisting && error && !name) {
+  if (isEditingExisting && error && !productName) {
     return (
       <div className="df-product-detail">
         <div className="df-product-detail__container df-product-detail__container--centered">
@@ -310,7 +145,8 @@ export const ProductDetail = ({ isNew = false }) => {
           </div>
         )}
 
-        <form onSubmit={handleSave}>
+        {/* React Hook Form */}
+        <form onSubmit={handleSubmit(onFormSubmit)} noValidate>
           {/* Section: General Info matching Wireframe #17 */}
           <div className="df-product-detail__panel">
             <h3>General Info</h3>
@@ -319,21 +155,28 @@ export const ProductDetail = ({ isNew = false }) => {
               {/* Left Column */}
               <div>
                 <div className="df-product-detail__field">
-                  <label>Product name</label>
+                  <label htmlFor="name">Product name *</label>
                   <input
+                    id="name"
                     type="text"
                     placeholder="e.g. Laptop Pro 14"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    required
+                    {...register('name', {
+                      required: 'Product name is required',
+                      minLength: { value: 2, message: 'Must be at least 2 characters' },
+                    })}
                   />
+                  {errors.name && (
+                    <span className="field-error">{errors.name.message}</span>
+                  )}
                 </div>
 
                 <div className="df-product-detail__field">
-                  <label>Category</label>
+                  <label htmlFor="category_id">Category *</label>
                   <select
-                    value={categoryId}
-                    onChange={(e) => setCategoryId(e.target.value)}
+                    id="category_id"
+                    {...register('category_id', {
+                      required: 'Please select a category',
+                    })}
                   >
                     {categories.map((c) => (
                       <option key={c.id} value={c.id}>
@@ -341,37 +184,45 @@ export const ProductDetail = ({ isNew = false }) => {
                       </option>
                     ))}
                   </select>
+                  {errors.category_id && (
+                    <span className="field-error">{errors.category_id.message}</span>
+                  )}
                 </div>
 
                 <div className="df-product-detail__field">
-                  <label>Price ($)</label>
+                  <label htmlFor="base_price">Price ($) *</label>
                   <input
+                    id="base_price"
                     type="number"
                     step="0.01"
                     placeholder="1200"
-                    value={basePrice}
-                    onChange={(e) => setBasePrice(e.target.value)}
-                    required
+                    {...register('base_price', {
+                      required: 'Price is required',
+                      min: { value: 0, message: 'Price cannot be negative' },
+                    })}
                   />
+                  {errors.base_price && (
+                    <span className="field-error">{errors.base_price.message}</span>
+                  )}
                 </div>
 
                 <div className="df-product-detail__field">
-                  <label>Unit</label>
+                  <label htmlFor="unit">Unit</label>
                   <input
+                    id="unit"
                     type="text"
                     placeholder="Each / Unit"
-                    value={unit}
-                    onChange={(e) => setUnit(e.target.value)}
+                    {...register('unit')}
                   />
                 </div>
 
                 <div className="df-product-detail__field">
-                  <label>Description</label>
+                  <label htmlFor="description">Description</label>
                   <textarea
+                    id="description"
                     rows={3}
                     placeholder="Product specifications and details..."
-                    value={description}
-                    onChange={(e) => setDescription(e.target.value)}
+                    {...register('description')}
                   />
                 </div>
               </div>
@@ -379,13 +230,19 @@ export const ProductDetail = ({ isNew = false }) => {
               {/* Right Column */}
               <div>
                 <div className="df-product-detail__field">
-                  <label>Tax %</label>
+                  <label htmlFor="tax_percentage">Tax %</label>
                   <input
+                    id="tax_percentage"
                     type="number"
                     placeholder="15"
-                    value={taxPercentage}
-                    onChange={(e) => setTaxPercentage(e.target.value)}
+                    {...register('tax_percentage', {
+                      min: { value: 0, message: 'Tax cannot be negative' },
+                      max: { value: 100, message: 'Tax cannot exceed 100%' },
+                    })}
                   />
+                  {errors.tax_percentage && (
+                    <span className="field-error">{errors.tax_percentage.message}</span>
+                  )}
                 </div>
 
                 <div className="df-product-detail__field">
@@ -394,14 +251,14 @@ export const ProductDetail = ({ isNew = false }) => {
                     <button
                       type="button"
                       className={isSubscription ? 'active' : ''}
-                      onClick={() => setIsSubscription(true)}
+                      onClick={() => setValue('is_subscription', true)}
                     >
                       Yes
                     </button>
                     <button
                       type="button"
                       className={!isSubscription ? 'active' : ''}
-                      onClick={() => setIsSubscription(false)}
+                      onClick={() => setValue('is_subscription', false)}
                     >
                       NO
                     </button>
@@ -413,10 +270,10 @@ export const ProductDetail = ({ isNew = false }) => {
 
                 {isSubscription && (
                   <div className="df-product-detail__field">
-                    <label>Recurring</label>
+                    <label htmlFor="recurring_cycle">Recurring</label>
                     <select
-                      value={recurringCycle}
-                      onChange={(e) => setRecurringCycle(e.target.value)}
+                      id="recurring_cycle"
+                      {...register('recurring_cycle')}
                     >
                       <option value="Monthly">Monthly</option>
                       <option value="Quarterly">Quarterly</option>
@@ -427,13 +284,15 @@ export const ProductDetail = ({ isNew = false }) => {
                 )}
 
                 <div className="df-product-detail__field">
-                  <label>Quantity on hand (Integer field)</label>
+                  <label htmlFor="quantity_on_hand">Quantity on hand (Integer field)</label>
                   <input
+                    id="quantity_on_hand"
                     type="number"
                     min="0"
                     placeholder="100"
-                    value={quantityOnHand}
-                    onChange={(e) => setQuantityOnHand(e.target.value)}
+                    {...register('quantity_on_hand', {
+                      min: { value: 0, message: 'Quantity cannot be negative' },
+                    })}
                   />
                 </div>
               </div>
@@ -447,7 +306,7 @@ export const ProductDetail = ({ isNew = false }) => {
               <button
                 type="button"
                 className="df-product-detail__add-sub-btn"
-                onClick={handleAddVariant}
+                onClick={addVariant}
               >
                 + Add Variant Attribute
               </button>
@@ -479,7 +338,7 @@ export const ProductDetail = ({ isNew = false }) => {
                             type="text"
                             placeholder="e.g. Color, RAM, Size"
                             value={v.attribute}
-                            onChange={(e) => handleUpdateVariantField(index, 'attribute', e.target.value)}
+                            onChange={(e) => updateVariantField(index, 'attribute', e.target.value)}
                             className="df-table-input"
                             autoFocus
                           />
@@ -495,7 +354,7 @@ export const ProductDetail = ({ isNew = false }) => {
                             type="text"
                             placeholder="e.g. Blue, Black or 4GB, 8GB"
                             value={v.values}
-                            onChange={(e) => handleUpdateVariantField(index, 'values', e.target.value)}
+                            onChange={(e) => updateVariantField(index, 'values', e.target.value)}
                             className="df-table-input"
                           />
                         ) : (
@@ -510,7 +369,7 @@ export const ProductDetail = ({ isNew = false }) => {
                             type="text"
                             placeholder="e.g. 0 or +30"
                             value={v.extra_price}
-                            onChange={(e) => handleUpdateVariantField(index, 'extra_price', e.target.value)}
+                            onChange={(e) => updateVariantField(index, 'extra_price', e.target.value)}
                             className="df-table-input df-table-input--extra"
                           />
                         ) : (
@@ -524,7 +383,7 @@ export const ProductDetail = ({ isNew = false }) => {
                           <div className="df-action-btn-group">
                             <button
                               type="button"
-                              onClick={() => handleSaveVariantRow(index)}
+                              onClick={() => saveVariantRow(index)}
                               className="df-action-btn df-action-btn--save"
                               title="Save row"
                             >
@@ -534,9 +393,9 @@ export const ProductDetail = ({ isNew = false }) => {
                               type="button"
                               onClick={() => {
                                 if (v.isNew) {
-                                  setVariants((prev) => prev.filter((_, i) => i !== index));
+                                  deleteVariant(index);
                                 } else {
-                                  handleToggleEditVariant(index, false);
+                                  toggleEditVariant(index, false);
                                 }
                               }}
                               className="df-action-btn df-action-btn--cancel"
@@ -549,7 +408,7 @@ export const ProductDetail = ({ isNew = false }) => {
                           <div className="df-action-btn-group">
                             <button
                               type="button"
-                              onClick={() => handleToggleEditVariant(index, true)}
+                              onClick={() => toggleEditVariant(index, true)}
                               className="df-action-btn df-action-btn--edit"
                               title="Edit attribute"
                             >
@@ -557,7 +416,7 @@ export const ProductDetail = ({ isNew = false }) => {
                             </button>
                             <button
                               type="button"
-                              onClick={() => handleDeleteVariant(index)}
+                              onClick={() => deleteVariant(index)}
                               className="df-action-btn df-action-btn--delete"
                               title="Delete variant"
                             >
@@ -580,7 +439,7 @@ export const ProductDetail = ({ isNew = false }) => {
               <button
                 type="button"
                 className="df-product-detail__add-sub-btn"
-                onClick={handleAddPricelist}
+                onClick={addPricelist}
               >
                 + Add Pricelist Rule
               </button>
@@ -610,7 +469,7 @@ export const ProductDetail = ({ isNew = false }) => {
                         {pl.isEditing ? (
                           <select
                             value={pl.tier}
-                            onChange={(e) => handleUpdatePricelistField(index, 'tier', e.target.value)}
+                            onChange={(e) => updatePricelistField(index, 'tier', e.target.value)}
                             className="df-table-select"
                           >
                             <option value="Bronze">Bronze</option>
@@ -628,7 +487,7 @@ export const ProductDetail = ({ isNew = false }) => {
                         {pl.isEditing ? (
                           <select
                             value={pl.currency}
-                            onChange={(e) => handleUpdatePricelistField(index, 'currency', e.target.value)}
+                            onChange={(e) => updatePricelistField(index, 'currency', e.target.value)}
                             className="df-table-select"
                           >
                             <option value="USD">USD</option>
@@ -649,7 +508,7 @@ export const ProductDetail = ({ isNew = false }) => {
                             type="text"
                             placeholder="e.g. Price minus 10 percent base"
                             value={pl.price_rule}
-                            onChange={(e) => handleUpdatePricelistField(index, 'price_rule', e.target.value)}
+                            onChange={(e) => updatePricelistField(index, 'price_rule', e.target.value)}
                             className="df-table-input"
                           />
                         ) : (
@@ -663,7 +522,7 @@ export const ProductDetail = ({ isNew = false }) => {
                           <div className="df-action-btn-group">
                             <button
                               type="button"
-                              onClick={() => handleSavePricelistRow(index)}
+                              onClick={() => savePricelistRow(index)}
                               className="df-action-btn df-action-btn--save"
                               title="Save rule"
                             >
@@ -673,9 +532,9 @@ export const ProductDetail = ({ isNew = false }) => {
                               type="button"
                               onClick={() => {
                                 if (pl.isNew) {
-                                  setPricelists((prev) => prev.filter((_, i) => i !== index));
+                                  deletePricelist(index);
                                 } else {
-                                  handleToggleEditPricelist(index, false);
+                                  toggleEditPricelist(index, false);
                                 }
                               }}
                               className="df-action-btn df-action-btn--cancel"
@@ -688,7 +547,7 @@ export const ProductDetail = ({ isNew = false }) => {
                           <div className="df-action-btn-group">
                             <button
                               type="button"
-                              onClick={() => handleToggleEditPricelist(index, true)}
+                              onClick={() => toggleEditPricelist(index, true)}
                               className="df-action-btn df-action-btn--edit"
                               title="Edit rule"
                             >
@@ -696,7 +555,7 @@ export const ProductDetail = ({ isNew = false }) => {
                             </button>
                             <button
                               type="button"
-                              onClick={() => handleDeletePricelist(index)}
+                              onClick={() => deletePricelist(index)}
                               className="df-action-btn df-action-btn--delete"
                               title="Delete rule"
                             >
@@ -724,7 +583,7 @@ export const ProductDetail = ({ isNew = false }) => {
             {isEditingExisting && (
               <button
                 type="button"
-                onClick={handleDeleteProduct}
+                onClick={onDeleteClick}
                 className="df-product-detail__delete-btn"
                 disabled={isDeleting}
               >

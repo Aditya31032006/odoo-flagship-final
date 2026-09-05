@@ -1,4 +1,3 @@
-import React from 'react';
 import { Link, useNavigate } from 'react-router';
 import useProducts from '../hook/useProducts.js';
 import '../styles/products.scss';
