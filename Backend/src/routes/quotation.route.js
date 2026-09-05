@@ -6,6 +6,7 @@ import {
   createQuotationController,
   updateQuotationController,
   submitApprovalController,
+  payQuotationController,
 } from '../controllers/quotation.controller.js';
 import { authMiddleware } from '../middleware/auth.middleware.js';
 
@@ -19,5 +20,6 @@ router.get('/summary', getQuotationsSummaryController);
 router.get('/:id', getQuotationDetailController);
 router.put('/:id', updateQuotationController);
 router.post('/:id/submit-approval', submitApprovalController);
+router.post('/:id/pay', payQuotationController);
 
 export default router;

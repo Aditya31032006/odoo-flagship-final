@@ -59,7 +59,12 @@ export const GET_QUOTATIONS_LIST = `
       WHERE qn.quotation_id = q.id 
       ORDER BY qn.created_at DESC 
       LIMIT 1
-    ) AS counter_discount_percentage
+    ) AS counter_discount_percentage,
+    (
+      SELECT COALESCE(json_agg(json_build_object('id', dhf.id, 'flag_type', dhf.flag_type, 'detail', dhf.detail, 'action', dhf.action)), '[]'::json)
+      FROM deal_health_flags dhf 
+      WHERE dhf.quotation_id = q.id AND dhf.action <> 'resolved'
+    ) AS deal_health_flags
   FROM quotations q
   JOIN customers c ON q.customer_id = c.id
   JOIN users u ON q.sales_rep_id = u.id

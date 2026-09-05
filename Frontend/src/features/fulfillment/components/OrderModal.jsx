@@ -17,6 +17,7 @@ export const OrderModal = ({
     register,
     handleSubmit,
     reset,
+    watch,
     formState: { errors },
   } = useForm({
     defaultValues: {
@@ -25,9 +26,13 @@ export const OrderModal = ({
       product_variant_id: '',
       quantity: 1,
       warehouse_id: '',
+      new_warehouse_name: '',
+      new_warehouse_code: '',
       status: 'pending',
     },
   });
+
+  const selectedWhId = watch('warehouse_id');
 
   useEffect(() => {
     if (isOpen) {
@@ -37,16 +42,21 @@ export const OrderModal = ({
           customer_id: initialData.customer_id || '',
           product_variant_id: initialData.product_variant_id || variants[0]?.variant_id || '',
           quantity: initialData.total_quantity || 1,
-          warehouse_id: warehouses[0]?.id || '',
+          warehouse_id: initialData.warehouse_id || warehouses[0]?.id || '',
+          new_warehouse_name: '',
+          new_warehouse_code: '',
           status: initialData.status || 'pending',
         });
       } else {
+        const orderSuffix = Math.floor(1000 + Math.random() * 9000);
         reset({
-          order_number: `Q-${Math.floor(1000 + Math.random() * 9000)}`,
+          order_number: `ORD-${new Date().getFullYear()}-${orderSuffix}`,
           customer_id: customers[0]?.id || '',
           product_variant_id: variants[0]?.variant_id || '',
-          quantity: 12,
-          warehouse_id: warehouses[0]?.id || '',
+          quantity: 1,
+          warehouse_id: warehouses[0]?.id || (warehouses.length > 0 ? warehouses[0].id : 'NEW'),
+          new_warehouse_name: '',
+          new_warehouse_code: '',
           status: 'pending',
         });
       }
@@ -56,12 +66,15 @@ export const OrderModal = ({
   if (!isOpen) return null;
 
   const onSubmit = (formData) => {
+    const isNewWarehouse = formData.warehouse_id === 'NEW';
     const payload = {
       order_number: formData.order_number,
       customer_id: parseInt(formData.customer_id, 10),
       product_variant_id: parseInt(formData.product_variant_id, 10),
       quantity: parseInt(formData.quantity, 10) || 1,
-      warehouse_id: parseInt(formData.warehouse_id, 10) || warehouses[0]?.id,
+      warehouse_id: isNewWarehouse ? null : parseInt(formData.warehouse_id, 10),
+      warehouse_name: isNewWarehouse ? formData.new_warehouse_name : undefined,
+      warehouse_code: isNewWarehouse ? formData.new_warehouse_code : undefined,
       status: formData.status,
     };
     onSave(payload, initialData?.order_id);
@@ -76,7 +89,7 @@ export const OrderModal = ({
               {isEdit ? 'Update Fulfillment Order' : 'Create Order Awaiting Fulfillment'}
             </h3>
             <span className="df-fulfillment-modal__subtitle">
-              {isEdit ? `Edit properties of ${initialData?.order_number}` : 'Add a new client order to the warehouse fulfillment schedule'}
+              {isEdit ? `Edit properties of ${initialData?.order_number}` : 'Add a new client order to the database fulfillment schedule'}
             </span>
           </div>
           <button type="button" className="df-fulfillment-modal__close-btn" onClick={onClose}>
@@ -90,7 +103,7 @@ export const OrderModal = ({
               <label className="df-fulfillment-modal__label">Order / Quotation # *</label>
               <input
                 type="text"
-                placeholder="e.g. Q-1050"
+                placeholder="e.g. ORD-2026-1050"
                 {...register('order_number', { required: 'Order number is required' })}
                 className="df-fulfillment-modal__input-text"
                 disabled={isEdit}
@@ -123,7 +136,7 @@ export const OrderModal = ({
             >
               {variants.map((v) => (
                 <option key={v.variant_id} value={v.variant_id}>
-                  {v.product_name} — SKU: {v.sku}
+                  {v.product_name} — SKU: {v.sku} (${Number(v.price).toLocaleString()})
                 </option>
               ))}
             </select>
@@ -145,9 +158,9 @@ export const OrderModal = ({
             </div>
 
             <div className="df-fulfillment-modal__field">
-              <label className="df-fulfillment-modal__label">Initial Fulfillment Warehouse</label>
+              <label className="df-fulfillment-modal__label">Initial Fulfillment Warehouse *</label>
               <select
-                {...register('warehouse_id')}
+                {...register('warehouse_id', { required: 'Please select a warehouse' })}
                 className="df-fulfillment-modal__select"
                 disabled={isEdit}
               >
@@ -156,9 +169,36 @@ export const OrderModal = ({
                     {w.name} ({w.code})
                   </option>
                 ))}
+                <option value="NEW">+ Add New Warehouse to Database...</option>
               </select>
             </div>
           </div>
+
+          {selectedWhId === 'NEW' && !isEdit && (
+            <div className="df-fulfillment-modal__grid-2">
+              <div className="df-fulfillment-modal__field">
+                <label className="df-fulfillment-modal__label">New Warehouse Name *</label>
+                <input
+                  type="text"
+                  placeholder="e.g. West Coast Distribution Hub"
+                  {...register('new_warehouse_name', { required: 'Warehouse name is required' })}
+                  className="df-fulfillment-modal__input-text"
+                />
+                {errors.new_warehouse_name && (
+                  <span className="df-fulfillment-modal__error-text">{errors.new_warehouse_name.message}</span>
+                )}
+              </div>
+              <div className="df-fulfillment-modal__field">
+                <label className="df-fulfillment-modal__label">Warehouse Code (e.g. WEST)</label>
+                <input
+                  type="text"
+                  placeholder="e.g. WEST"
+                  {...register('new_warehouse_code')}
+                  className="df-fulfillment-modal__input-text"
+                />
+              </div>
+            </div>
+          )}
 
           <div className="df-fulfillment-modal__field">
             <label className="df-fulfillment-modal__label">Fulfillment Status</label>

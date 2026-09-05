@@ -5,10 +5,11 @@ import {
   getQuotationFullDetailRepo,
   saveQuotationRepo,
 } from '../repositories/quotation.repository.js';
+import { payQuotationRepo } from '../repositories/fulfillment.repository.js';
 import { STATUS_CODES } from '../constants/statusCodes.js';
 import { addQuotationIssuedEmailJob } from '../jobs/emailQueue.js';
 
-const KANBAN_STAGES = ['draft', 'pending_approval', 'approved', 'negotiating', 'confirmed'];
+const KANBAN_STAGES = ['draft', 'pending_approval', 'approved', 'negotiating', 'confirmed', 'shipment', 'payment'];
 
 /**
  * Resolves customer ID for a user from token, customer_users link table, or email matching.
@@ -50,7 +51,7 @@ export const getQuotationsController = async (req, res, next) => {
         return res.status(STATUS_CODES.OK).json({
           success: true,
           view: req.query.view || 'list',
-          data: req.query.view === 'kanban' ? { draft: [], pending_approval: [], approved: [], negotiating: [], confirmed: [] } : [],
+          data: req.query.view === 'kanban' ? { draft: [], pending_approval: [], approved: [], negotiating: [], confirmed: [], shipment: [], payment: [] } : [],
           summary: {},
           totalCount: 0,
         });
@@ -73,6 +74,8 @@ export const getQuotationsController = async (req, res, next) => {
         approved: [],
         negotiating: [],
         confirmed: [],
+        shipment: [],
+        payment: [],
       };
 
       quotations.forEach((item) => {
@@ -377,4 +380,26 @@ export const submitApprovalController = async (req, res, next) => {
     next(error);
   }
 };
+
+export const payQuotationController = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { paymentMethod = 'bank_transfer', transactionReference = '' } = req.body;
+
+    const result = await payQuotationRepo({
+      quotationId: id,
+      paymentMethod,
+      transactionReference,
+    });
+
+    return res.status(STATUS_CODES.OK).json({
+      success: true,
+      message: 'Payment completed successfully! Order moved to payment stage.',
+      data: result,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 

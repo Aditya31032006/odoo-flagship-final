@@ -6,6 +6,7 @@ import {
   fetchFulfillmentDetail,
   acceptSuggestedSplit,
   saveManualOverride,
+  completeShipment,
   createWarehouseStock,
   updateWarehouseStock,
   deleteWarehouseStock,
@@ -70,6 +71,11 @@ export const useFulfillment = (orderId = null) => {
     [dispatch, orderId]
   );
 
+  const handleCompleteShipment = useCallback(async () => {
+    if (!orderId) return;
+    return await dispatch(completeShipment(orderId)).unwrap();
+  }, [dispatch, orderId]);
+
   // Stock CRUD
   const handleCreateStock = useCallback(
     async (payload) => {
@@ -131,6 +137,7 @@ export const useFulfillment = (orderId = null) => {
     refreshDetail,
     handleAcceptSplit,
     handleSaveManualOverride,
+    handleCompleteShipment,
     handleCreateStock,
     handleUpdateStock,
     handleDeleteStock,

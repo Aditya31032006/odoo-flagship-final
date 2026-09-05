@@ -5,6 +5,7 @@ import {
   getFulfillmentDetailRepo,
   acceptSuggestedSplitRepo,
   saveManualOverrideSplitRepo,
+  completeShipmentRepo,
   createWarehouseStockRepo,
   updateWarehouseStockRepo,
   deleteWarehouseStockRepo,
@@ -69,6 +70,20 @@ export const saveManualOverrideSplitController = async (req, res, next) => {
     return res.status(STATUS_CODES.OK).json({
       success: true,
       message: 'Manual fulfillment split and backorder saved successfully.',
+      data: updated,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const completeShipmentController = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const updated = await completeShipmentRepo(id);
+    return res.status(STATUS_CODES.OK).json({
+      success: true,
+      message: 'Shipment marked as complete. Order moved to Payment stage.',
       data: updated,
     });
   } catch (error) {

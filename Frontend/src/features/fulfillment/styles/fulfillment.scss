@@ -333,6 +333,19 @@
       }
     }
 
+    &--complete {
+      background: linear-gradient(135deg, #065f46 0%, #047857 100%);
+      color: #ecfdf5;
+      border: 1px solid #34d399;
+      box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
+
+      &:hover {
+        background: linear-gradient(135deg, #047857 0%, #059669 100%);
+        box-shadow: 0 6px 20px rgba(16, 185, 129, 0.5);
+        transform: translateY(-1px);
+      }
+    }
+
     &:disabled {
       opacity: 0.5;
       cursor: not-allowed;

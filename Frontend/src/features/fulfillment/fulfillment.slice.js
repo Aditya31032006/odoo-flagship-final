@@ -71,6 +71,20 @@ export const saveManualOverride = createAsyncThunk(
   }
 );
 
+export const completeShipment = createAsyncThunk(
+  'fulfillment/completeShipment',
+  async (orderId, { rejectWithValue }) => {
+    try {
+      const data = await fulfillmentApi.completeShipment(orderId);
+      return data;
+    } catch (err) {
+      return rejectWithValue(
+        err.response?.data?.message || err.message || 'Failed to complete shipment'
+      );
+    }
+  }
+);
+
 // Stock CRUD Thunks
 export const createWarehouseStock = createAsyncThunk(
   'fulfillment/createStock',
@@ -260,6 +274,24 @@ export const fulfillmentSlice = createSlice({
         }
       })
       .addCase(saveManualOverride.rejected, (state, action) => {
+        state.isSavingSplit = false;
+        state.error = action.payload;
+      })
+
+      // Complete Shipment → Payment
+      .addCase(completeShipment.pending, (state) => {
+        state.isSavingSplit = true;
+        state.error = null;
+        state.successMsg = null;
+      })
+      .addCase(completeShipment.fulfilled, (state, action) => {
+        state.isSavingSplit = false;
+        state.successMsg = action.payload?.message || 'Shipment completed! Order moved to Payment.';
+        if (action.payload?.data) {
+          state.currentDetail = action.payload.data;
+        }
+      })
+      .addCase(completeShipment.rejected, (state, action) => {
         state.isSavingSplit = false;
         state.error = action.payload;
       })

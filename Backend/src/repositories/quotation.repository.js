@@ -13,6 +13,7 @@ import {
   INSERT_QUOTATION_AUDIT_LOG,
 } from '../queries/quotation.query.js';
 import { GET_ACTIVE_APPROVAL_RULES } from '../queries/catalog.query.js';
+import { allocateStockGreedy } from './fulfillment.repository.js';
 
 export const getQuotationsListRepo = async ({ salesRepId = null, customerId = null, status = null, searchQuery = null } = {}) => {
   const result = await pool.query(GET_QUOTATIONS_LIST, [
@@ -190,6 +191,62 @@ export const saveQuotationRepo = async ({
       }
       if (matchingRule.requires_finance) {
         await client.query(CREATE_APPROVAL_STEP, [approvalRequest.id, stepNum++, 'finance']);
+      }
+    }
+
+    // If confirmed, automatically ensure order and order items are generated with greedy stock deduction
+    if (status === 'confirmed') {
+      const existingOrder = await client.query('SELECT id FROM orders WHERE quotation_id = $1', [quotation.id]);
+      if (existingOrder.rows.length === 0) {
+        const countRes = await client.query('SELECT COUNT(*)::INT AS count FROM orders');
+        const orderCount = (countRes.rows[0]?.count || 0) + 1;
+        const year = new Date().getFullYear();
+        const orderNumber = `ORD-${year}-${String(orderCount).padStart(4, '0')}`;
+
+        const orderRes = await client.query(`
+          INSERT INTO orders (order_number, quotation_id, customer_id, status, created_at, updated_at)
+          VALUES ($1, $2, $3, 'confirmed', NOW(), NOW())
+          RETURNING id
+        `, [orderNumber, quotation.id, customer_id]);
+        const createdOrderId = orderRes.rows[0].id;
+
+        for (const insertedItem of insertedItems) {
+          const isSub = insertedItem.product_name_snapshot && (
+            insertedItem.product_name_snapshot.toLowerCase().includes('plan') ||
+            insertedItem.product_name_snapshot.toLowerCase().includes('sla') ||
+            insertedItem.product_name_snapshot.toLowerCase().includes('subscription') ||
+            insertedItem.product_name_snapshot.toLowerCase().includes('amc') ||
+            insertedItem.product_name_snapshot.toLowerCase().includes('care')
+          );
+          const lineType = isSub ? 'subscription' : 'one_time';
+
+          const oiRes = await client.query(`
+            INSERT INTO order_items (
+              order_id, quotation_item_id, product_variant_id, line_type,
+              product_name_snapshot, sku_snapshot, quantity, unit_price,
+              discount_percentage, discount_amount, tax_percentage, tax_amount, line_total
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+            RETURNING id
+          `, [
+            createdOrderId,
+            insertedItem.id,
+            insertedItem.product_variant_id,
+            lineType,
+            insertedItem.product_name_snapshot,
+            insertedItem.sku_snapshot,
+            insertedItem.quantity,
+            insertedItem.unit_price,
+            insertedItem.discount_percentage || 0,
+            insertedItem.discount_amount || 0,
+            insertedItem.tax_percentage || 0,
+            insertedItem.tax_amount || 0,
+            insertedItem.line_total,
+          ]);
+
+          if (!isSub && insertedItem.product_variant_id) {
+            await allocateStockGreedy(client, createdOrderId, oiRes.rows[0].id, insertedItem.product_variant_id, insertedItem.quantity);
+          }
+        }
       }
     }
 

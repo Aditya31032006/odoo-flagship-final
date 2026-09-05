@@ -60,6 +60,9 @@ export const GET_ORDERS_AWAITING_FULFILLMENT = `
   FROM orders o
   JOIN customers c ON o.customer_id = c.id
   LEFT JOIN quotations q ON o.quotation_id = q.id
+  WHERE (q.status = 'confirmed' OR (q.status IS NULL AND o.status = 'confirmed'))
+    AND (q.status::TEXT NOT IN ('shipment', 'payment', 'rejected', 'cancelled'))
+    AND (o.status::TEXT NOT IN ('processing', 'fulfilled', 'cancelled'))
   ORDER BY o.created_at DESC;
 `;
 
@@ -67,9 +70,11 @@ export const GET_FULFILLMENT_DETAIL_HEADER = `
   SELECT 
     o.id AS order_id,
     o.order_number,
+    o.quotation_id,
     COALESCE(q.quotation_number, o.order_number) AS quotation_number,
     c.company_name AS customer_name,
     c.id AS customer_id,
+    COALESCE(q.grand_total, 0) AS grand_total,
     o.status::TEXT AS status,
     o.created_at,
     o.updated_at
@@ -99,6 +104,8 @@ export const GET_FULFILLMENT_SPLITS_BY_ORDER_ID = `
     fs.id AS split_id,
     fs.order_item_id,
     fs.warehouse_id,
+    oi.product_name_snapshot AS product_name,
+    oi.sku_snapshot AS sku,
     w.name AS warehouse_name,
     w.code AS warehouse_code,
     w.shipping_cost_weight,
@@ -112,7 +119,8 @@ export const GET_FULFILLMENT_SPLITS_BY_ORDER_ID = `
     fs.updated_at
   FROM fulfillment_splits fs
   JOIN warehouses w ON fs.warehouse_id = w.id
-  WHERE fs.order_item_id IN (SELECT id FROM order_items WHERE order_id = $1)
+  JOIN order_items oi ON fs.order_item_id = oi.id
+  WHERE oi.order_id = $1
   ORDER BY fs.id ASC;
 `;
 
@@ -120,6 +128,8 @@ export const GET_BACKORDERS_BY_ORDER_ID = `
   SELECT 
     b.id AS backorder_id,
     b.order_item_id,
+    oi.product_name_snapshot AS product_name,
+    oi.sku_snapshot AS sku,
     b.quantity,
     b.preferred_warehouse_id,
     w.name AS preferred_warehouse_name,
@@ -127,8 +137,9 @@ export const GET_BACKORDERS_BY_ORDER_ID = `
     b.created_at,
     b.updated_at
   FROM backorders b
+  JOIN order_items oi ON b.order_item_id = oi.id
   LEFT JOIN warehouses w ON b.preferred_warehouse_id = w.id
-  WHERE b.order_item_id IN (SELECT id FROM order_items WHERE order_id = $1)
+  WHERE oi.order_id = $1
   ORDER BY b.id ASC;
 `;
 

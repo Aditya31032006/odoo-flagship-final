@@ -20,6 +20,7 @@ export const FulfillmentDetail = () => {
     successMsg,
     handleAcceptSplit,
     handleSaveManualOverride,
+    handleCompleteShipment,
   } = useFulfillment(orderId);
 
   const [isOverrideModalOpen, setIsOverrideModalOpen] = useState(false);
@@ -107,11 +108,68 @@ export const FulfillmentDetail = () => {
           </div>
         )}
 
+        {/* Product & Order Overview Card */}
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          background: 'rgba(15, 23, 42, 0.65)',
+          border: '1px solid rgba(56, 189, 248, 0.2)',
+          borderRadius: '10px',
+          padding: '0.9rem 1.25rem',
+          marginBottom: '1.25rem',
+          backdropFilter: 'blur(8px)',
+          flexWrap: 'wrap',
+          gap: '1rem',
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
+            <div style={{
+              width: '38px',
+              height: '38px',
+              borderRadius: '8px',
+              background: 'rgba(56, 189, 248, 0.15)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: '1.2rem',
+              color: '#38bdf8',
+            }}>
+              📦
+            </div>
+            <div>
+              <div style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: '#94a3b8', fontWeight: 600 }}>
+                Product Ordered
+              </div>
+              <div style={{ fontSize: '1.05rem', fontWeight: 700, color: '#f8fafc' }}>
+                {mainItem.product_name || 'Standard Product'} {mainItem.sku ? <span style={{ fontSize: '0.85rem', color: '#38bdf8', fontWeight: 500 }}>({mainItem.sku})</span> : null}
+              </div>
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem', flexWrap: 'wrap' }}>
+            <div>
+              <div style={{ fontSize: '0.75rem', color: '#94a3b8' }}>Order Quantity</div>
+              <div style={{ fontSize: '0.95rem', fontWeight: 700, color: '#f8fafc' }}>{totalRequired} units</div>
+            </div>
+            {header?.quotation_number && (
+              <div>
+                <div style={{ fontSize: '0.75rem', color: '#94a3b8' }}>Linked Quotation</div>
+                <div style={{ fontSize: '0.95rem', fontWeight: 600, color: '#38bdf8' }}>{header.quotation_number}</div>
+              </div>
+            )}
+            <div>
+              <div style={{ fontSize: '0.75rem', color: '#94a3b8' }}>Customer</div>
+              <div style={{ fontSize: '0.95rem', fontWeight: 600, color: '#f8fafc' }}>{header?.customer_name || 'Customer'}</div>
+            </div>
+          </div>
+        </div>
+
         {/* Warehouse Splits Table */}
         <div className="df-fulfillment__card">
           <table className="df-fulfillment__table">
             <thead>
               <tr>
+                <th>Product</th>
                 <th>Warehouse</th>
                 <th>Qty Fulfilled</th>
                 <th>Est. Shipments</th>
@@ -121,13 +179,23 @@ export const FulfillmentDetail = () => {
             <tbody>
               {splits.length === 0 ? (
                 <tr>
-                  <td colSpan={4} className="df-fulfillment__empty">
+                  <td colSpan={5} className="df-fulfillment__empty">
                     No warehouse splits generated for this order.
                   </td>
                 </tr>
               ) : (
                 splits.map((split) => (
                   <tr key={split.split_id || split.warehouse_id}>
+                    <td>
+                      <strong style={{ color: '#f8fafc', fontSize: '0.9375rem', display: 'block' }}>
+                        {split.product_name || mainItem.product_name || 'Product'}
+                      </strong>
+                      {(split.sku || mainItem.sku) && (
+                        <span style={{ fontSize: '0.75rem', color: '#94a3b8' }}>
+                          SKU: {split.sku || mainItem.sku}
+                        </span>
+                      )}
+                    </td>
                     <td>
                       <strong className="df-fulfillment__warehouse-name">
                         {split.warehouse_name}
@@ -163,6 +231,7 @@ export const FulfillmentDetail = () => {
                 <thead>
                   <tr>
                     <th>Backorder ID</th>
+                    <th>Product</th>
                     <th>Pending Units</th>
                     <th>Preferred Warehouse</th>
                     <th>Status</th>
@@ -175,6 +244,16 @@ export const FulfillmentDetail = () => {
                         <span className="df-fulfillment__code">
                           BO-{b.backorder_id}
                         </span>
+                      </td>
+                      <td>
+                        <strong style={{ color: '#f8fafc' }}>
+                          {b.product_name || mainItem.product_name || 'Product'}
+                        </strong>
+                        {(b.sku || mainItem.sku) && (
+                          <span style={{ display: 'block', fontSize: '0.75rem', color: '#94a3b8' }}>
+                            SKU: {b.sku || mainItem.sku}
+                          </span>
+                        )}
                       </td>
                       <td>
                         <strong>{b.quantity} units</strong>
