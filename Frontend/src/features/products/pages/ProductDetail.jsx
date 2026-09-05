@@ -140,7 +140,7 @@ export const ProductDetail = ({ isNew = false }) => {
     const newRule = {
       id: Date.now(),
       tier: 'Silver',
-      currency: 'USD',
+      currency: 'INR',
       price_rule: 'Price minus 5 percent base',
       isEditing: true,
       isNew: true,
@@ -616,7 +616,7 @@ export const ProductDetail = ({ isNew = false }) => {
                             <option value="Bronze">Bronze</option>
                             <option value="Silver">Silver</option>
                             <option value="Gold">Gold</option>
-                            <option value="Platinum">Platinum</option>
+                            
                           </select>
                         ) : (
                           <span className="df-pricelist-tier-title">{pl.tier}</span>
