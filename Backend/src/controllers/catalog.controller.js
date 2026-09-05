@@ -2,6 +2,7 @@ import {
   getActiveCustomersRepo,
   getActivePriceListsRepo,
   getSellableVariantsRepo,
+  searchProductVariantsFuzzyRepo,
   getPriceListItemsRepo,
   getUpsellRulesForProductsRepo,
   getActiveApprovalRulesRepo,
@@ -46,7 +47,10 @@ export const getPriceListItemsCatalogController = async (req, res, next) => {
 
 export const getProductsCatalogController = async (req, res, next) => {
   try {
-    const variants = await getSellableVariantsRepo();
+    const { search } = req.query;
+    const variants = search 
+      ? await searchProductVariantsFuzzyRepo(search) 
+      : await getSellableVariantsRepo();
     return res.status(STATUS_CODES.OK).json({ success: true, data: variants });
   } catch (error) {
     next(error);
