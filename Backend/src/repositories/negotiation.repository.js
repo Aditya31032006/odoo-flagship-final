@@ -16,6 +16,8 @@ import {
   INSERT_DEFAULT_SUBSCRIPTION_PLAN,
   INSERT_SUBSCRIPTION_FROM_ORDER,
   INSERT_INITIAL_SUBSCRIPTION_BILLING_LINE,
+  CHECK_NEGOTIATION_PRODUCT_VARIANT_IS_SUBSCRIPTION,
+  INSERT_NEGOTIATION_FALLBACK_SUBSCRIPTION_PLAN,
 } from '../queries/negotiation.query.js';
 import { GET_QUOTATION_BY_ID } from '../queries/quotation.query.js';
 import { allocateStockGreedy } from './fulfillment.repository.js';
@@ -221,14 +223,7 @@ export const acceptQuotationTermsRepo = async ({ quotationId, userId, userRole }
       let productId = null;
 
       if (item.product_variant_id) {
-        const prodCheck = await client.query(`
-          SELECT p.id AS product_id, p.name AS product_name, p.unit, sp.id AS plan_id, sp.billing_cycle
-          FROM product_variants pv
-          JOIN products p ON pv.product_id = p.id
-          LEFT JOIN subscription_plans sp ON sp.product_id = p.id AND sp.is_active = TRUE
-          WHERE pv.id = $1
-          LIMIT 1;
-        `, [item.product_variant_id]);
+        const prodCheck = await client.query(CHECK_NEGOTIATION_PRODUCT_VARIANT_IS_SUBSCRIPTION, [item.product_variant_id]);
 
         if (prodCheck.rows.length > 0) {
           const pRow = prodCheck.rows[0];
@@ -291,12 +286,11 @@ export const acceptQuotationTermsRepo = async ({ quotationId, userId, userRole }
       // If subscription line item, automatically generate subscription & schedule
       if (isSub) {
         if (!subscriptionPlanId) {
-          const newPlan = await client.query(`
-            INSERT INTO subscription_plans (
-              product_id, name, billing_cycle, price, allow_proration, allow_cancellation, allow_partial_refund, is_active
-            ) VALUES ($1, $2, 'monthly', $3, true, true, true, true)
-            RETURNING id, billing_cycle;
-          `, [productId || 1, item.product_name_snapshot || 'Subscription Plan', item.unit_price]);
+          const newPlan = await client.query(INSERT_NEGOTIATION_FALLBACK_SUBSCRIPTION_PLAN, [
+            productId || 1,
+            item.product_name_snapshot || 'Subscription Plan',
+            item.unit_price,
+          ]);
           subscriptionPlanId = newPlan.rows[0].id;
           subscriptionCycle = newPlan.rows[0].billing_cycle || 'monthly';
         }

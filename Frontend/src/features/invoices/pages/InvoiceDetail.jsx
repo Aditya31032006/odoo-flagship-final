@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router';
+import { useForm } from 'react-hook-form';
 import { invoiceApi } from '../services/invoice.api.js';
 import '../styles/invoices.scss';
 
@@ -19,6 +20,97 @@ const formatCurrency = (val) => {
   return `$${num.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`;
 };
 
+const RecordPaymentModal = React.memo(({ isOpen, onClose, balanceDue, onRecordPayment, isSubmitting }) => {
+  const { register, handleSubmit, formState: { errors } } = useForm({
+    defaultValues: {
+      amount: balanceDue > 0 ? balanceDue.toFixed(2) : '',
+      paymentMethod: 'bank_transfer',
+      transactionReference: '',
+    },
+  });
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="df-sub-modal">
+      <div className="df-sub-modal__content">
+        <div className="df-sub-modal__header">
+          <h3>Record Invoice Payment</h3>
+          <button
+            type="button"
+            className="df-sub-modal__close-btn"
+            onClick={onClose}
+          >
+            ✕
+          </button>
+        </div>
+        <form onSubmit={handleSubmit(onRecordPayment)}>
+          <div className="df-sub-modal__body">
+            <div style={{ background: '#1e293b', padding: '0.875rem', borderRadius: '0.5rem', border: '1px solid #334155' }}>
+              <div style={{ fontSize: '0.75rem', color: '#94a3b8', textTransform: 'uppercase' }}>Balance Due</div>
+              <div style={{ fontSize: '1.25rem', color: '#f8fafc', fontWeight: 700 }}>
+                {formatCurrency(balanceDue)}
+              </div>
+            </div>
+
+            <div className="df-sub-modal__field">
+              <label>Payment Amount ($)</label>
+              <input
+                type="number"
+                step="0.01"
+                max={balanceDue}
+                {...register('amount', {
+                  required: 'Payment amount is required',
+                  min: { value: 0.01, message: 'Amount must be greater than zero' },
+                  max: { value: balanceDue, message: `Amount cannot exceed balance due of $${balanceDue}` },
+                })}
+              />
+              {errors.amount && <span style={{ color: '#fb7185', fontSize: '0.75rem' }}>{errors.amount.message}</span>}
+            </div>
+
+            <div className="df-sub-modal__field">
+              <label>Payment Method</label>
+              <select {...register('paymentMethod', { required: true })}>
+                <option value="bank_transfer">Bank Transfer</option>
+                <option value="upi">UPI</option>
+                <option value="card">Card</option>
+                <option value="cash">Cash</option>
+                <option value="online">Online Payment</option>
+              </select>
+            </div>
+
+            <div className="df-sub-modal__field">
+              <label>Transaction Reference / Cheque #</label>
+              <input
+                type="text"
+                placeholder="e.g. TXN-99482104"
+                {...register('transactionReference')}
+              />
+            </div>
+          </div>
+
+          <div className="df-sub-modal__footer">
+            <button
+              type="button"
+              className="df-sub-modal__btn-cancel"
+              onClick={onClose}
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              className="df-sub-modal__btn-submit"
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? 'Recording...' : 'Submit Payment'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+});
+
 const InvoiceDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -29,11 +121,6 @@ const InvoiceDetail = () => {
 
   // Payment Modal
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
-  const [paymentForm, setPaymentForm] = useState({
-    amount: '',
-    paymentMethod: 'bank_transfer',
-    transactionReference: '',
-  });
   const [isSubmittingPayment, setIsSubmittingPayment] = useState(false);
 
   const fetchDetail = useCallback(async () => {
@@ -43,14 +130,6 @@ const InvoiceDetail = () => {
       const data = await invoiceApi.getInvoiceDetail(id);
       if (data) {
         setDetailData(data);
-        if (data.invoice) {
-          const balance = parseFloat(data.invoice.grand_total) - parseFloat(data.invoice.paid_amount || 0);
-          setPaymentForm({
-            amount: balance > 0 ? balance.toFixed(2) : '',
-            paymentMethod: 'bank_transfer',
-            transactionReference: '',
-          });
-        }
       }
     } catch (err) {
       console.error('Failed to load invoice detail:', err);
@@ -64,9 +143,8 @@ const InvoiceDetail = () => {
     fetchDetail();
   }, [fetchDetail]);
 
-  const handlePaymentSubmit = async (e) => {
-    e.preventDefault();
-    if (!paymentForm.amount || parseFloat(paymentForm.amount) <= 0) {
+  const handlePaymentSubmit = async (formData) => {
+    if (!formData.amount || parseFloat(formData.amount) <= 0) {
       alert('Please enter a valid payment amount');
       return;
     }
@@ -74,9 +152,9 @@ const InvoiceDetail = () => {
     try {
       setIsSubmittingPayment(true);
       await invoiceApi.recordPayment(id, {
-        amount: parseFloat(paymentForm.amount),
-        paymentMethod: paymentForm.paymentMethod,
-        transactionReference: paymentForm.transactionReference,
+        amount: parseFloat(formData.amount),
+        paymentMethod: formData.paymentMethod,
+        transactionReference: formData.transactionReference,
       });
 
       setIsPaymentModalOpen(false);
@@ -392,94 +470,13 @@ const InvoiceDetail = () => {
       </div>
 
       {/* Modal: Record Payment */}
-      {isPaymentModalOpen && (
-        <div className="df-sub-modal">
-          <div className="df-sub-modal__content">
-            <div className="df-sub-modal__header">
-              <h3>Record Invoice Payment</h3>
-              <button
-                type="button"
-                className="df-sub-modal__close-btn"
-                onClick={() => setIsPaymentModalOpen(false)}
-              >
-                ✕
-              </button>
-            </div>
-            <form onSubmit={handlePaymentSubmit}>
-              <div className="df-sub-modal__body">
-                <div style={{ background: '#1e293b', padding: '0.875rem', borderRadius: '0.5rem', border: '1px solid #334155' }}>
-                  <div style={{ fontSize: '0.75rem', color: '#94a3b8', textTransform: 'uppercase' }}>Balance Due</div>
-                  <div style={{ fontSize: '1.25rem', color: '#f8fafc', fontWeight: 700 }}>
-                    {formatCurrency(balanceDue)}
-                  </div>
-                </div>
-
-                <div className="df-sub-modal__field">
-                  <label>Payment Amount ($)</label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    max={balanceDue}
-                    required
-                    value={paymentForm.amount}
-                    onChange={(e) =>
-                      setPaymentForm({ ...paymentForm, amount: e.target.value })
-                    }
-                  />
-                </div>
-
-                <div className="df-sub-modal__field">
-                  <label>Payment Method</label>
-                  <select
-                    value={paymentForm.paymentMethod}
-                    onChange={(e) =>
-                      setPaymentForm({ ...paymentForm, paymentMethod: e.target.value })
-                    }
-                  >
-                    <option value="bank_transfer">Bank Transfer</option>
-                    <option value="upi">UPI</option>
-                    <option value="card">Card</option>
-                    <option value="cash">Cash</option>
-                    <option value="online">Online Payment</option>
-                  </select>
-                </div>
-
-                <div className="df-sub-modal__field">
-                  <label>Transaction Reference / Cheque #</label>
-                  <input
-                    type="text"
-                    placeholder="e.g. TXN-99482104"
-                    value={paymentForm.transactionReference}
-                    onChange={(e) =>
-                      setPaymentForm({
-                        ...paymentForm,
-                        transactionReference: e.target.value,
-                      })
-                    }
-                  />
-                </div>
-              </div>
-
-              <div className="df-sub-modal__footer">
-                <button
-                  type="button"
-                  className="df-sub-modal__btn-cancel"
-                  onClick={() => setIsPaymentModalOpen(false)}
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="df-sub-modal__btn-submit"
-                  disabled={isSubmittingPayment}
-                >
-                  {isSubmittingPayment ? 'Recording...' : 'Submit Payment'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+      <RecordPaymentModal
+        isOpen={isPaymentModalOpen}
+        onClose={() => setIsPaymentModalOpen(false)}
+        balanceDue={balanceDue}
+        onRecordPayment={handlePaymentSubmit}
+        isSubmitting={isSubmittingPayment}
+      />
     </div>
   );
 };

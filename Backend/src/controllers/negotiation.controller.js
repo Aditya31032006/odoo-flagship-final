@@ -1,4 +1,3 @@
-import { pool } from '../config/database.js';
 import { STATUS_CODES } from '../constants/statusCodes.js';
 import {
   getNegotiationWithMessagesRepo,
@@ -7,6 +6,7 @@ import {
   acceptQuotationTermsRepo,
 } from '../repositories/negotiation.repository.js';
 import { getQuotationFullDetailRepo } from '../repositories/quotation.repository.js';
+import { getCustomerNotificationContactRepo } from '../repositories/auth.repository.js';
 import { addCounterOfferEmailJob, addQuotationApprovedEmailJob } from '../jobs/emailQueue.js';
 import { resolveUserCustomerId } from './quotation.controller.js';
 
@@ -103,11 +103,11 @@ export const submitCounterOfferController = async (req, res, next) => {
     // When sales team submits counter offer to customer, dispatch notification email
     if (user.role !== 'customer') {
       try {
-        const custRes = await pool.query('SELECT company_name, email FROM customers WHERE id = $1', [quotation.customer_id]);
-        if (custRes.rows.length > 0 && custRes.rows[0].email) {
+        const cust = await getCustomerNotificationContactRepo(quotation.customer_id);
+        if (cust && cust.email) {
           await addCounterOfferEmailJob({
-            toEmail: custRes.rows[0].email,
-            customerName: custRes.rows[0].company_name,
+            toEmail: cust.email,
+            customerName: cust.company_name,
             quotationNumber: quotation.quotation_number,
             quotationId: quotation.id,
             counterDiscount: counter_discount_percentage !== undefined ? Number(counter_discount_percentage) : null,
@@ -215,11 +215,11 @@ export const acceptQuotationController = async (req, res, next) => {
 
     // Dispatch approved quotation email
     try {
-      const custRes = await pool.query('SELECT company_name, email FROM customers WHERE id = $1', [quotation.customer_id]);
-      if (custRes.rows.length > 0 && custRes.rows[0].email) {
+      const cust = await getCustomerNotificationContactRepo(quotation.customer_id);
+      if (cust && cust.email) {
         await addQuotationApprovedEmailJob({
-          toEmail: custRes.rows[0].email,
-          customerName: custRes.rows[0].company_name,
+          toEmail: cust.email,
+          customerName: cust.company_name,
           quotationNumber: quotation.quotation_number,
           quotationId: quotation.id,
           grandTotal: quotation.grand_total,

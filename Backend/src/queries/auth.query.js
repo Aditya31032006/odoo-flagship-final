@@ -167,3 +167,15 @@ export const UPDATE_USER_MOBILE = `
   SET mobile = $1, updated_at = CURRENT_TIMESTAMP 
   WHERE id = $2
 `;
+
+export const RESOLVE_CUSTOMER_USER_LINK = `
+  SELECT customer_id FROM customer_users WHERE user_id = $1 LIMIT 1;
+`;
+
+export const FIND_CUSTOMER_BY_EMAIL = `
+  SELECT id FROM customers WHERE LOWER(TRIM(email)) = LOWER(TRIM($1)) LIMIT 1;
+`;
+
+export const GET_CUSTOMER_NOTIFICATION_CONTACT = `
+  SELECT company_name, email FROM customers WHERE id = $1;
+`;

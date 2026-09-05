@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router';
+import { useForm } from 'react-hook-form';
 import { subscriptionApi } from '../services/subscription.api.js';
 import '../styles/subscriptions.scss';
 
@@ -24,6 +25,201 @@ const formatCurrency = (val) => {
   return `$${num.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`;
 };
 
+const ModifySubscriptionModal = React.memo(({ isOpen, onClose, subscription, availablePlans, onSave, isSubmitting }) => {
+  const { register, handleSubmit, setValue, formState: { errors } } = useForm({
+    defaultValues: {
+      subscription_plan_id: subscription?.subscription_plan_id || '',
+      billing_cycle: subscription?.billing_cycle || 'monthly',
+      unit_price: subscription?.unit_price || '',
+      quantity: subscription?.quantity || 1,
+    }
+  });
+
+  if (!isOpen) return null;
+
+  const handlePlanChange = (e) => {
+    const value = e.target.value;
+    setValue('subscription_plan_id', value);
+    const selectedPlan = availablePlans?.find((p) => String(p.id) === String(value));
+    if (selectedPlan) {
+      setValue('billing_cycle', selectedPlan.billing_cycle || 'monthly');
+      setValue('unit_price', selectedPlan.price || '');
+    }
+  };
+
+  return (
+    <div className="df-sub-modal">
+      <div className="df-sub-modal__content">
+        <div className="df-sub-modal__header">
+          <h3>Modify Active Subscription</h3>
+          <button type="button" className="df-sub-modal__close-btn" onClick={onClose}>
+            ✕
+          </button>
+        </div>
+        <form onSubmit={handleSubmit(onSave)}>
+          <div className="df-sub-modal__body">
+            <div style={{ background: '#1e293b', padding: '0.875rem', borderRadius: '0.5rem', border: '1px solid #334155' }}>
+              <div style={{ fontSize: '0.75rem', color: '#94a3b8', textTransform: 'uppercase', marginBottom: '0.25rem' }}>Current Configuration</div>
+              <div style={{ fontSize: '0.9rem', color: '#f8fafc', fontWeight: 600 }}>
+                {subscription.plan_name} • {formatCycle(subscription.billing_cycle)} • {formatCurrency(subscription.unit_price)}
+              </div>
+            </div>
+
+            <div className="df-sub-modal__field">
+              <label>Select Plan</label>
+              <select
+                {...register('subscription_plan_id', { required: 'Plan is required' })}
+                onChange={handlePlanChange}
+              >
+                {availablePlans.map((plan) => (
+                  <option key={plan.id} value={plan.id}>
+                    {plan.name} — {formatCycle(plan.billing_cycle)} ({formatCurrency(plan.price)})
+                  </option>
+                ))}
+              </select>
+              {errors.subscription_plan_id && <span style={{ color: '#fb7185', fontSize: '0.75rem' }}>{errors.subscription_plan_id.message}</span>}
+            </div>
+
+            <div className="df-sub-modal__field">
+              <label>Billing Cycle</label>
+              <select {...register('billing_cycle', { required: true })}>
+                <option value="monthly">Monthly</option>
+                <option value="quarterly">Quarterly</option>
+                <option value="yearly">Yearly</option>
+              </select>
+            </div>
+
+            <div className="df-sub-modal__field">
+              <label>Price Per Cycle ($)</label>
+              <input
+                type="number"
+                step="0.01"
+                {...register('unit_price', { required: 'Price is required', min: 0 })}
+              />
+              {errors.unit_price && <span style={{ color: '#fb7185', fontSize: '0.75rem' }}>{errors.unit_price.message}</span>}
+            </div>
+
+            <div className="df-sub-modal__field">
+              <label>Quantity / License Units</label>
+              <input
+                type="number"
+                min="1"
+                {...register('quantity', { required: 'Quantity is required', min: 1 })}
+              />
+              {errors.quantity && <span style={{ color: '#fb7185', fontSize: '0.75rem' }}>{errors.quantity.message}</span>}
+            </div>
+
+            {subscription.allow_proration && (
+              <p style={{ color: '#38bdf8', fontSize: '0.8rem', margin: 0 }}>
+                ℹ Proration policy enabled: Mid-cycle changes will generate an updated proration billing line.
+              </p>
+            )}
+          </div>
+
+          <div className="df-sub-modal__footer">
+            <button type="button" className="df-sub-modal__btn-cancel" onClick={onClose}>
+              Cancel
+            </button>
+            <button type="submit" className="df-sub-modal__btn-submit" disabled={isSubmitting}>
+              {isSubmitting ? 'Saving...' : 'Apply Changes'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+});
+
+const CancelSubscriptionModal = React.memo(({ isOpen, onClose, subscription, onConfirm, isSubmitting }) => {
+  const cyclePrice = parseFloat(subscription?.unit_price) || 0;
+  const { register, handleSubmit, watch, formState: { errors } } = useForm({
+    defaultValues: {
+      reason: 'Customer requested cancellation',
+      is_prorated: Boolean(subscription?.allow_proration),
+      credit_amount: (cyclePrice / 2).toFixed(2),
+    }
+  });
+
+  const isProrated = watch('is_prorated');
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="df-sub-modal">
+      <div className="df-sub-modal__content">
+        <div className="df-sub-modal__header">
+          <h3>Cancel Subscription Confirmation</h3>
+          <button type="button" className="df-sub-modal__close-btn" onClick={onClose}>
+            ✕
+          </button>
+        </div>
+        <form onSubmit={handleSubmit(onConfirm)}>
+          <div className="df-sub-modal__body">
+            <p style={{ color: '#cbd5e1', fontSize: '0.875rem', lineHeight: 1.5, margin: 0 }}>
+              Are you sure you want to cancel the recurring subscription for{' '}
+              <strong>{subscription.customer_name}</strong>?
+            </p>
+
+            <div style={{ background: '#1e293b', padding: '0.75rem', borderRadius: '0.5rem', border: '1px solid #334155', fontSize: '0.8125rem' }}>
+              <div style={{ color: '#94a3b8' }}>Plan Policy:</div>
+              <div style={{ color: subscription.allow_cancellation ? '#4ade80' : '#fb7185' }}>
+                • Cancellation: {subscription.allow_cancellation ? 'Permitted' : 'Not Permitted'}
+              </div>
+              <div style={{ color: subscription.allow_partial_refund ? '#4ade80' : '#fbbf24' }}>
+                • Partial Refund / Credit Note: {subscription.allow_partial_refund ? 'Supported' : 'Disallowed'}
+              </div>
+            </div>
+
+            <div className="df-sub-modal__field">
+              <label>Cancellation Reason</label>
+              <textarea
+                rows="2"
+                {...register('reason', { required: 'Reason is required' })}
+              />
+              {errors.reason && <span style={{ color: '#fb7185', fontSize: '0.75rem' }}>{errors.reason.message}</span>}
+            </div>
+
+            {subscription.allow_partial_refund !== false && (
+              <>
+                <div className="df-sub-modal__field">
+                  <label className="checkbox-row">
+                    <input type="checkbox" {...register('is_prorated')} />
+                    <span>Issue prorated credit note for unused period</span>
+                  </label>
+                </div>
+
+                {isProrated && (
+                  <div className="df-sub-modal__field">
+                    <label>Prorated Credit Amount ($)</label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      {...register('credit_amount', { min: 0 })}
+                    />
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+
+          <div className="df-sub-modal__footer">
+            <button type="button" className="df-sub-modal__btn-cancel" onClick={onClose}>
+              Keep Subscription
+            </button>
+            <button
+              type="submit"
+              className="df-sub-modal__btn-submit df-sub-modal__btn-submit--danger"
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? 'Cancelling...' : 'Confirm Cancellation'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+});
+
 const SubscriptionDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -34,20 +230,9 @@ const SubscriptionDetail = () => {
 
   // Modals
   const [isModifyModalOpen, setIsModifyModalOpen] = useState(false);
-  const [modifyForm, setModifyForm] = useState({
-    subscription_plan_id: '',
-    billing_cycle: 'monthly',
-    unit_price: '',
-    quantity: 1,
-  });
   const [isSubmittingModify, setIsSubmittingModify] = useState(false);
 
   const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
-  const [cancelForm, setCancelForm] = useState({
-    reason: 'Customer requested cancellation',
-    is_prorated: true,
-    credit_amount: 0,
-  });
   const [isSubmittingCancel, setIsSubmittingCancel] = useState(false);
 
   const fetchDetail = useCallback(async () => {
@@ -57,21 +242,6 @@ const SubscriptionDetail = () => {
       const data = await subscriptionApi.getSubscriptionDetail(id);
       if (data) {
         setDetailData(data);
-        if (data.subscription) {
-          setModifyForm({
-            subscription_plan_id: data.subscription.subscription_plan_id || '',
-            billing_cycle: data.subscription.billing_cycle || 'monthly',
-            unit_price: data.subscription.unit_price || '',
-            quantity: data.subscription.quantity || 1,
-          });
-          // Estimate credit amount based on unused portion of cycle
-          const cyclePrice = parseFloat(data.subscription.unit_price) || 0;
-          setCancelForm((prev) => ({
-            ...prev,
-            credit_amount: (cyclePrice / 2).toFixed(2),
-            is_prorated: Boolean(data.subscription.allow_proration),
-          }));
-        }
       }
     } catch (err) {
       console.error('Failed to load subscription detail:', err);
@@ -85,30 +255,14 @@ const SubscriptionDetail = () => {
     fetchDetail();
   }, [fetchDetail]);
 
-  const handleModifyChange = (e) => {
-    const { name, value } = e.target;
-    if (name === 'subscription_plan_id') {
-      const selectedPlan = detailData?.availablePlans?.find((p) => String(p.id) === String(value));
-      setModifyForm((prev) => ({
-        ...prev,
-        subscription_plan_id: value,
-        billing_cycle: selectedPlan?.billing_cycle || prev.billing_cycle,
-        unit_price: selectedPlan?.price || prev.unit_price,
-      }));
-    } else {
-      setModifyForm((prev) => ({ ...prev, [name]: value }));
-    }
-  };
-
-  const handleModifySubmit = async (e) => {
-    e.preventDefault();
+  const handleModifySubmit = async (formData) => {
     try {
       setIsSubmittingModify(true);
       await subscriptionApi.modifySubscription(id, {
-        subscription_plan_id: modifyForm.subscription_plan_id,
-        billing_cycle: modifyForm.billing_cycle,
-        unit_price: parseFloat(modifyForm.unit_price),
-        quantity: parseInt(modifyForm.quantity, 10),
+        subscription_plan_id: formData.subscription_plan_id,
+        billing_cycle: formData.billing_cycle,
+        unit_price: parseFloat(formData.unit_price),
+        quantity: parseInt(formData.quantity, 10),
       });
       setIsModifyModalOpen(false);
       alert('Subscription configuration updated successfully in PostgreSQL database!');
@@ -121,11 +275,10 @@ const SubscriptionDetail = () => {
     }
   };
 
-  const handleCancelSubmit = async (e) => {
-    e.preventDefault();
+  const handleCancelSubmit = async (formData) => {
     try {
       setIsSubmittingCancel(true);
-      await subscriptionApi.cancelSubscription(id, cancelForm);
+      await subscriptionApi.cancelSubscription(id, formData);
       setIsCancelModalOpen(false);
       alert('Subscription has been cancelled and credit note schedule recorded.');
       fetchDetail();
@@ -363,200 +516,23 @@ const SubscriptionDetail = () => {
       </div>
 
       {/* Modal: Modify Subscription */}
-      {isModifyModalOpen && (
-        <div className="df-sub-modal">
-          <div className="df-sub-modal__content">
-            <div className="df-sub-modal__header">
-              <h3>Modify Subscription</h3>
-              <button
-                type="button"
-                className="df-sub-modal__close-btn"
-                onClick={() => setIsModifyModalOpen(false)}
-              >
-                ✕
-              </button>
-            </div>
-            <form onSubmit={handleModifySubmit}>
-              <div className="df-sub-modal__body">
-                {/* Current vs New comparison summary */}
-                <div style={{ background: '#1e293b', padding: '0.875rem', borderRadius: '0.5rem', border: '1px solid #334155' }}>
-                  <div style={{ fontSize: '0.75rem', color: '#94a3b8', textTransform: 'uppercase', marginBottom: '0.25rem' }}>Current Configuration</div>
-                  <div style={{ fontSize: '0.9rem', color: '#f8fafc', fontWeight: 600 }}>
-                    {subscription.plan_name} • {formatCycle(subscription.billing_cycle)} • {formatCurrency(subscription.unit_price)}
-                  </div>
-                </div>
-
-                <div className="df-sub-modal__field">
-                  <label>Select Plan</label>
-                  <select
-                    name="subscription_plan_id"
-                    value={modifyForm.subscription_plan_id}
-                    onChange={handleModifyChange}
-                  >
-                    {availablePlans.map((plan) => (
-                      <option key={plan.id} value={plan.id}>
-                        {plan.name} — {formatCycle(plan.billing_cycle)} ({formatCurrency(plan.price)})
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div className="df-sub-modal__field">
-                  <label>Billing Cycle</label>
-                  <select
-                    name="billing_cycle"
-                    value={modifyForm.billing_cycle}
-                    onChange={handleModifyChange}
-                  >
-                    <option value="monthly">Monthly</option>
-                    <option value="quarterly">Quarterly</option>
-                    <option value="yearly">Yearly</option>
-                  </select>
-                </div>
-
-                <div className="df-sub-modal__field">
-                  <label>Price Per Cycle ($)</label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    name="unit_price"
-                    required
-                    value={modifyForm.unit_price}
-                    onChange={handleModifyChange}
-                  />
-                </div>
-
-                <div className="df-sub-modal__field">
-                  <label>Quantity / License Units</label>
-                  <input
-                    type="number"
-                    min="1"
-                    name="quantity"
-                    value={modifyForm.quantity}
-                    onChange={handleModifyChange}
-                  />
-                </div>
-
-                {subscription.allow_proration && (
-                  <p style={{ color: '#38bdf8', fontSize: '0.8rem', margin: 0 }}>
-                    ℹ Proration policy enabled: Mid-cycle changes will generate an updated proration billing line.
-                  </p>
-                )}
-              </div>
-
-              <div className="df-sub-modal__footer">
-                <button
-                  type="button"
-                  className="df-sub-modal__btn-cancel"
-                  onClick={() => setIsModifyModalOpen(false)}
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="df-sub-modal__btn-submit"
-                  disabled={isSubmittingModify}
-                >
-                  {isSubmittingModify ? 'Saving...' : 'Apply Changes'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+      <ModifySubscriptionModal
+        isOpen={isModifyModalOpen}
+        onClose={() => setIsModifyModalOpen(false)}
+        subscription={subscription}
+        availablePlans={availablePlans}
+        onSave={handleModifySubmit}
+        isSubmitting={isSubmittingModify}
+      />
 
       {/* Modal: Cancel Subscription */}
-      {isCancelModalOpen && (
-        <div className="df-sub-modal">
-          <div className="df-sub-modal__content">
-            <div className="df-sub-modal__header">
-              <h3>Cancel Subscription Confirmation</h3>
-              <button
-                type="button"
-                className="df-sub-modal__close-btn"
-                onClick={() => setIsCancelModalOpen(false)}
-              >
-                ✕
-              </button>
-            </div>
-            <form onSubmit={handleCancelSubmit}>
-              <div className="df-sub-modal__body">
-                <p style={{ color: '#cbd5e1', fontSize: '0.875rem', lineHeight: 1.5, margin: 0 }}>
-                  Are you sure you want to cancel the recurring subscription for{' '}
-                  <strong>{subscription.customer_name}</strong>?
-                </p>
-
-                <div style={{ background: '#1e293b', padding: '0.75rem', borderRadius: '0.5rem', border: '1px solid #334155', fontSize: '0.8125rem' }}>
-                  <div style={{ color: '#94a3b8' }}>Plan Policy:</div>
-                  <div style={{ color: subscription.allow_cancellation ? '#4ade80' : '#fb7185' }}>
-                    • Cancellation: {subscription.allow_cancellation ? 'Permitted' : 'Not Permitted'}
-                  </div>
-                  <div style={{ color: subscription.allow_partial_refund ? '#4ade80' : '#fbbf24' }}>
-                    • Partial Refund / Credit Note: {subscription.allow_partial_refund ? 'Supported' : 'Disallowed'}
-                  </div>
-                </div>
-
-                <div className="df-sub-modal__field">
-                  <label>Cancellation Reason</label>
-                  <textarea
-                    rows="2"
-                    value={cancelForm.reason}
-                    onChange={(e) => setCancelForm({ ...cancelForm, reason: e.target.value })}
-                  />
-                </div>
-
-                {subscription.allow_partial_refund !== false && (
-                  <>
-                    <div className="df-sub-modal__field">
-                      <label className="checkbox-row">
-                        <input
-                          type="checkbox"
-                          checked={cancelForm.is_prorated}
-                          onChange={(e) =>
-                            setCancelForm({ ...cancelForm, is_prorated: e.target.checked })
-                          }
-                        />
-                        <span>Issue prorated credit note for unused period</span>
-                      </label>
-                    </div>
-
-                    {cancelForm.is_prorated && (
-                      <div className="df-sub-modal__field">
-                        <label>Prorated Credit Amount ($)</label>
-                        <input
-                          type="number"
-                          step="0.01"
-                          value={cancelForm.credit_amount}
-                          onChange={(e) =>
-                            setCancelForm({ ...cancelForm, credit_amount: e.target.value })
-                          }
-                        />
-                      </div>
-                    )}
-                  </>
-                )}
-              </div>
-
-              <div className="df-sub-modal__footer">
-                <button
-                  type="button"
-                  className="df-sub-modal__btn-cancel"
-                  onClick={() => setIsCancelModalOpen(false)}
-                >
-                  Keep Subscription
-                </button>
-                <button
-                  type="submit"
-                  className="df-sub-modal__btn-submit df-sub-modal__btn-submit--danger"
-                  disabled={isSubmittingCancel}
-                >
-                  {isSubmittingCancel ? 'Cancelling...' : 'Confirm Cancellation'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+      <CancelSubscriptionModal
+        isOpen={isCancelModalOpen}
+        onClose={() => setIsCancelModalOpen(false)}
+        subscription={subscription}
+        onConfirm={handleCancelSubmit}
+        isSubmitting={isSubmittingCancel}
+      />
     </div>
   );
 };

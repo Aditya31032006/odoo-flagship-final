@@ -49,6 +49,8 @@ import {
   GET_INVOICE_BY_ORDER_ID,
   UPDATE_INVOICE_TO_PAID,
   INSERT_PAYMENT_RECORD,
+  RESOLVE_PENDING_BACKORDERS_FOR_ORDER,
+  INSERT_SHORTAGE_BACKORDER_RECORD,
 } from '../queries/fulfillment.query.js';
 
 export const getFulfillmentListRepo = async () => {
@@ -166,11 +168,7 @@ export const getFulfillmentDetailRepo = async (orderIdOrNumber) => {
 
     // If new stock was added to warehouses and can now fully fulfill the order, resolve existing pending backorders
     if (totalAllocated >= totalRequired && backorders.some((b) => b.status === 'pending')) {
-      await client.query(`
-        UPDATE backorders 
-        SET status = 'fulfilled', updated_at = NOW() 
-        WHERE order_item_id IN (SELECT id FROM order_items WHERE order_id = $1) AND status = 'pending';
-      `, [orderId]);
+      await client.query(RESOLVE_PENDING_BACKORDERS_FOR_ORDER, [orderId]);
       currentBackorders = [];
     } else if (totalAllocated < totalRequired && backorders.length === 0 && items.length > 0) {
       // Record shortage as pending backorder
@@ -180,11 +178,7 @@ export const getFulfillmentDetailRepo = async (orderIdOrNumber) => {
           .reduce((sum, s) => sum + (parseInt(s.qty_fulfilled, 10) || 0), 0);
         const shortage = item.quantity - itemAlloc;
         if (shortage > 0) {
-          const boRes = await client.query(`
-            INSERT INTO backorders (order_item_id, quantity, status, created_at, updated_at)
-            VALUES ($1, $2, 'pending', NOW(), NOW())
-            RETURNING id AS backorder_id, order_item_id, $2::INT AS quantity, NULL AS preferred_warehouse_name, 'pending' AS status;
-          `, [item.order_item_id, shortage]);
+          const boRes = await client.query(INSERT_SHORTAGE_BACKORDER_RECORD, [item.order_item_id, shortage]);
           currentBackorders.push({
             ...boRes.rows[0],
             product_name: item.product_name,

@@ -111,4 +111,4 @@ export const RecentActivityFeed = ({ activities = [], isLoading = false }) => {
   );
 };
 
-export default RecentActivityFeed;
+export default React.memo(RecentActivityFeed);

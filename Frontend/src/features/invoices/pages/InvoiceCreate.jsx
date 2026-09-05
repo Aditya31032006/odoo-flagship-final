@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router';
+import { useForm, useFieldArray } from 'react-hook-form';
 import { invoiceApi } from '../services/invoice.api.js';
 import '../styles/invoices.scss';
 
@@ -17,21 +18,38 @@ const InvoiceCreate = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState(null);
 
-  const [form, setForm] = useState({
-    customerId: '',
-    orderId: '',
-    dueDate: new Date(Date.now() + 15 * 86400000).toISOString().split('T')[0],
-    items: [
-      {
-        product_variant_id: '',
-        product_name: '',
-        sku: '',
-        quantity: 1,
-        unit_price: 0,
-        tax_percentage: 18,
-      },
-    ],
+  const {
+    register,
+    control,
+    handleSubmit,
+    setValue,
+    watch,
+    reset,
+    formState: { errors },
+  } = useForm({
+    defaultValues: {
+      customerId: '',
+      orderId: '',
+      dueDate: new Date(Date.now() + 15 * 86400000).toISOString().split('T')[0],
+      items: [
+        {
+          product_variant_id: '',
+          product_name: '',
+          sku: '',
+          quantity: 1,
+          unit_price: 0,
+          tax_percentage: 18,
+        },
+      ],
+    },
   });
+
+  const { fields, append, remove } = useFieldArray({
+    control,
+    name: 'items',
+  });
+
+  const watchedItems = watch('items') || [];
 
   useEffect(() => {
     const fetchMeta = async () => {
@@ -44,9 +62,10 @@ const InvoiceCreate = () => {
           const defaultCustId = metaData.customers?.length > 0 ? metaData.customers[0].id : '';
           const firstP = metaData.products?.length > 0 ? metaData.products[0] : null;
 
-          setForm((prev) => ({
-            ...prev,
+          reset({
             customerId: defaultCustId,
+            orderId: '',
+            dueDate: new Date(Date.now() + 15 * 86400000).toISOString().split('T')[0],
             items: firstP
               ? [
                   {
@@ -58,8 +77,17 @@ const InvoiceCreate = () => {
                     tax_percentage: parseFloat(firstP.tax_percentage) || 18,
                   },
                 ]
-              : prev.items,
-          }));
+              : [
+                  {
+                    product_variant_id: '',
+                    product_name: '',
+                    sku: '',
+                    quantity: 1,
+                    unit_price: 0,
+                    tax_percentage: 18,
+                  },
+                ],
+          });
         }
       } catch (err) {
         console.error('Failed to load invoice metadata:', err);
@@ -70,79 +98,49 @@ const InvoiceCreate = () => {
     };
 
     fetchMeta();
-  }, []);
+  }, [reset]);
 
-  const handleProductChange = (index, variantId) => {
+  const handleProductSelect = (index, variantId) => {
     const selectedProd = meta.products.find((p) => String(p.variant_id) === String(variantId));
     if (!selectedProd) return;
 
-    setForm((prev) => {
-      const updated = [...prev.items];
-      updated[index] = {
-        ...updated[index],
-        product_variant_id: variantId,
-        product_name: selectedProd.product_name,
-        sku: selectedProd.sku,
-        unit_price: parseFloat(selectedProd.selling_price) || 0,
-        tax_percentage: parseFloat(selectedProd.tax_percentage) || 18,
-      };
-      return { ...prev, items: updated };
-    });
-  };
-
-  const handleItemChange = (index, field, value) => {
-    setForm((prev) => {
-      const updated = [...prev.items];
-      updated[index] = { ...updated[index], [field]: value };
-      return { ...prev, items: updated };
-    });
+    setValue(`items.${index}.product_variant_id`, variantId);
+    setValue(`items.${index}.product_name`, selectedProd.product_name);
+    setValue(`items.${index}.sku`, selectedProd.sku);
+    setValue(`items.${index}.unit_price`, parseFloat(selectedProd.selling_price) || 0);
+    setValue(`items.${index}.tax_percentage`, parseFloat(selectedProd.tax_percentage) || 18);
   };
 
   const handleAddItem = () => {
     const firstP = meta.products[0] || {};
-    setForm((prev) => ({
-      ...prev,
-      items: [
-        ...prev.items,
-        {
-          product_variant_id: firstP.variant_id || '',
-          product_name: firstP.product_name || '',
-          sku: firstP.sku || '',
-          quantity: 1,
-          unit_price: parseFloat(firstP.selling_price) || 0,
-          tax_percentage: parseFloat(firstP.tax_percentage) || 18,
-        },
-      ],
-    }));
+    append({
+      product_variant_id: firstP.variant_id || '',
+      product_name: firstP.product_name || '',
+      sku: firstP.sku || '',
+      quantity: 1,
+      unit_price: parseFloat(firstP.selling_price) || 0,
+      tax_percentage: parseFloat(firstP.tax_percentage) || 18,
+    });
   };
 
-  const handleRemoveItem = (index) => {
-    if (form.items.length <= 1) return;
-    setForm((prev) => ({
-      ...prev,
-      items: prev.items.filter((_, i) => i !== index),
-    }));
-  };
-
-  // Calculate dynamic totals
-  const subtotal = form.items.reduce((sum, it) => {
-    return sum + (parseInt(it.quantity, 10) || 1) * (parseFloat(it.unit_price) || 0);
+  // Calculate dynamic totals from watched form values
+  const subtotal = watchedItems.reduce((sum, it) => {
+    return sum + (parseInt(it?.quantity, 10) || 1) * (parseFloat(it?.unit_price) || 0);
   }, 0);
 
-  const taxTotal = form.items.reduce((sum, it) => {
-    const itemSub = (parseInt(it.quantity, 10) || 1) * (parseFloat(it.unit_price) || 0);
-    return sum + (itemSub * (parseFloat(it.tax_percentage) || 0)) / 100;
+  const taxTotal = watchedItems.reduce((sum, it) => {
+    const itemSub = (parseInt(it?.quantity, 10) || 1) * (parseFloat(it?.unit_price) || 0);
+    return sum + (itemSub * (parseFloat(it?.tax_percentage) || 0)) / 100;
   }, 0);
 
   const grandTotal = subtotal + taxTotal;
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (!form.customerId) {
+  const onFormSubmit = async (formData) => {
+    if (!formData.customerId) {
       alert('Please select a customer');
       return;
     }
-    if (form.items.length === 0) {
+    if (!formData.items || formData.items.length === 0) {
       alert('Please add at least one line item');
       return;
     }
@@ -150,10 +148,10 @@ const InvoiceCreate = () => {
     try {
       setIsSubmitting(true);
       const res = await invoiceApi.createInvoice({
-        customerId: form.customerId,
-        orderId: form.orderId || null,
-        dueDate: form.dueDate,
-        items: form.items,
+        customerId: formData.customerId,
+        orderId: formData.orderId || null,
+        dueDate: formData.dueDate,
+        items: formData.items,
       });
 
       alert('Invoice created successfully in database!');
@@ -204,7 +202,7 @@ const InvoiceCreate = () => {
 
         {error && <div className="df-invoices__empty">{error}</div>}
 
-        <form onSubmit={handleSubmit}>
+        <form onSubmit={handleSubmit(onFormSubmit)}>
           {/* Card 1: Invoice Header Parameters */}
           <div
             style={{
@@ -220,25 +218,19 @@ const InvoiceCreate = () => {
           >
             <div className="df-sub-modal__field">
               <label>Select Customer *</label>
-              <select
-                required
-                value={form.customerId}
-                onChange={(e) => setForm({ ...form, customerId: e.target.value })}
-              >
+              <select {...register('customerId', { required: 'Customer is required' })}>
                 {meta.customers.map((c) => (
                   <option key={c.id} value={c.id}>
                     {c.company_name} ({c.email || 'No email'})
                   </option>
                 ))}
               </select>
+              {errors.customerId && <span style={{ color: '#fb7185', fontSize: '0.75rem' }}>{errors.customerId.message}</span>}
             </div>
 
             <div className="df-sub-modal__field">
               <label>Link Confirmed Order (Optional)</label>
-              <select
-                value={form.orderId}
-                onChange={(e) => setForm({ ...form, orderId: e.target.value })}
-              >
+              <select {...register('orderId')}>
                 <option value="">Direct Invoice (No Order Link)</option>
                 {meta.orders.map((o) => (
                   <option key={o.id} value={o.id}>
@@ -252,10 +244,9 @@ const InvoiceCreate = () => {
               <label>Payment Due Date *</label>
               <input
                 type="date"
-                required
-                value={form.dueDate}
-                onChange={(e) => setForm({ ...form, dueDate: e.target.value })}
+                {...register('dueDate', { required: 'Due date is required' })}
               />
+              {errors.dueDate && <span style={{ color: '#fb7185', fontSize: '0.75rem' }}>{errors.dueDate.message}</span>}
             </div>
           </div>
 
@@ -285,13 +276,14 @@ const InvoiceCreate = () => {
                 </tr>
               </thead>
               <tbody>
-                {form.items.map((item, idx) => {
-                  const lineSub = (parseInt(item.quantity, 10) || 1) * (parseFloat(item.unit_price) || 0);
-                  const lineTax = (lineSub * (parseFloat(item.tax_percentage) || 0)) / 100;
+                {fields.map((field, idx) => {
+                  const currentItem = watchedItems[idx] || {};
+                  const lineSub = (parseInt(currentItem.quantity, 10) || 1) * (parseFloat(currentItem.unit_price) || 0);
+                  const lineTax = (lineSub * (parseFloat(currentItem.tax_percentage) || 0)) / 100;
                   const itemTotal = lineSub + lineTax;
 
                   return (
-                    <tr key={idx}>
+                    <tr key={field.id}>
                       <td>
                         <select
                           style={{
@@ -302,8 +294,8 @@ const InvoiceCreate = () => {
                             borderRadius: '0.375rem',
                             padding: '0.5rem',
                           }}
-                          value={item.product_variant_id}
-                          onChange={(e) => handleProductChange(idx, e.target.value)}
+                          {...register(`items.${idx}.product_variant_id`, { required: true })}
+                          onChange={(e) => handleProductSelect(idx, e.target.value)}
                         >
                           {meta.products.map((p) => (
                             <option key={p.variant_id} value={p.variant_id}>
@@ -324,8 +316,7 @@ const InvoiceCreate = () => {
                             borderRadius: '0.375rem',
                             padding: '0.5rem',
                           }}
-                          value={item.quantity}
-                          onChange={(e) => handleItemChange(idx, 'quantity', e.target.value)}
+                          {...register(`items.${idx}.quantity`, { required: true, min: 1 })}
                         />
                       </td>
                       <td>
@@ -340,8 +331,7 @@ const InvoiceCreate = () => {
                             borderRadius: '0.375rem',
                             padding: '0.5rem',
                           }}
-                          value={item.unit_price}
-                          onChange={(e) => handleItemChange(idx, 'unit_price', e.target.value)}
+                          {...register(`items.${idx}.unit_price`, { required: true, min: 0 })}
                         />
                       </td>
                       <td>
@@ -356,18 +346,17 @@ const InvoiceCreate = () => {
                             borderRadius: '0.375rem',
                             padding: '0.5rem',
                           }}
-                          value={item.tax_percentage}
-                          onChange={(e) => handleItemChange(idx, 'tax_percentage', e.target.value)}
+                          {...register(`items.${idx}.tax_percentage`, { min: 0 })}
                         />
                       </td>
                       <td>
                         <strong>{formatCurrency(itemTotal)}</strong>
                       </td>
                       <td>
-                        {form.items.length > 1 && (
+                        {fields.length > 1 && (
                           <button
                             type="button"
-                            onClick={() => handleRemoveItem(idx)}
+                            onClick={() => remove(idx)}
                             style={{
                               background: 'transparent',
                               border: 'none',

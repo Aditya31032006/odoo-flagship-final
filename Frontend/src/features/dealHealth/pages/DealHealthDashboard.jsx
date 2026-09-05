@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router';
 import { useSelector } from 'react-redux';
+import { useForm } from 'react-hook-form';
 import { dealHealthApi } from '../services/dealHealth.api.js';
 import '../styles/dealHealth.scss';
 
@@ -22,6 +23,104 @@ const formatActionText = (action, detail) => {
   if (action === 'resolved') return 'Resolved';
   return 'Open Action';
 };
+
+const ConfigureThresholdsModal = React.memo(({ isOpen, onClose, currentConfig, onSave, isSaving }) => {
+  const { register, handleSubmit, formState: { errors } } = useForm({
+    defaultValues: {
+      stalled_days: currentConfig?.stalled_days || 7,
+      discount_anomaly_multiplier: currentConfig?.discount_anomaly_multiplier || 1.5,
+      delivery_slippage_days: currentConfig?.delivery_slippage_days || 3,
+    },
+  });
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="df-sub-modal">
+      <div className="df-sub-modal__content">
+        <div className="df-sub-modal__header">
+          <h3>Configure Deal Health Thresholds</h3>
+          <button
+            type="button"
+            className="df-sub-modal__close-btn"
+            onClick={onClose}
+          >
+            ✕
+          </button>
+        </div>
+        <form onSubmit={handleSubmit(onSave)}>
+          <div className="df-sub-modal__body">
+            <div className="df-sub-modal__field">
+              <label>Stalled Deal Threshold (Days Idle)</label>
+              <input
+                type="number"
+                min="1"
+                {...register('stalled_days', {
+                  required: 'Stalled threshold is required',
+                  min: { value: 1, message: 'Must be at least 1 day' },
+                })}
+              />
+              {errors.stalled_days && <span style={{ color: '#fb7185', fontSize: '0.75rem' }}>{errors.stalled_days.message}</span>}
+              <small style={{ color: '#94a3b8', fontSize: '0.75rem' }}>
+                Quotes idle longer than this will trigger a Stalled Deal flag.
+              </small>
+            </div>
+
+            <div className="df-sub-modal__field">
+              <label>Discount Anomaly Multiplier (× Average)</label>
+              <input
+                type="number"
+                step="0.1"
+                min="1.0"
+                {...register('discount_anomaly_multiplier', {
+                  required: 'Multiplier is required',
+                  min: { value: 1.0, message: 'Must be at least 1.0' },
+                })}
+              />
+              {errors.discount_anomaly_multiplier && <span style={{ color: '#fb7185', fontSize: '0.75rem' }}>{errors.discount_anomaly_multiplier.message}</span>}
+              <small style={{ color: '#94a3b8', fontSize: '0.75rem' }}>
+                Discounts exceeding average × multiplier will be flagged.
+              </small>
+            </div>
+
+            <div className="df-sub-modal__field">
+              <label>Delivery Slippage Threshold (Days Overdue)</label>
+              <input
+                type="number"
+                min="0"
+                {...register('delivery_slippage_days', {
+                  required: 'Delivery slippage threshold is required',
+                  min: { value: 0, message: 'Must be at least 0 days' },
+                })}
+              />
+              {errors.delivery_slippage_days && <span style={{ color: '#fb7185', fontSize: '0.75rem' }}>{errors.delivery_slippage_days.message}</span>}
+              <small style={{ color: '#94a3b8', fontSize: '0.75rem' }}>
+                Shipments delayed beyond this threshold will trigger Delivery Slippage.
+              </small>
+            </div>
+          </div>
+
+          <div className="df-sub-modal__footer">
+            <button
+              type="button"
+              className="df-sub-modal__btn-cancel"
+              onClick={onClose}
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              className="df-sub-modal__btn-submit"
+              disabled={isSaving}
+            >
+              {isSaving ? 'Saving...' : 'Save Configuration'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+});
 
 const DealHealthDashboard = () => {
   const navigate = useNavigate();
@@ -48,11 +147,6 @@ const DealHealthDashboard = () => {
 
   // Config Modal
   const [isConfigModalOpen, setIsConfigModalOpen] = useState(false);
-  const [configForm, setConfigForm] = useState({
-    stalled_days: 7,
-    discount_anomaly_multiplier: 1.5,
-    delivery_slippage_days: 3,
-  });
   const [isSavingConfig, setIsSavingConfig] = useState(false);
 
   const fetchDashboard = useCallback(async (filterType) => {
@@ -65,7 +159,6 @@ const DealHealthDashboard = () => {
         if (data.summary) setSummary(data.summary);
         if (data.config) {
           setConfig(data.config);
-          setConfigForm(data.config);
         }
       }
     } catch (err) {
@@ -114,14 +207,13 @@ const DealHealthDashboard = () => {
     }
   };
 
-  const handleConfigSubmit = async (e) => {
-    e.preventDefault();
+  const handleConfigSubmit = async (formData) => {
     try {
       setIsSavingConfig(true);
       await dealHealthApi.updateConfig({
-        stalled_days: parseInt(configForm.stalled_days, 10),
-        discount_anomaly_multiplier: parseFloat(configForm.discount_anomaly_multiplier),
-        delivery_slippage_days: parseInt(configForm.delivery_slippage_days, 10),
+        stalled_days: parseInt(formData.stalled_days, 10),
+        discount_anomaly_multiplier: parseFloat(formData.discount_anomaly_multiplier),
+        delivery_slippage_days: parseInt(formData.delivery_slippage_days, 10),
       });
       setIsConfigModalOpen(false);
       alert('Deal health thresholds updated successfully!');
@@ -299,97 +391,13 @@ const DealHealthDashboard = () => {
       </div>
 
       {/* Thresholds Config Modal */}
-      {isConfigModalOpen && (
-        <div className="df-sub-modal">
-          <div className="df-sub-modal__content">
-            <div className="df-sub-modal__header">
-              <h3>Configure Deal Health Thresholds</h3>
-              <button
-                type="button"
-                className="df-sub-modal__close-btn"
-                onClick={() => setIsConfigModalOpen(false)}
-              >
-                ✕
-              </button>
-            </div>
-            <form onSubmit={handleConfigSubmit}>
-              <div className="df-sub-modal__body">
-                <div className="df-sub-modal__field">
-                  <label>Stalled Deal Threshold (Days Idle)</label>
-                  <input
-                    type="number"
-                    min="1"
-                    required
-                    value={configForm.stalled_days}
-                    onChange={(e) =>
-                      setConfigForm({ ...configForm, stalled_days: e.target.value })
-                    }
-                  />
-                  <small style={{ color: '#94a3b8', fontSize: '0.75rem' }}>
-                    Quotes idle longer than this will trigger a Stalled Deal flag.
-                  </small>
-                </div>
-
-                <div className="df-sub-modal__field">
-                  <label>Discount Anomaly Multiplier (× Average)</label>
-                  <input
-                    type="number"
-                    step="0.1"
-                    min="1.0"
-                    required
-                    value={configForm.discount_anomaly_multiplier}
-                    onChange={(e) =>
-                      setConfigForm({
-                        ...configForm,
-                        discount_anomaly_multiplier: e.target.value,
-                      })
-                    }
-                  />
-                  <small style={{ color: '#94a3b8', fontSize: '0.75rem' }}>
-                    Discounts exceeding average × multiplier will be flagged.
-                  </small>
-                </div>
-
-                <div className="df-sub-modal__field">
-                  <label>Delivery Slippage Threshold (Days Overdue)</label>
-                  <input
-                    type="number"
-                    min="0"
-                    required
-                    value={configForm.delivery_slippage_days}
-                    onChange={(e) =>
-                      setConfigForm({
-                        ...configForm,
-                        delivery_slippage_days: e.target.value,
-                      })
-                    }
-                  />
-                  <small style={{ color: '#94a3b8', fontSize: '0.75rem' }}>
-                    Shipments delayed beyond this threshold will trigger Delivery Slippage.
-                  </small>
-                </div>
-              </div>
-
-              <div className="df-sub-modal__footer">
-                <button
-                  type="button"
-                  className="df-sub-modal__btn-cancel"
-                  onClick={() => setIsConfigModalOpen(false)}
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="df-sub-modal__btn-submit"
-                  disabled={isSavingConfig}
-                >
-                  {isSavingConfig ? 'Saving...' : 'Save Configuration'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+      <ConfigureThresholdsModal
+        isOpen={isConfigModalOpen}
+        onClose={() => setIsConfigModalOpen(false)}
+        currentConfig={config}
+        onSave={handleConfigSubmit}
+        isSaving={isSavingConfig}
+      />
     </div>
   );
 };

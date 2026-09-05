@@ -17,6 +17,10 @@ import {
   CHECK_ORDER_EXISTS_FOR_QUOTATION,
   INSERT_CONFIRMED_ORDER,
   INSERT_CONFIRMED_ORDER_ITEM,
+  CHECK_PRODUCT_VARIANT_IS_SUBSCRIPTION,
+  INSERT_QUOTATION_FALLBACK_SUBSCRIPTION_PLAN,
+  INSERT_QUOTATION_SUBSCRIPTION,
+  INSERT_QUOTATION_SUBSCRIPTION_BILLING_LINE,
 } from '../queries/quotation.query.js';
 import { GET_ACTIVE_APPROVAL_RULES } from '../queries/catalog.query.js';
 import { allocateStockGreedy } from './fulfillment.repository.js';
@@ -255,14 +259,7 @@ export const saveQuotationRepo = async ({
           let productId = null;
 
           if (insertedItem.product_variant_id) {
-            const prodCheck = await client.query(`
-              SELECT p.id AS product_id, p.name AS product_name, p.unit, sp.id AS plan_id, sp.billing_cycle
-              FROM product_variants pv
-              JOIN products p ON pv.product_id = p.id
-              LEFT JOIN subscription_plans sp ON sp.product_id = p.id AND sp.is_active = TRUE
-              WHERE pv.id = $1
-              LIMIT 1;
-            `, [insertedItem.product_variant_id]);
+            const prodCheck = await client.query(CHECK_PRODUCT_VARIANT_IS_SUBSCRIPTION, [insertedItem.product_variant_id]);
 
             if (prodCheck.rows.length > 0) {
               const pRow = prodCheck.rows[0];
@@ -324,24 +321,16 @@ export const saveQuotationRepo = async ({
 
           if (isSub) {
             if (!subscriptionPlanId) {
-              const newPlan = await client.query(`
-                INSERT INTO subscription_plans (
-                  product_id, name, billing_cycle, price, allow_proration, allow_cancellation, allow_partial_refund, is_active
-                ) VALUES ($1, $2, 'monthly', $3, true, true, true, true)
-                RETURNING id, billing_cycle;
-              `, [productId || 1, insertedItem.product_name_snapshot || 'Subscription Plan', insertedItem.unit_price]);
+              const newPlan = await client.query(INSERT_QUOTATION_FALLBACK_SUBSCRIPTION_PLAN, [
+                productId || 1,
+                insertedItem.product_name_snapshot || 'Subscription Plan',
+                insertedItem.unit_price,
+              ]);
               subscriptionPlanId = newPlan.rows[0].id;
               subscriptionCycle = newPlan.rows[0].billing_cycle || 'monthly';
             }
 
-            const subRes = await client.query(`
-              INSERT INTO subscriptions (
-                order_item_id, customer_id, subscription_plan_id, quantity, unit_price,
-                billing_cycle, start_date, end_date, status, created_at, updated_at
-              ) VALUES (
-                $1, $2, $3, $4, $5, $6::subscription_cycle_enum, CURRENT_DATE, CURRENT_DATE + INTERVAL '1 year', 'active', NOW(), NOW()
-              ) RETURNING id;
-            `, [
+            const subRes = await client.query(INSERT_QUOTATION_SUBSCRIPTION, [
               orderItemId,
               customer_id,
               subscriptionPlanId,
@@ -351,13 +340,7 @@ export const saveQuotationRepo = async ({
             ]);
             const newSubId = subRes.rows[0].id;
 
-            await client.query(`
-              INSERT INTO subscription_billing_lines (
-                subscription_id, billing_period_start, billing_period_end, amount, is_prorated, credit_note_required, created_at
-              ) VALUES (
-                $1, CURRENT_DATE, CURRENT_DATE + INTERVAL '1 month', $2, false, false, NOW()
-              );
-            `, [newSubId, insertedItem.line_total]);
+            await client.query(INSERT_QUOTATION_SUBSCRIPTION_BILLING_LINE, [newSubId, insertedItem.line_total]);
           } else if (insertedItem.product_variant_id) {
             await allocateStockGreedy(client, createdOrderId, orderItemId, insertedItem.product_variant_id, insertedItem.quantity);
           }

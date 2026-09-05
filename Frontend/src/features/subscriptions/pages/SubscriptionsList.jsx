@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router';
 import { useSelector } from 'react-redux';
+import { useForm } from 'react-hook-form';
 import { subscriptionApi } from '../services/subscription.api.js';
 import '../styles/subscriptions.scss';
 
@@ -32,15 +33,23 @@ const SubscriptionsList = () => {
 
   // Modal State for "+ New Plan (Admin)"
   const [isPlanModalOpen, setIsPlanModalOpen] = useState(false);
-  const [newPlanForm, setNewPlanForm] = useState({
-    name: '',
-    billing_cycle: 'monthly',
-    price: '',
-    allow_proration: true,
-    allow_cancellation: true,
-    allow_partial_refund: false,
-  });
   const [isSubmittingPlan, setIsSubmittingPlan] = useState(false);
+
+  const {
+    register: registerPlan,
+    handleSubmit: handleSubmitPlan,
+    reset: resetPlanForm,
+    formState: { errors: planErrors },
+  } = useForm({
+    defaultValues: {
+      name: '',
+      billing_cycle: 'monthly',
+      price: '',
+      allow_proration: true,
+      allow_cancellation: true,
+      allow_partial_refund: false,
+    },
+  });
 
   const fetchSubscriptions = useCallback(async (filter) => {
     try {
@@ -71,41 +80,20 @@ const SubscriptionsList = () => {
     navigate(`/subscriptions/${subId}`);
   };
 
-  const handlePlanFormChange = (e) => {
-    const { name, value, type, checked } = e.target;
-    setNewPlanForm((prev) => ({
-      ...prev,
-      [name]: type === 'checkbox' ? checked : value,
-    }));
-  };
-
-  const handleCreatePlanSubmit = async (e) => {
-    e.preventDefault();
-    if (!newPlanForm.name || !newPlanForm.price) {
-      alert('Please fill in plan name and price');
-      return;
-    }
-
+  const onCreatePlanSubmit = async (formData) => {
     try {
       setIsSubmittingPlan(true);
       await subscriptionApi.createPlan({
-        name: newPlanForm.name,
-        billing_cycle: newPlanForm.billing_cycle,
-        price: parseFloat(newPlanForm.price),
-        allow_proration: newPlanForm.allow_proration,
-        allow_cancellation: newPlanForm.allow_cancellation,
-        allow_partial_refund: newPlanForm.allow_partial_refund,
+        name: formData.name.trim(),
+        billing_cycle: formData.billing_cycle,
+        price: parseFloat(formData.price),
+        allow_proration: Boolean(formData.allow_proration),
+        allow_cancellation: Boolean(formData.allow_cancellation),
+        allow_partial_refund: Boolean(formData.allow_partial_refund),
       });
 
       setIsPlanModalOpen(false);
-      setNewPlanForm({
-        name: '',
-        billing_cycle: 'monthly',
-        price: '',
-        allow_proration: true,
-        allow_cancellation: true,
-        allow_partial_refund: false,
-      });
+      resetPlanForm();
       alert('Subscription plan created successfully!');
       fetchSubscriptions(selectedFilter);
     } catch (err) {
@@ -240,27 +228,25 @@ const SubscriptionsList = () => {
                 ✕
               </button>
             </div>
-            <form onSubmit={handleCreatePlanSubmit}>
+            <form onSubmit={handleSubmitPlan(onCreatePlanSubmit)} noValidate>
               <div className="df-sub-modal__body">
                 <div className="df-sub-modal__field">
-                  <label>Plan Name</label>
+                  <label>Plan Name *</label>
                   <input
                     type="text"
-                    name="name"
-                    required
                     placeholder="e.g. Care Plan 3yr Premium"
-                    value={newPlanForm.name}
-                    onChange={handlePlanFormChange}
+                    {...registerPlan('name', { required: 'Plan name is required' })}
                   />
+                  {planErrors.name && (
+                    <span style={{ color: '#f87171', fontSize: '0.75rem', marginTop: '4px' }}>
+                      {planErrors.name.message}
+                    </span>
+                  )}
                 </div>
 
                 <div className="df-sub-modal__field">
                   <label>Billing Cycle</label>
-                  <select
-                    name="billing_cycle"
-                    value={newPlanForm.billing_cycle}
-                    onChange={handlePlanFormChange}
-                  >
+                  <select {...registerPlan('billing_cycle')}>
                     <option value="monthly">Monthly</option>
                     <option value="quarterly">Quarterly</option>
                     <option value="yearly">Yearly</option>
@@ -268,43 +254,42 @@ const SubscriptionsList = () => {
                 </div>
 
                 <div className="df-sub-modal__field">
-                  <label>Price (₹ / $)</label>
+                  <label>Price (₹ / $) *</label>
                   <input
                     type="number"
                     step="0.01"
-                    name="price"
-                    required
                     placeholder="e.g. 46.00"
-                    value={newPlanForm.price}
-                    onChange={handlePlanFormChange}
+                    {...registerPlan('price', {
+                      required: 'Price is required',
+                      min: { value: 0, message: 'Price must be greater than or equal to 0' },
+                    })}
                   />
+                  {planErrors.price && (
+                    <span style={{ color: '#f87171', fontSize: '0.75rem', marginTop: '4px' }}>
+                      {planErrors.price.message}
+                    </span>
+                  )}
                 </div>
 
                 <div className="df-sub-modal__field">
                   <label className="checkbox-row">
                     <input
                       type="checkbox"
-                      name="allow_proration"
-                      checked={newPlanForm.allow_proration}
-                      onChange={handlePlanFormChange}
+                      {...registerPlan('allow_proration')}
                     />
                     <span>Allow Proration on mid-cycle changes</span>
                   </label>
                   <label className="checkbox-row">
                     <input
                       type="checkbox"
-                      name="allow_cancellation"
-                      checked={newPlanForm.allow_cancellation}
-                      onChange={handlePlanFormChange}
+                      {...registerPlan('allow_cancellation')}
                     />
                     <span>Allow Cancellation by customer/rep</span>
                   </label>
                   <label className="checkbox-row">
                     <input
                       type="checkbox"
-                      name="allow_partial_refund"
-                      checked={newPlanForm.allow_partial_refund}
-                      onChange={handlePlanFormChange}
+                      {...registerPlan('allow_partial_refund')}
                     />
                     <span>Allow Partial Refund / Credit Note</span>
                   </label>

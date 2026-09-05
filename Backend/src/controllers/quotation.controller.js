@@ -1,4 +1,8 @@
-import { pool } from '../config/database.js';
+import {
+  resolveCustomerUserLinkIdRepo,
+  findCustomerByEmailRepo,
+  getCustomerNotificationContactRepo,
+} from '../repositories/auth.repository.js';
 import {
   getQuotationsListRepo,
   getQuotationsKanbanSummaryRepo,
@@ -20,16 +24,16 @@ export async function resolveUserCustomerId(user) {
 
   try {
     // 1. Check customer_users link table
-    const linkRes = await pool.query('SELECT customer_id FROM customer_users WHERE user_id = $1 LIMIT 1', [user.id]);
-    if (linkRes.rows.length > 0 && linkRes.rows[0].customer_id) {
-      return linkRes.rows[0].customer_id;
+    const linkCustomerId = await resolveCustomerUserLinkIdRepo(user.id);
+    if (linkCustomerId) {
+      return linkCustomerId;
     }
 
     // 2. Check customer record matching user's email
     if (user.email) {
-      const custRes = await pool.query('SELECT id FROM customers WHERE LOWER(TRIM(email)) = LOWER(TRIM($1)) LIMIT 1', [user.email]);
-      if (custRes.rows.length > 0) {
-        return custRes.rows[0].id;
+      const custId = await findCustomerByEmailRepo(user.email);
+      if (custId) {
+        return custId;
       }
     }
   } catch (err) {
@@ -220,11 +224,11 @@ export const createQuotationController = async (req, res, next) => {
     // Send email to customer when pending quotation is filed to them
     if (savedQuotation) {
       try {
-        const custRes = await pool.query('SELECT company_name, email FROM customers WHERE id = $1', [customer_id]);
-        if (custRes.rows.length > 0 && custRes.rows[0].email) {
+        const cust = await getCustomerNotificationContactRepo(customer_id);
+        if (cust && cust.email) {
           await addQuotationIssuedEmailJob({
-            toEmail: custRes.rows[0].email,
-            customerName: custRes.rows[0].company_name,
+            toEmail: cust.email,
+            customerName: cust.company_name,
             quotationNumber: savedQuotation.quotation_number,
             quotationId: savedQuotation.id,
             grandTotal: savedQuotation.grand_total,
@@ -288,11 +292,11 @@ export const updateQuotationController = async (req, res, next) => {
     // If quotation is updated in pending_approval status, dispatch email
     if (savedQuotation && status === 'pending_approval') {
       try {
-        const custRes = await pool.query('SELECT company_name, email FROM customers WHERE id = $1', [customer_id]);
-        if (custRes.rows.length > 0 && custRes.rows[0].email) {
+        const cust = await getCustomerNotificationContactRepo(customer_id);
+        if (cust && cust.email) {
           await addQuotationIssuedEmailJob({
-            toEmail: custRes.rows[0].email,
-            customerName: custRes.rows[0].company_name,
+            toEmail: cust.email,
+            customerName: cust.company_name,
             quotationNumber: savedQuotation.quotation_number,
             quotationId: savedQuotation.id,
             grandTotal: savedQuotation.grand_total,
@@ -354,11 +358,11 @@ export const submitApprovalController = async (req, res, next) => {
 
     if (submitted) {
       try {
-        const custRes = await pool.query('SELECT company_name, email FROM customers WHERE id = $1', [customer_id]);
-        if (custRes.rows.length > 0 && custRes.rows[0].email) {
+        const cust = await getCustomerNotificationContactRepo(customer_id);
+        if (cust && cust.email) {
           await addQuotationIssuedEmailJob({
-            toEmail: custRes.rows[0].email,
-            customerName: custRes.rows[0].company_name,
+            toEmail: cust.email,
+            customerName: cust.company_name,
             quotationNumber: submitted.quotation_number,
             quotationId: submitted.id,
             grandTotal: submitted.grand_total,

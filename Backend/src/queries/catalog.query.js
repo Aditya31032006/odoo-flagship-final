@@ -278,4 +278,22 @@ export const SOFT_DELETE_PRODUCT_VARIANT_BY_ID = `
   RETURNING id;
 `;
 
+export const INSERT_SUBSCRIPTION_PLAN_FOR_RECURRING_PRODUCT = `
+  INSERT INTO subscription_plans (
+    product_id, name, billing_cycle, price, allow_proration, allow_cancellation, allow_partial_refund, is_active
+  ) VALUES ($1, $2, $3::subscription_cycle_enum, $4, true, true, true, true);
+`;
+
+export const FIND_SUBSCRIPTION_PLAN_BY_PRODUCT_ID = `
+  SELECT id FROM subscription_plans 
+  WHERE product_id = $1 
+  LIMIT 1;
+`;
+
+export const UPDATE_SUBSCRIPTION_PLAN_BY_ID = `
+  UPDATE subscription_plans
+  SET name = $1, price = $2, billing_cycle = $3::subscription_cycle_enum, is_active = true
+  WHERE id = $4;
+`;
+
 

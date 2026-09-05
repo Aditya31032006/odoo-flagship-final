@@ -14,7 +14,10 @@ import {
     UPDATE_PASSWORD,
     FIND_USER_WITH_PASSWORD_BY_ID,
     UPDATE_USER_PASSWORD_BY_ID,
-    UPDATE_USER_MOBILE
+    UPDATE_USER_MOBILE,
+    RESOLVE_CUSTOMER_USER_LINK,
+    FIND_CUSTOMER_BY_EMAIL,
+    GET_CUSTOMER_NOTIFICATION_CONTACT,
 } from '../queries/auth.query.js';
 
 /**
@@ -389,6 +392,54 @@ export const updateUserPasswordRepo = async (email, password_hash) => {
         return result.rows[0];
     } catch (error) {
         console.error("Error in updateUserPasswordRepo:", error);
+        await client.query("ROLLBACK");
+        throw error;
+    } finally {
+        client.release();
+    }
+};
+
+export const resolveCustomerUserLinkIdRepo = async (userId) => {
+    const client = await pool.connect();
+    try {
+        await client.query("BEGIN");
+        const result = await client.query(RESOLVE_CUSTOMER_USER_LINK, [userId]);
+        await client.query("COMMIT");
+        return result.rows[0]?.customer_id || null;
+    } catch (error) {
+        console.error("Error in resolveCustomerUserLinkIdRepo:", error);
+        await client.query("ROLLBACK");
+        throw error;
+    } finally {
+        client.release();
+    }
+};
+
+export const findCustomerByEmailRepo = async (email) => {
+    const client = await pool.connect();
+    try {
+        await client.query("BEGIN");
+        const result = await client.query(FIND_CUSTOMER_BY_EMAIL, [email]);
+        await client.query("COMMIT");
+        return result.rows[0]?.id || null;
+    } catch (error) {
+        console.error("Error in findCustomerByEmailRepo:", error);
+        await client.query("ROLLBACK");
+        throw error;
+    } finally {
+        client.release();
+    }
+};
+
+export const getCustomerNotificationContactRepo = async (customerId) => {
+    const client = await pool.connect();
+    try {
+        await client.query("BEGIN");
+        const result = await client.query(GET_CUSTOMER_NOTIFICATION_CONTACT, [customerId]);
+        await client.query("COMMIT");
+        return result.rows[0] || null;
+    } catch (error) {
+        console.error("Error in getCustomerNotificationContactRepo:", error);
         await client.query("ROLLBACK");
         throw error;
     } finally {

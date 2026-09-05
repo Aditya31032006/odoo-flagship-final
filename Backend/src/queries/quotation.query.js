@@ -293,3 +293,36 @@ export const INSERT_CONFIRMED_ORDER_ITEM = `
   ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
   RETURNING id;
 `;
+
+export const CHECK_PRODUCT_VARIANT_IS_SUBSCRIPTION = `
+  SELECT p.id AS product_id, p.name AS product_name, p.unit, sp.id AS plan_id, sp.billing_cycle
+  FROM product_variants pv
+  JOIN products p ON pv.product_id = p.id
+  LEFT JOIN subscription_plans sp ON sp.product_id = p.id AND sp.is_active = TRUE
+  WHERE pv.id = $1
+  LIMIT 1;
+`;
+
+export const INSERT_QUOTATION_FALLBACK_SUBSCRIPTION_PLAN = `
+  INSERT INTO subscription_plans (
+    product_id, name, billing_cycle, price, allow_proration, allow_cancellation, allow_partial_refund, is_active
+  ) VALUES ($1, $2, 'monthly', $3, true, true, true, true)
+  RETURNING id, billing_cycle;
+`;
+
+export const INSERT_QUOTATION_SUBSCRIPTION = `
+  INSERT INTO subscriptions (
+    order_item_id, customer_id, subscription_plan_id, quantity, unit_price,
+    billing_cycle, start_date, end_date, status, created_at, updated_at
+  ) VALUES (
+    $1, $2, $3, $4, $5, $6::subscription_cycle_enum, CURRENT_DATE, CURRENT_DATE + INTERVAL '1 year', 'active', NOW(), NOW()
+  ) RETURNING id;
+`;
+
+export const INSERT_QUOTATION_SUBSCRIPTION_BILLING_LINE = `
+  INSERT INTO subscription_billing_lines (
+    subscription_id, billing_period_start, billing_period_end, amount, is_prorated, credit_note_required, created_at
+  ) VALUES (
+    $1, CURRENT_DATE, CURRENT_DATE + INTERVAL '1 month', $2, false, false, NOW()
+  );
+`;

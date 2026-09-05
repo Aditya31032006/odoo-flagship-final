@@ -429,3 +429,15 @@ export const INSERT_PAYMENT_RECORD = `
   ) VALUES ($1, $2, $3, $4::payment_method_enum, 'completed', $5, NOW())
   RETURNING *;
 `;
+
+export const RESOLVE_PENDING_BACKORDERS_FOR_ORDER = `
+  UPDATE backorders 
+  SET status = 'fulfilled', updated_at = NOW() 
+  WHERE order_item_id IN (SELECT id FROM order_items WHERE order_id = $1) AND status = 'pending';
+`;
+
+export const INSERT_SHORTAGE_BACKORDER_RECORD = `
+  INSERT INTO backorders (order_item_id, quantity, status, created_at, updated_at)
+  VALUES ($1, $2, 'pending', NOW(), NOW())
+  RETURNING id AS backorder_id, order_item_id, $2::INT AS quantity, NULL AS preferred_warehouse_name, 'pending' AS status;
+`;

@@ -24,6 +24,9 @@ import {
   SOFT_DELETE_PRODUCT_BY_ID,
   SOFT_DELETE_PRODUCT_VARIANTS_BY_PRODUCT_ID,
   SOFT_DELETE_PRODUCT_VARIANT_BY_ID,
+  INSERT_SUBSCRIPTION_PLAN_FOR_RECURRING_PRODUCT,
+  FIND_SUBSCRIPTION_PLAN_BY_PRODUCT_ID,
+  UPDATE_SUBSCRIPTION_PLAN_BY_ID,
 } from '../queries/catalog.query.js';
 
 export const getActiveCustomersRepo = async () => {
@@ -269,11 +272,7 @@ export const createProductRepo = async ({
       if (['monthly', 'quarterly', 'yearly'].includes(c)) {
         cycle = c;
       }
-      await client.query(`
-        INSERT INTO subscription_plans (
-          product_id, name, billing_cycle, price, allow_proration, allow_cancellation, allow_partial_refund, is_active
-        ) VALUES ($1, $2, $3::subscription_cycle_enum, $4, true, true, true, true)
-      `, [product.id, name, cycle, base_price]);
+      await client.query(INSERT_SUBSCRIPTION_PLAN_FOR_RECURRING_PRODUCT, [product.id, name, cycle, base_price]);
     }
 
     await client.query('COMMIT');
@@ -370,19 +369,11 @@ export const updateProductRepo = async (productId, {
       if (['monthly', 'quarterly', 'yearly'].includes(c)) {
         cycle = c;
       }
-      const existingPlan = await client.query('SELECT id FROM subscription_plans WHERE product_id = $1 LIMIT 1', [productId]);
+      const existingPlan = await client.query(FIND_SUBSCRIPTION_PLAN_BY_PRODUCT_ID, [productId]);
       if (existingPlan.rows.length === 0) {
-        await client.query(`
-          INSERT INTO subscription_plans (
-            product_id, name, billing_cycle, price, allow_proration, allow_cancellation, allow_partial_refund, is_active
-          ) VALUES ($1, $2, $3::subscription_cycle_enum, $4, true, true, true, true)
-        `, [productId, name, cycle, base_price]);
+        await client.query(INSERT_SUBSCRIPTION_PLAN_FOR_RECURRING_PRODUCT, [productId, name, cycle, base_price]);
       } else {
-        await client.query(`
-          UPDATE subscription_plans
-          SET name = $1, price = $2, billing_cycle = $3::subscription_cycle_enum, is_active = true
-          WHERE id = $4
-        `, [name, base_price, cycle, existingPlan.rows[0].id]);
+        await client.query(UPDATE_SUBSCRIPTION_PLAN_BY_ID, [name, base_price, cycle, existingPlan.rows[0].id]);
       }
     }
 

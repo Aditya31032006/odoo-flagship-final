@@ -151,3 +151,19 @@ export const INSERT_INITIAL_SUBSCRIPTION_BILLING_LINE = `
   ) VALUES ($1, CURRENT_DATE, CURRENT_DATE + INTERVAL '1 month', $2, false);
 `;
 
+export const CHECK_NEGOTIATION_PRODUCT_VARIANT_IS_SUBSCRIPTION = `
+  SELECT p.id AS product_id, p.name AS product_name, p.unit, sp.id AS plan_id, sp.billing_cycle
+  FROM product_variants pv
+  JOIN products p ON pv.product_id = p.id
+  LEFT JOIN subscription_plans sp ON sp.product_id = p.id AND sp.is_active = TRUE
+  WHERE pv.id = $1
+  LIMIT 1;
+`;
+
+export const INSERT_NEGOTIATION_FALLBACK_SUBSCRIPTION_PLAN = `
+  INSERT INTO subscription_plans (
+    product_id, name, billing_cycle, price, allow_proration, allow_cancellation, allow_partial_refund, is_active
+  ) VALUES ($1, $2, 'monthly', $3, true, true, true, true)
+  RETURNING id, billing_cycle;
+`;
+
