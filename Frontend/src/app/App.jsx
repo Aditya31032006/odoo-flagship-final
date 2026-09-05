@@ -11,6 +11,14 @@ function App() {
 
   useEffect(() => {
     fetchCurrentUser();
+
+    // Auto-resync permissions and fresh token when user focuses/returns to tab
+    const handleFocus = () => {
+      fetchCurrentUser();
+    };
+
+    window.addEventListener('focus', handleFocus);
+    return () => window.removeEventListener('focus', handleFocus);
   }, [fetchCurrentUser]);
 
   return (

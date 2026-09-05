@@ -224,7 +224,7 @@ export const getCompaniesController = async (req, res, next) => {
 };
 
 /**
- * Get current logged in user details
+ * Get current logged in user details and re-issue fresh JWT token with updated role/permissions
  */
 export const getMeController = async (req, res, next) => {
     try {
@@ -237,9 +237,20 @@ export const getMeController = async (req, res, next) => {
             return res.status(STATUS_CODES.NOT_FOUND).json({ message: MESSAGES.USER.NOT_FOUND });
         }
 
+        if (freshUser.is_active === false) {
+            res.clearCookie("auth_token", getAccessCookieOptions());
+            return res.status(STATUS_CODES.FORBIDDEN).json({ message: 'Your account has been deactivated. Please contact your administrator.' });
+        }
+
+        // Auto re-issue fresh JWT token containing the latest role & user properties
+        const { password_hash, ...safeUser } = freshUser;
+        const token = signToken(safeUser);
+        res.cookie("auth_token", token, getAccessCookieOptions());
+
         return res.status(STATUS_CODES.OK).json({
             message: MESSAGES.USER.RETRIEVED,
-            user: freshUser
+            user: safeUser,
+            token
         });
     } catch (error) {
         next(error);
