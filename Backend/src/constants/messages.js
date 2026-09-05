@@ -1,0 +1,36 @@
+export const MESSAGES = Object.freeze({
+  AUTH: Object.freeze({
+    LOGIN_SUCCESS: 'Login successful',
+    LOGOUT_SUCCESS: 'Logout successful',
+    INVALID_CREDENTIALS: 'Invalid password',
+    ALREADY_EXISTS: 'User already exists',
+    USER_NOT_FOUND: 'User not found',
+    NO_TOKEN: 'Authentication required. No token provided.',
+    INVALID_TOKEN: 'Invalid or expired authentication token.',
+    UNAUTHORIZED: 'Not authenticated.',
+    OTP_SENT: 'Password reset OTP has been sent to your email',
+    OTP_EXPIRED_OR_NOT_FOUND: 'OTP has expired or was not requested',
+    INVALID_OTP: 'Invalid OTP provided',
+    PASSWORD_RESET_SUCCESS: 'Password reset successfully. You can now log in with your new password.',
+    PASSWORD_CHANGED: 'Password changed successfully',
+    OAUTH_USER_MANUAL_LOGIN_ERROR: 'This account was registered using Google. Please log in using Google or reset password after loggin in using Google',
+    GOOGLE_LOGIN_SUCCESS: 'Google authentication successful',
+  }),
+  USER: Object.freeze({
+    CREATED: 'User created successfully',
+    CREATED_EMAIL_SENT: 'User created. Welcome email sent.',
+    RETRIEVED: 'User retrieved successfully',
+    UPDATED: 'User updated successfully',
+    NOT_FOUND: 'User not found',
+  }),
+  FILE: Object.freeze({
+    UPLOAD_ERROR: 'File upload error',
+    INVALID_FILE_TYPE: 'Invalid file type',
+  }),
+  SYSTEM: Object.freeze({
+    INTERNAL_ERROR: 'Internal server error',
+    VALIDATION_ERROR: 'Validation error',
+    DUPLICATE_VALUE: 'Duplicate value',
+    ROUTE_NOT_FOUND: 'Route not found',
+  }),
+});

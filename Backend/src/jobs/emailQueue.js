@@ -1,0 +1,148 @@
+import { Queue, Worker } from 'bullmq';
+import { redisConnection } from '../config/redis.js';
+import { sendMail, generateWelcomeEmail, generateOtpEmail } from '../services/mail.service.js';
+
+/**
+ * BullMQ Email Queue for offloading email dispatching.
+ */
+export const emailQueue = new Queue('email-queue', {
+  connection: redisConnection,
+  defaultJobOptions: {
+    attempts: 3,
+    backoff: {
+      type: 'exponential',
+      delay: 3000,
+    },
+    removeOnComplete: {
+      count: 100,
+      age: 24 * 3600, // keep for 24 hours
+    },
+    removeOnFail: {
+      count: 500,
+    },
+  },
+});
+
+let emailWorker = null;
+
+/**
+ * Explicitly initializes and starts the BullMQ Email Worker.
+ */
+export function initEmailWorker() {
+  if (emailWorker) {
+    return emailWorker;
+  }
+
+  emailWorker = new Worker(
+    'email-queue',
+    async (job) => {
+      const { name, data } = job;
+
+      switch (name) {
+        case 'send-welcome-email': {
+          const { name: userName, email } = data;
+          const html = generateWelcomeEmail({ name: userName, email });
+          await sendMail({
+            toEmail: email,
+            subject: 'Welcome to GlobeTrotter! 🌍',
+            html,
+          });
+          break;
+        }
+
+        case 'send-otp-email': {
+          const { email, otp } = data;
+          const html = generateOtpEmail({ otp });
+          await sendMail({
+            toEmail: email,
+            subject: 'Your Password Reset OTP - GlobeTrotter',
+            html,
+          });
+          break;
+        }
+
+        case 'send-generic-mail': {
+          const { toEmail, subject, html, text } = data;
+          await sendMail({ toEmail, subject, html, text });
+          break;
+        }
+
+        default:
+          throw new Error(`Unknown job type: ${name}`);
+      }
+    },
+    {
+      connection: redisConnection,
+      concurrency: 5,
+    }
+  );
+
+  // ==================== EVENT LISTENERS ====================
+
+  emailWorker.on('completed', (job) => {
+    console.log(`📧 [BullMQ] Email sent successfully (${job.name}) to: ${job.data.email || job.data.toEmail}`);
+  });
+
+  emailWorker.on('failed', (job, err) => {
+    console.error(`❌ [BullMQ] Email job FAILED (${job?.name}) to: ${job?.data?.email || job?.data?.toEmail} — Reason: ${err.message}`);
+  });
+
+  emailWorker.on('error', (err) => {
+    console.error(`⚠️ [BullMQ] Email worker connection error: ${err.message}`);
+  });
+
+  console.log('⚡ BullMQ Email Worker initialized and listening for jobs.');
+  return emailWorker;
+}
+
+// ==================== HELPER DISPATCHERS ====================
+
+/**
+ * Enqueues a welcome email job upon user registration.
+ * @param {Object} params
+ * @param {string} params.name
+ * @param {string} params.email
+ */
+export const addWelcomeEmailJob = async ({ name, email }) => {
+  return await emailQueue.add('send-welcome-email', { name, email });
+};
+
+/**
+ * Enqueues a password reset OTP email job.
+ * @param {Object} params
+ * @param {string} params.email
+ * @param {string} params.otp
+ */
+export const addOtpEmailJob = async ({ email, otp }) => {
+  return await emailQueue.add('send-otp-email', { email, otp });
+};
+
+/**
+ * Enqueues a custom generic email job.
+ * @param {Object} params
+ * @param {string} params.toEmail
+ * @param {string} params.subject
+ * @param {string} params.html
+ * @param {string} [params.text]
+ */
+export const addGenericEmailJob = async ({ toEmail, subject, html, text }) => {
+  return await emailQueue.add('send-generic-mail', { toEmail, subject, html, text });
+};
+
+/**
+ * Retrieves current job counts for monitoring/health check.
+ */
+export const getQueueStatus = async () => {
+  try {
+    const counts = await emailQueue.getJobCounts('waiting', 'active', 'completed', 'failed', 'delayed');
+    return {
+      status: 'up',
+      ...counts,
+    };
+  } catch (error) {
+    return {
+      status: 'down',
+      error: error.message,
+    };
+  }
+};
