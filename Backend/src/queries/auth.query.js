@@ -25,6 +25,28 @@ export const FIND_USER = `
   WHERE LOWER(u.email) = LOWER($1)
 `;
 
+export const FIND_USER_BY_IDENTIFIER = `
+  SELECT 
+    u.id, 
+    u.name, 
+    u.email, 
+    u.password_hash, 
+    (u.password_hash IS NOT NULL AND u.password_hash != '') AS has_password,
+    u.mobile, 
+    u.role, 
+    u.is_active, 
+    u.created_at,
+    c.id AS customer_id, 
+    c.company_name, 
+    c.gst_number, 
+    cu.is_primary_contact
+  FROM users u
+  LEFT JOIN customer_users cu ON u.id = cu.user_id
+  LEFT JOIN customers c ON cu.customer_id = c.id
+  WHERE LOWER(u.email) = LOWER($1) OR u.mobile = $1
+`;
+
+
 export const FIND_USER_BY_ID = `
   SELECT 
     u.id, 

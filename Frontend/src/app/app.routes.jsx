@@ -126,6 +126,8 @@ export const router = createBrowserRouter([
       {
         path: '/staff',
         element: <StaffManagement />,
+      },
+      {
         path: '/discount-rules',
         element: <DiscountRulesSetup />,
       },

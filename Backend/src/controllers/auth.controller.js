@@ -4,6 +4,7 @@ import {
     completeUserOnboardingRepo,
     listActiveCompaniesRepo,
     findUserRepo,
+    findUserByIdentifierRepo,
     findUserByIdRepo,
     getUserFullProfileRepo,
     updateUserProfileRepo,
@@ -116,14 +117,18 @@ export const registerController = async (req, res, next) => {
 };
 
 /**
- * Login user via email and password
+ * Login user via email/mobile and password
  */
 export const loginController = async (req, res, next) => {
     try {
-        const { email, password } = req.body;
-        const useEmail = email.toLowerCase().trim();
+        const { email, mobile, identifier, password } = req.body;
+        const targetIdentifier = (identifier || email || mobile || '').trim();
 
-        const user = await findUserRepo(useEmail);
+        if (!targetIdentifier) {
+            return res.status(STATUS_CODES.BAD_REQUEST).json({ message: 'Email address or mobile number is required' });
+        }
+
+        const user = await findUserByIdentifierRepo(targetIdentifier);
         if (!user) {
             return res.status(STATUS_CODES.BAD_REQUEST).json({ message: MESSAGES.AUTH.USER_NOT_FOUND });
         }

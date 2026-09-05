@@ -9,15 +9,18 @@ export default function Login() {
   const location = useLocation();
   const { login, loading, error, isAuthenticated, resetError } = useAuth();
 
+  const [loginMethod, setLoginMethod] = useState('email'); // 'email' | 'mobile'
   const [showPassword, setShowPassword] = useState(false);
 
   // React Hook Form instance
   const {
     register,
     handleSubmit,
+    setValue,
+    clearErrors,
     formState: { errors }
   } = useForm({
-    defaultValues: { email: '', password: '' }
+    defaultValues: { identifier: '', password: '' }
   });
 
   // If already authenticated, redirect to destination or dashboard
@@ -37,10 +40,16 @@ export default function Login() {
   // Submit Login
   const onLogin = async (data) => {
     if (error) resetError();
-    const result = await login({
-      email: data.email,
+    const payload = {
       password: data.password,
-    });
+    };
+    if (loginMethod === 'email') {
+      payload.email = data.identifier;
+    } else {
+      payload.mobile = data.identifier;
+    }
+
+    const result = await login(payload);
 
     if (result.success) {
       const destination = location.state?.from?.pathname || '/dashboard';
@@ -81,33 +90,99 @@ export default function Login() {
           </div>
         )}
 
-        {/* Login Form */}
-        <form className="df-auth-card__form" onSubmit={handleSubmit(onLogin)} noValidate>
-          <div className="form-group">
-            <label htmlFor="email">Email Address</label>
-            <div className="input-wrapper">
-              <input
-                id="email"
-                type="email"
-                autoComplete="email"
-                placeholder="name@company.com"
-                {...register('email', {
-                  required: 'Email address is required',
-                  pattern: {
-                    value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
-                    message: 'Please enter a valid email address'
-                  }
-                })}
-              />
-              <svg className="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        {/* Login Method Toggle */}
+        <div className="df-auth-card__role-selector">
+          <div className="role-grid">
+            <button
+              type="button"
+              className={`role-chip ${loginMethod === 'email' ? 'active' : ''}`}
+              onClick={() => {
+                setLoginMethod('email');
+                setValue('identifier', '');
+                clearErrors();
+              }}
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
                 <polyline points="22,6 12,13 2,6" />
               </svg>
-            </div>
-            {errors.email && (
-              <span className="field-error">{errors.email.message}</span>
-            )}
+              <span>Email Address</span>
+            </button>
+
+            <button
+              type="button"
+              className={`role-chip ${loginMethod === 'mobile' ? 'active' : ''}`}
+              onClick={() => {
+                setLoginMethod('mobile');
+                setValue('identifier', '');
+                clearErrors();
+              }}
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <rect x="5" y="2" width="14" height="20" rx="2" ry="2" />
+                <line x1="12" y1="18" x2="12.01" y2="18" />
+              </svg>
+              <span>Mobile Number</span>
+            </button>
           </div>
+        </div>
+
+        {/* Login Form */}
+        <form className="df-auth-card__form" onSubmit={handleSubmit(onLogin)} noValidate>
+          {loginMethod === 'email' ? (
+            <div className="form-group">
+              <label htmlFor="identifier">Email Address</label>
+              <div className="input-wrapper">
+                <input
+                  id="identifier"
+                  type="email"
+                  autoComplete="email"
+                  placeholder="name@company.com"
+                  {...register('identifier', {
+                    required: 'Email address is required',
+                    pattern: {
+                      value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
+                      message: 'Please enter a valid email address'
+                    }
+                  })}
+                />
+                <svg className="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
+                  <polyline points="22,6 12,13 2,6" />
+                </svg>
+              </div>
+              {errors.identifier && (
+                <span className="field-error">{errors.identifier.message}</span>
+              )}
+            </div>
+          ) : (
+            <div className="form-group">
+              <label htmlFor="identifier">Mobile Number</label>
+              <div className="input-wrapper">
+                <input
+                  id="identifier"
+                  type="tel"
+                  autoComplete="tel"
+                  placeholder="9876543210 (10 digits)"
+                  maxLength={10}
+                  {...register('identifier', {
+                    required: 'Mobile number is required',
+                    pattern: {
+                      value: /^[6-9]\d{9}$/,
+                      message: 'Mobile number must be 10 digits starting with 6, 7, 8, or 9'
+                    }
+                  })}
+                />
+                <svg className="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <rect x="5" y="2" width="14" height="20" rx="2" ry="2" />
+                  <line x1="12" y1="18" x2="12.01" y2="18" />
+                </svg>
+              </div>
+              {errors.identifier && (
+                <span className="field-error">{errors.identifier.message}</span>
+              )}
+            </div>
+          )}
 
           <div className="form-group">
             <div className="form-label-row">
@@ -206,5 +281,3 @@ export default function Login() {
     </div>
   );
 }
-
-

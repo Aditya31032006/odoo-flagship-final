@@ -2,6 +2,7 @@ import { pool } from "../config/database.js";
 import {
     CREATE_USER,
     FIND_USER,
+    FIND_USER_BY_IDENTIFIER,
     FIND_USER_BY_ID,
     GET_USER_FULL_PROFILE,
     UPDATE_USER_BASIC_PROFILE,
@@ -231,6 +232,20 @@ export const findUserRepo = async (email) => {
         return result.rows[0];
     } catch (error) {
         console.error("Error in findUserRepo:", error);
+        throw error;
+    } finally {
+        client.release();
+    }
+};
+
+export const findUserByIdentifierRepo = async (identifier) => {
+    const client = await pool.connect();
+    try {
+        const cleanIdentifier = identifier.trim();
+        const result = await client.query(FIND_USER_BY_IDENTIFIER, [cleanIdentifier]);
+        return result.rows[0];
+    } catch (error) {
+        console.error("Error in findUserByIdentifierRepo:", error);
         throw error;
     } finally {
         client.release();

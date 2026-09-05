@@ -33,14 +33,11 @@ app.use('/api/auth', authRouter);
 app.use('/api/dashboard', dashboardRouter);
 app.use('/api/quotations', quotationRouter);
 app.use('/api/catalog', catalogRouter);
-<<<<<<< HEAD
 app.use('/api/staff', staffRouter);
 app.use('/staff', staffRouter);
-=======
 app.use('/api/discount-rules', discountRulesRouter);
 app.use('/api/approvals', approvalRouter);
 app.use('/api/fulfillment', fulfillmentRouter);
->>>>>>> e196ad3a5e7c50c3525b272c3fef6815f32fd60f
 
 // Global Error Handler
 app.use(handleError);
