@@ -47,7 +47,9 @@ export async function resolveUserCustomerId(user) {
 export const getQuotationsController = async (req, res, next) => {
   try {
     const user = req.user;
-    const salesRepId = user.role === 'sales_rep' ? user.id : null;
+    const salesRepId = req.query.sales_rep_id 
+      ? Number(req.query.sales_rep_id) 
+      : (req.query.mine === 'true' && user.role === 'sales_rep' ? user.id : null);
     let customerId = null;
 
     if (user.role === 'customer') {

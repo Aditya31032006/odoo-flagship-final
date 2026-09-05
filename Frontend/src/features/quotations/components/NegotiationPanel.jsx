@@ -173,7 +173,15 @@ export const NegotiationPanel = memo(({
   };
 
   const isConfirmed = quotation?.status === 'confirmed' || negotiation?.status === 'accepted';
-  const hasActiveCounter = negotiation?.counter_discount_percentage != null;
+  const hasActiveCounter = negotiation?.counter_discount_percentage != null || negotiation?.requested_delivery_date != null;
+  const messages = negotiation?.messages || [];
+  const lastMessage = messages.length > 0 ? messages[messages.length - 1] : null;
+  const lastSenderType = lastMessage?.sender_type || (negotiation?.created_by_role === 'customer' ? 'customer' : null);
+
+  // Turn-based negotiation rules
+  const isAwaitingSalesResponse = isCustomer && lastSenderType === 'customer' && hasActiveCounter;
+  const isAwaitingCustomerResponse = !isCustomer && lastSenderType === 'sales_rep' && hasActiveCounter;
+  const isMyTurn = isCustomer ? (lastSenderType !== 'customer') : (lastSenderType === 'customer' || !hasActiveCounter);
 
   return (
     <div className="df-negotiation-panel">
@@ -255,7 +263,39 @@ export const NegotiationPanel = memo(({
               ✅ Quotation Accepted &amp; Confirmed
             </span>
           ) : (
-            <>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+              {isAwaitingSalesResponse && (
+                <span
+                  style={{
+                    fontSize: '0.8125rem',
+                    color: '#fbbf24',
+                    background: 'rgba(245, 158, 11, 0.12)',
+                    border: '1px solid rgba(245, 158, 11, 0.3)',
+                    padding: '0.35rem 0.75rem',
+                    borderRadius: '6px',
+                    fontWeight: 600,
+                  }}
+                >
+                  ⏳ Waiting for Sales Team Reply
+                </span>
+              )}
+
+              {isAwaitingCustomerResponse && (
+                <span
+                  style={{
+                    fontSize: '0.8125rem',
+                    color: '#38bdf8',
+                    background: 'rgba(56, 189, 248, 0.12)',
+                    border: '1px solid rgba(56, 189, 248, 0.3)',
+                    padding: '0.35rem 0.75rem',
+                    borderRadius: '6px',
+                    fontWeight: 600,
+                  }}
+                >
+                  ⏳ Waiting for Customer Response
+                </span>
+              )}
+
               {isCustomer && (
                 <button
                   type="button"
@@ -266,14 +306,23 @@ export const NegotiationPanel = memo(({
                   Confirm &amp; Accept Deal
                 </button>
               )}
+
               <button
                 type="button"
                 className="btn-counter-toggle"
                 onClick={() => setShowCounterForm((prev) => !prev)}
               >
-                {showCounterForm ? 'Hide Counter Form' : hasActiveCounter ? 'Revise Counter Offer' : '+ Propose Counter Offer'}
+                {showCounterForm
+                  ? 'Close Form'
+                  : isAwaitingSalesResponse
+                  ? '✏️ Edit My Counter Offer'
+                  : isAwaitingCustomerResponse
+                  ? '✏️ Edit Sent Counter Offer'
+                  : isCustomer
+                  ? '+ Propose Counter Offer'
+                  : '+ Respond with Counter Offer'}
               </button>
-            </>
+            </div>
           )}
         </div>
       </div>
@@ -282,10 +331,12 @@ export const NegotiationPanel = memo(({
       {hasActiveCounter && !showCounterForm && (
         <div className="df-negotiation-panel__counter-summary">
           <div className="counter-details">
-            <span className="badge-active">Active Counter Proposal</span>
+            <span className="badge-active">
+              {lastSenderType === 'customer' ? 'Customer Counter Proposal' : 'Sales Counter Proposal'}
+            </span>
             {negotiation.counter_discount_percentage != null && (
               <span className="counter-val">
-                Requested Discount: <strong>{negotiation.counter_discount_percentage}%</strong>
+                Proposed Discount: <strong>{negotiation.counter_discount_percentage}%</strong>
               </span>
             )}
             {negotiation.requested_delivery_date && (
@@ -300,7 +351,7 @@ export const NegotiationPanel = memo(({
               className="btn-edit-counter"
               onClick={() => setShowCounterForm(true)}
             >
-              Modify Proposal
+              {isAwaitingSalesResponse || isAwaitingCustomerResponse ? 'Edit Proposal' : 'Revise / Respond'}
             </button>
           )}
         </div>
@@ -309,11 +360,15 @@ export const NegotiationPanel = memo(({
       {/* Counter Offer Form (React Hook Form) */}
       {showCounterForm && !isConfirmed && (
         <div className="df-negotiation-panel__counter-form">
-          <h4>Propose Revised Commercial Terms</h4>
+          <h4>
+            {isAwaitingSalesResponse || isAwaitingCustomerResponse
+              ? 'Edit Current Proposal Terms'
+              : 'Propose Revised Commercial Terms'}
+          </h4>
           <form onSubmit={handleSubmitCounter(onCounterSubmit)}>
             <div className="inputs-grid">
               <div className="input-block">
-                <label>Requested Discount Percentage (%)</label>
+                <label>Requested / Counter Discount Percentage (%)</label>
                 <input
                   type="number"
                   min="0"

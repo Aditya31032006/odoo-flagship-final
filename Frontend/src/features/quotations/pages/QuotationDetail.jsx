@@ -6,6 +6,7 @@ import QuotationLineItemsTable from '../components/QuotationLineItemsTable.jsx';
 import DiscountAlertBanner from '../components/DiscountAlertBanner.jsx';
 import UpsellSuggestionsWidget from '../components/UpsellSuggestionsWidget.jsx';
 import NegotiationPanel from '../components/NegotiationPanel.jsx';
+import approvalsApi from '../../approvals/services/approvals.api.js';
 import quotationApi from '../services/quotation.api.js';
 import BackButton from '../../../shared/components/BackButton.jsx';
 import { useToast } from '../../../shared/context/ToastContext.jsx';
@@ -21,6 +22,8 @@ export const QuotationDetail = ({ isNew = false }) => {
   const { user } = useAuth();
   const { toast, confirm } = useToast();
   const isCustomer = user?.role === 'customer';
+  const isReviewer = ['admin', 'sales_manager', 'finance'].includes(user?.role);
+  const [isActingApproval, setIsActingApproval] = React.useState(false);
   const targetId = isNew ? 'new' : id;
 
   const {
@@ -73,6 +76,74 @@ export const QuotationDetail = ({ isNew = false }) => {
       setTimeout(() => {
         navigate('/quotations');
       }, 1200);
+    }
+  };
+
+  const handleApproveQuotation = async () => {
+    const ok = await confirm({
+      title: 'Approve Quotation',
+      message: 'Are you sure you want to grant approval for this quotation?',
+      confirmText: 'Approve Quotation',
+      type: 'info',
+    });
+    if (!ok) return;
+
+    setIsActingApproval(true);
+    try {
+      await approvalsApi.submitDecision(targetId, {
+        action: 'approve',
+        reason: 'Approved by ' + (user?.name || user?.role),
+      });
+      toast.success('Quotation approved successfully!');
+      setTimeout(() => {
+        window.location.reload();
+      }, 800);
+    } catch (err) {
+      toast.error(err.response?.data?.message || err.message || 'Failed to approve quotation');
+    } finally {
+      setIsActingApproval(false);
+    }
+  };
+
+  const handleReturnRevision = async () => {
+    const note = window.prompt('Please enter note/reason for returning to sales rep for revision:');
+    if (note === null) return;
+
+    setIsActingApproval(true);
+    try {
+      await approvalsApi.submitDecision(targetId, {
+        action: 'return_revision',
+        reason: note || 'Returned for discount revision',
+      });
+      toast.success('Quotation returned for revision.');
+      setTimeout(() => {
+        window.location.reload();
+      }, 800);
+    } catch (err) {
+      toast.error(err.response?.data?.message || err.message || 'Failed to return quotation');
+    } finally {
+      setIsActingApproval(false);
+    }
+  };
+
+  const handleRejectQuotation = async () => {
+    const reason = window.prompt('Please enter the reason for rejection:');
+    if (reason === null) return;
+
+    setIsActingApproval(true);
+    try {
+      await approvalsApi.submitDecision(targetId, {
+        action: 'reject',
+        reason: reason || 'Quotation terms rejected',
+      });
+      toast.error('Quotation rejected.');
+      setTimeout(() => {
+        window.location.reload();
+      }, 800);
+    } catch (err) {
+      toast.error(err.response?.data?.message || err.message || 'Failed to reject quotation');
+    } finally {
+      setIsActingApproval(false);
     }
   };
 
@@ -381,6 +452,68 @@ export const QuotationDetail = ({ isNew = false }) => {
                   >
                     {isSaving ? 'Saving...' : 'Update & Re-save'}
                   </button>
+                </div>
+              ) : status === 'pending_approval' ? (
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.85rem',
+                  flexWrap: 'wrap'
+                }}>
+                  <div style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '0.5rem',
+                    padding: '0.65rem 1.15rem',
+                    background: 'rgba(245, 158, 11, 0.15)',
+                    border: '1px solid rgba(245, 158, 11, 0.4)',
+                    borderRadius: '8px',
+                    color: '#fbbf24',
+                    fontWeight: 600,
+                    fontSize: '0.9375rem'
+                  }}>
+                    ⏳ Status: Pending Governance Approval
+                  </div>
+
+                  {isReviewer ? (
+                    <>
+                      <button
+                        type="button"
+                        className="df-quotation-detail__btn-approve"
+                        onClick={handleApproveQuotation}
+                        disabled={isActingApproval || isSaving}
+                      >
+                        {isActingApproval ? 'Processing...' : '✓ Approve Quotation'}
+                      </button>
+
+                      <button
+                        type="button"
+                        className="df-quotation-detail__btn-return"
+                        onClick={handleReturnRevision}
+                        disabled={isActingApproval || isSaving}
+                      >
+                        ↺ Return for Revision
+                      </button>
+
+                      <button
+                        type="button"
+                        className="df-quotation-detail__btn-reject"
+                        onClick={handleRejectQuotation}
+                        disabled={isActingApproval || isSaving}
+                      >
+                        ✕ Reject
+                      </button>
+                    </>
+                  ) : (
+                    <button
+                      type="button"
+                      className="df-quotation-detail__btn-draft"
+                      onClick={handleSaveDraft}
+                      disabled={isSaving}
+                    >
+                      {isSaving ? 'Saving...' : 'Save Draft Updates'}
+                    </button>
+                  )}
                 </div>
               ) : (
                 <>

@@ -11,9 +11,16 @@ import { STATUS_CODES } from '../constants/statusCodes.js';
 export const getDashboardStatsController = async (req, res, next) => {
   try {
     const user = req.user;
-    const salesRepId = user.role === 'sales_rep' ? user.id : null;
+    const salesRepId = req.query.sales_rep_id 
+      ? Number(req.query.sales_rep_id) 
+      : (req.query.mine === 'true' && user.role === 'sales_rep' ? user.id : null);
 
-    const stats = await getDashboardStatsRepo(salesRepId);
+    let stats = await getDashboardStatsRepo(salesRepId);
+    
+    // If personal rep filter yields 0 and wasn't explicitly requested as mine, show pipeline stats
+    if (salesRepId && Number(stats.open_quotations_count) === 0 && req.query.mine !== 'true') {
+      stats = await getDashboardStatsRepo(null);
+    }
 
     return res.status(STATUS_CODES.OK).json({
       success: true,
@@ -38,10 +45,15 @@ export const getDashboardStatsController = async (req, res, next) => {
 export const getDashboardActivityController = async (req, res, next) => {
   try {
     const user = req.user;
-    const salesRepId = user.role === 'sales_rep' ? user.id : null;
+    const salesRepId = req.query.sales_rep_id 
+      ? Number(req.query.sales_rep_id) 
+      : (req.query.mine === 'true' && user.role === 'sales_rep' ? user.id : null);
     const limit = Math.min(Number(req.query.limit) || 15, 50);
 
-    const activities = await getRecentActivityLogsRepo(salesRepId, limit);
+    let activities = await getRecentActivityLogsRepo(salesRepId, limit);
+    if ((!activities || activities.length === 0) && salesRepId && req.query.mine !== 'true') {
+      activities = await getRecentActivityLogsRepo(null, limit);
+    }
 
     return res.status(STATUS_CODES.OK).json({
       success: true,

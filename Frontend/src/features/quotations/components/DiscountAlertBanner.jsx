@@ -11,7 +11,7 @@ export const DiscountAlertBanner = memo(({
       className={`df-quotation-detail__alert-banner df-quotation-detail__alert-banner--${hasExcess ? 'excess' : 'valid'}`}
     >
       <div className="banner-text">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           {hasExcess ? (
             <>
               <circle cx="12" cy="12" r="10" />
