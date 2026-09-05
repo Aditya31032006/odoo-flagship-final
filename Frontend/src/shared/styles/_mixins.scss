@@ -1,0 +1,74 @@
+// Mixins for DealFlow360 Navbar & Components
+@use './variables' as vars;
+
+// Flexbox Helpers
+@mixin flex-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+@mixin flex-between {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+@mixin flex-start {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+}
+
+// Glassmorphism effect
+@mixin glass-panel($bg-color: vars.$bg-nav, $blur-radius: 12px) {
+  background: $bg-color;
+  backdrop-filter: blur($blur-radius);
+  -webkit-backdrop-filter: blur($blur-radius);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+// Interactive states
+@mixin interactive-transition {
+  transition: all vars.$transition-normal;
+}
+
+// Truncate text with ellipsis
+@mixin text-truncate {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+// Responsive Breakpoint Mixins
+@mixin respond-to($breakpoint) {
+  @if $breakpoint == 'sm' {
+    @media (max-width: #{vars.$breakpoint-sm}) { @content; }
+  } @else if $breakpoint == 'md' {
+    @media (max-width: #{vars.$breakpoint-md}) { @content; }
+  } @else if $breakpoint == 'lg' {
+    @media (max-width: #{vars.$breakpoint-lg}) { @content; }
+  } @else if $breakpoint == 'xl' {
+    @media (max-width: #{vars.$breakpoint-xl}) { @content; }
+  } @else if $breakpoint == '2xl' {
+    @media (max-width: #{vars.$breakpoint-2xl}) { @content; }
+  }
+}
+
+// Scrollbar styling
+@mixin custom-scrollbar {
+  &::-webkit-scrollbar {
+    height: 3px;
+    width: 3px;
+  }
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  &::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: vars.$border-radius-full;
+  }
+  &::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.3);
+  }
+}
