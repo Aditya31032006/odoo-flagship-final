@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router';
 import useApprovals from '../hooks/useApprovals.js';
+import { useDebounce } from '../../../shared/hooks/useDebounce.js';
 import '../styles/approvals.scss';
 
 export const ApprovalsList = () => {
@@ -13,6 +14,21 @@ export const ApprovalsList = () => {
     filterPendingOnly,
     handleTogglePendingOnly,
   } = useApprovals();
+
+  const [searchQuery, setSearchQuery] = useState('');
+  const debouncedSearch = useDebounce(searchQuery, 300);
+
+  const filteredApprovals = useMemo(() => {
+    if (!debouncedSearch.trim()) return approvals;
+    const q = debouncedSearch.trim().toLowerCase();
+    return approvals.filter(
+      (item) =>
+        item.quotation_number?.toLowerCase().includes(q) ||
+        item.customer_name?.toLowerCase().includes(q) ||
+        item.stage?.toLowerCase().includes(q) ||
+        item.assigned_to?.toLowerCase().includes(q)
+    );
+  }, [approvals, debouncedSearch]);
 
   const handleRowClick = (quotationId) => {
     navigate(`/approvals/${quotationId}`);
@@ -38,16 +54,56 @@ export const ApprovalsList = () => {
           </div>
         )}
 
-        {/* KPI Badges / Counts Bar */}
-        <div className="df-approvals__kpis">
-          <div className="df-approvals__kpi-card df-approvals__kpi-card--pending">
-            <span>{counts?.pending_count || 0} Pending</span>
+        {/* KPI Badges / Counts Bar & Search Input */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem', marginBottom: '1.5rem' }}>
+          <div className="df-approvals__kpis" style={{ margin: 0 }}>
+            <div className="df-approvals__kpi-card df-approvals__kpi-card--pending">
+              <span>{counts?.pending_count || 0} Pending</span>
+            </div>
+            <div className="df-approvals__kpi-card df-approvals__kpi-card--returned">
+              <span>{counts?.returned_count || 0} Returned</span>
+            </div>
+            <div className="df-approvals__kpi-card df-approvals__kpi-card--approved">
+              <span>{counts?.approved_count || 0} Approved</span>
+            </div>
           </div>
-          <div className="df-approvals__kpi-card df-approvals__kpi-card--returned">
-            <span>{counts?.returned_count || 0} Returned</span>
-          </div>
-          <div className="df-approvals__kpi-card df-approvals__kpi-card--approved">
-            <span>{counts?.approved_count || 0} Approved</span>
+
+          <div style={{ position: 'relative', width: '300px', maxWidth: '100%' }}>
+            <input
+              type="text"
+              placeholder="Search by quote #, customer, stage..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              style={{
+                width: '100%',
+                background: 'rgba(30, 41, 59, 0.7)',
+                border: '1px solid rgba(255, 255, 255, 0.12)',
+                borderRadius: '8px',
+                padding: '0.6rem 2.2rem 0.6rem 0.9rem',
+                color: '#ffffff',
+                fontSize: '0.875rem',
+                outline: 'none',
+              }}
+            />
+            {searchQuery && (
+              <button
+                type="button"
+                onClick={() => setSearchQuery('')}
+                style={{
+                  position: 'absolute',
+                  right: '10px',
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  background: 'transparent',
+                  border: 'none',
+                  color: '#94a3b8',
+                  cursor: 'pointer',
+                  fontSize: '14px',
+                }}
+              >
+                ✕
+              </button>
+            )}
           </div>
         </div>
 
@@ -57,10 +113,10 @@ export const ApprovalsList = () => {
             <div className="df-approvals__empty">
               <div className="df-approvals__empty-title">Loading approvals...</div>
             </div>
-          ) : approvals.length === 0 ? (
+          ) : filteredApprovals.length === 0 ? (
             <div className="df-approvals__empty">
               <div className="df-approvals__empty-title">No quotations found</div>
-              <p>No quotation discount approval requests match your criteria.</p>
+              <p>{searchQuery ? 'No approval requests match your search criteria.' : 'No quotation discount approval requests match your criteria.'}</p>
             </div>
           ) : (
             <table className="df-approvals__table">
@@ -74,7 +130,7 @@ export const ApprovalsList = () => {
                 </tr>
               </thead>
               <tbody>
-                {approvals.map((item) => {
+                {filteredApprovals.map((item) => {
                   const riskLevel = item.risk_level?.toUpperCase() || 'LOW';
                   const isPendingStage = item.stage === 'Sales Manager' || item.stage === 'Finance';
                   const isAuto = item.stage === 'Auto-Approved' || item.stage === 'Approved';

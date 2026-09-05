@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useForm } from 'react-hook-form';
 import useStaff from '../hook/useStaff.js';
 import useAuth from '../../auth/hook/useAuth.js';
+import { useDebounce } from '../../../shared/hooks/useDebounce.js';
 import '../styles/staff.scss';
 
 // Role definitions
@@ -32,6 +33,7 @@ export default function StaffManagement() {
   const { staffList, loading, error, fetchStaff, createStaff, toggleStatus, deleteStaff } = useStaff();
 
   const [searchQuery, setSearchQuery] = useState('');
+  const debouncedSearch = useDebounce(searchQuery, 300);
   const [selectedRoleFilter, setSelectedRoleFilter] = useState('all');
   const [selectedStatusFilter, setSelectedStatusFilter] = useState('all');
 
@@ -61,14 +63,15 @@ export default function StaffManagement() {
     fetchStaff();
   }, [fetchStaff]);
 
-  // Filtered staff list
+  // Filtered staff list using debounced query for smooth rendering
   const filteredStaff = useMemo(() => {
     return staffList.filter((member) => {
+      const q = debouncedSearch.trim().toLowerCase();
       const matchesSearch =
-        searchQuery.trim() === '' ||
-        member.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        member.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        member.mobile?.includes(searchQuery);
+        q === '' ||
+        member.name?.toLowerCase().includes(q) ||
+        member.email?.toLowerCase().includes(q) ||
+        member.mobile?.includes(q);
 
       const matchesRole =
         selectedRoleFilter === 'all' || member.role === selectedRoleFilter;
@@ -80,7 +83,7 @@ export default function StaffManagement() {
 
       return matchesSearch && matchesRole && matchesStatus;
     });
-  }, [staffList, searchQuery, selectedRoleFilter, selectedStatusFilter]);
+  }, [staffList, debouncedSearch, selectedRoleFilter, selectedStatusFilter]);
 
   // Metrics counts
   const metrics = useMemo(() => {

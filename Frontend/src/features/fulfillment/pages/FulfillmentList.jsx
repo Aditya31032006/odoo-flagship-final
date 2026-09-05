@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router';
 import useFulfillment from '../hooks/useFulfillment.js';
+import { useDebounce } from '../../../shared/hooks/useDebounce.js';
 import WarehouseStockModal from '../components/WarehouseStockModal.jsx';
 import OrderModal from '../components/OrderModal.jsx';
 import DeleteConfirmModal from '../components/DeleteConfirmModal.jsx';
@@ -23,6 +24,38 @@ export const FulfillmentList = () => {
     handleUpdateOrder,
     handleDeleteOrder,
   } = useFulfillment();
+
+  // Search filter states
+  const [stockSearch, setStockSearch] = useState('');
+  const debouncedStockSearch = useDebounce(stockSearch, 300);
+
+  const [orderSearch, setOrderSearch] = useState('');
+  const debouncedOrderSearch = useDebounce(orderSearch, 300);
+
+  // Filtered Stock List
+  const filteredStock = useMemo(() => {
+    if (!debouncedStockSearch.trim()) return stock;
+    const q = debouncedStockSearch.trim().toLowerCase();
+    return stock.filter(
+      (s) =>
+        s.warehouse_name?.toLowerCase().includes(q) ||
+        s.product_name?.toLowerCase().includes(q) ||
+        s.sku?.toLowerCase().includes(q)
+    );
+  }, [stock, debouncedStockSearch]);
+
+  // Filtered Orders List
+  const filteredOrders = useMemo(() => {
+    if (!debouncedOrderSearch.trim()) return orders;
+    const q = debouncedOrderSearch.trim().toLowerCase();
+    return orders.filter(
+      (o) =>
+        o.order_number?.toLowerCase().includes(q) ||
+        o.customer_name?.toLowerCase().includes(q) ||
+        o.warehouses_display?.toLowerCase().includes(q) ||
+        o.status_display?.toLowerCase().includes(q)
+    );
+  }, [orders, debouncedOrderSearch]);
 
   // Modal States
   const [stockModal, setStockModal] = useState({ isOpen: false, initialData: null });
@@ -148,15 +181,54 @@ export const FulfillmentList = () => {
         )}
 
         {/* Section 1: Live Warehouse Stock Table with Add Option */}
-        <div className="df-fulfillment__section-header">
-          <h2 className="df-fulfillment__section-title">Warehouse Inventory & On-Hand Stock</h2>
-          <button
-            type="button"
-            className="df-fulfillment__add-btn"
-            onClick={handleOpenAddStock}
-          >
-            + Add Warehouse Stock
-          </button>
+        <div className="df-fulfillment__section-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
+          <h2 className="df-fulfillment__section-title" style={{ margin: 0 }}>Warehouse Inventory & On-Hand Stock</h2>
+          <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', flexWrap: 'wrap' }}>
+            <div style={{ position: 'relative', width: '260px', maxWidth: '100%' }}>
+              <input
+                type="text"
+                placeholder="Search stock by product, SKU, warehouse..."
+                value={stockSearch}
+                onChange={(e) => setStockSearch(e.target.value)}
+                style={{
+                  width: '100%',
+                  background: 'rgba(30, 41, 59, 0.7)',
+                  border: '1px solid rgba(255, 255, 255, 0.12)',
+                  borderRadius: '8px',
+                  padding: '0.5rem 2rem 0.5rem 0.8rem',
+                  color: '#ffffff',
+                  fontSize: '0.8125rem',
+                  outline: 'none',
+                }}
+              />
+              {stockSearch && (
+                <button
+                  type="button"
+                  onClick={() => setStockSearch('')}
+                  style={{
+                    position: 'absolute',
+                    right: '8px',
+                    top: '50%',
+                    transform: 'translateY(-50%)',
+                    background: 'transparent',
+                    border: 'none',
+                    color: '#94a3b8',
+                    cursor: 'pointer',
+                    fontSize: '13px',
+                  }}
+                >
+                  ✕
+                </button>
+              )}
+            </div>
+            <button
+              type="button"
+              className="df-fulfillment__add-btn"
+              onClick={handleOpenAddStock}
+            >
+              + Add Warehouse Stock
+            </button>
+          </div>
         </div>
 
         <div className="df-fulfillment__card">
@@ -177,14 +249,14 @@ export const FulfillmentList = () => {
                 </tr>
               </thead>
               <tbody>
-                {stock.length === 0 ? (
+                {filteredStock.length === 0 ? (
                   <tr>
                     <td colSpan={6} className="df-fulfillment__empty">
-                      No stock records found. Click "+ Add Warehouse Stock" above to register inventory.
+                      {stockSearch ? 'No warehouse stock matches your search.' : 'No stock records found. Click "+ Add Warehouse Stock" above to register inventory.'}
                     </td>
                   </tr>
                 ) : (
-                  stock.map((item) => (
+                  filteredStock.map((item) => (
                     <tr key={item.stock_id}>
                       <td>
                         <strong className="df-fulfillment__warehouse-name">
@@ -199,11 +271,15 @@ export const FulfillmentList = () => {
                       <td>{item.in_stock}</td>
                       <td>{item.reserved}</td>
                       <td>
-                        <span className="df-fulfillment__available-highlight">
+                        <span
+                          className={`df-fulfillment__available-badge ${
+                            item.available <= 0 ? 'df-fulfillment__available-badge--out' : ''
+                          }`}
+                        >
                           {item.available}
                         </span>
                       </td>
-                      <td>
+                      <td style={{ textAlign: 'right' }}>
                         <div className="df-fulfillment__row-actions">
                           <button
                             type="button"
@@ -231,16 +307,55 @@ export const FulfillmentList = () => {
           )}
         </div>
 
-        {/* Section 2: Orders Awaiting Fulfillment with Add Option */}
-        <div className="df-fulfillment__section-header">
-          <h2 className="df-fulfillment__section-title">Orders Awaiting Fulfillment</h2>
-          <button
-            type="button"
-            className="df-fulfillment__add-btn"
-            onClick={handleOpenAddOrder}
-          >
-            + Create Fulfillment Order
-          </button>
+        {/* Section 2: Orders Awaiting Fulfillment Table with Create Option */}
+        <div className="df-fulfillment__section-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem', marginTop: '2.5rem' }}>
+          <h2 className="df-fulfillment__section-title" style={{ margin: 0 }}>Orders Awaiting Fulfillment</h2>
+          <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', flexWrap: 'wrap' }}>
+            <div style={{ position: 'relative', width: '260px', maxWidth: '100%' }}>
+              <input
+                type="text"
+                placeholder="Search orders by number, customer..."
+                value={orderSearch}
+                onChange={(e) => setOrderSearch(e.target.value)}
+                style={{
+                  width: '100%',
+                  background: 'rgba(30, 41, 59, 0.7)',
+                  border: '1px solid rgba(255, 255, 255, 0.12)',
+                  borderRadius: '8px',
+                  padding: '0.5rem 2rem 0.5rem 0.8rem',
+                  color: '#ffffff',
+                  fontSize: '0.8125rem',
+                  outline: 'none',
+                }}
+              />
+              {orderSearch && (
+                <button
+                  type="button"
+                  onClick={() => setOrderSearch('')}
+                  style={{
+                    position: 'absolute',
+                    right: '8px',
+                    top: '50%',
+                    transform: 'translateY(-50%)',
+                    background: 'transparent',
+                    border: 'none',
+                    color: '#94a3b8',
+                    cursor: 'pointer',
+                    fontSize: '13px',
+                  }}
+                >
+                  ✕
+                </button>
+              )}
+            </div>
+            <button
+              type="button"
+              className="df-fulfillment__add-btn"
+              onClick={handleOpenAddOrder}
+            >
+              + Create Fulfillment Order
+            </button>
+          </div>
         </div>
 
         <div className="df-fulfillment__card">
@@ -260,14 +375,14 @@ export const FulfillmentList = () => {
                 </tr>
               </thead>
               <tbody>
-                {orders.length === 0 ? (
+                {filteredOrders.length === 0 ? (
                   <tr>
                     <td colSpan={5} className="df-fulfillment__empty">
-                      No orders awaiting fulfillment. Click "+ Create Fulfillment Order" above.
+                      {orderSearch ? 'No orders match your search criteria.' : 'No orders awaiting fulfillment. Click "+ Create Fulfillment Order" above.'}
                     </td>
                   </tr>
                 ) : (
-                  orders.map((order) => (
+                  filteredOrders.map((order) => (
                     <tr
                       key={order.order_id}
                       className="is-clickable"

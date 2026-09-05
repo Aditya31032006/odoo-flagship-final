@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router';
 import useQuotations from '../hook/useQuotations.js';
+import { useDebounce } from '../../../shared/hooks/useDebounce.js';
 import QuotationKanban from '../components/QuotationKanban.jsx';
 import QuotationTable from '../components/QuotationTable.jsx';
 import '../styles/quotations.scss';
@@ -21,6 +22,14 @@ export const QuotationsList = () => {
     refresh,
     isLoading,
   } = useQuotations();
+
+  // Debounced search state for smooth keystrokes
+  const [localSearch, setLocalSearch] = useState(searchQuery || '');
+  const debouncedSearch = useDebounce(localSearch, 350);
+
+  useEffect(() => {
+    setSearch(debouncedSearch);
+  }, [debouncedSearch, setSearch]);
 
   const handleSelectQuote = (quote) => {
     if (quote?.id) {
@@ -79,9 +88,26 @@ export const QuotationsList = () => {
               <input
                 type="text"
                 placeholder="Search by customer, quote #, or sales rep..."
-                value={searchQuery}
-                onChange={(e) => setSearch(e.target.value)}
+                value={localSearch}
+                onChange={(e) => setLocalSearch(e.target.value)}
               />
+              {localSearch && (
+                <button
+                  type="button"
+                  onClick={() => setLocalSearch('')}
+                  title="Clear search"
+                  style={{
+                    background: 'transparent',
+                    border: 'none',
+                    color: '#94a3b8',
+                    cursor: 'pointer',
+                    fontSize: '14px',
+                    padding: '0 6px',
+                  }}
+                >
+                  ✕
+                </button>
+              )}
             </div>
           </div>
 
