@@ -1,43 +1,72 @@
+import React, { lazy, Suspense } from 'react';
 import { createBrowserRouter, Navigate } from 'react-router';
 import ProtectedRoute from '../features/auth/components/ProtectedRoute.jsx';
 import PublicRoute from '../features/auth/components/PublicRoute.jsx';
-import Login from '../features/auth/pages/Login.jsx';
-import Register from '../features/auth/pages/Register.jsx';
-import Dashboard from '../features/dashboard/pages/Dashboard.jsx';
-import QuotationsList from '../features/quotations/pages/QuotationsList.jsx';
-import QuotationDetail from '../features/quotations/pages/QuotationDetail.jsx';
-import ProductCatalog from '../features/products/pages/ProductCatalog.jsx';
-import ProductDetail from '../features/products/pages/ProductDetail.jsx';
-import DiscountRulesSetup from '../features/discountRules/pages/DiscountRulesSetup.jsx';
-import ApprovalsList from '../features/approvals/pages/ApprovalsList.jsx';
-import ApprovalDetail from '../features/approvals/pages/ApprovalDetail.jsx';
-import FulfillmentList from '../features/fulfillment/pages/FulfillmentList.jsx';
-import FulfillmentDetail from '../features/fulfillment/pages/FulfillmentDetail.jsx';
-import Onboarding from '../features/auth/pages/Onboarding.jsx';
-import ForgotPassword from '../features/auth/pages/ForgotPassword.jsx';
-import Profile from '../features/auth/pages/Profile.jsx';
-import StaffManagement from '../features/staff/pages/StaffManagement.jsx';
-import MyQuotations from '../features/quotations/pages/MyQuotations.jsx';
-import MyInvoices from '../features/invoices/pages/MyInvoices.jsx';
-import SubscriptionsList from '../features/subscriptions/pages/SubscriptionsList.jsx';
-import SubscriptionDetail from '../features/subscriptions/pages/SubscriptionDetail.jsx';
-import DealHealthDashboard from '../features/dealHealth/pages/DealHealthDashboard.jsx';
-import InvoicesList from '../features/invoices/pages/InvoicesList.jsx';
-import InvoiceDetail from '../features/invoices/pages/InvoiceDetail.jsx';
-import InvoiceCreate from '../features/invoices/pages/InvoiceCreate.jsx';
-import ReportsDashboard from '../features/reports/pages/ReportsDashboard.jsx';
 import './placeholder.scss';
 
-// Lightweight placeholder view component for quick verification
-const PagePlaceholder = ({ title, description }) => (
-  <div className="df-placeholder-page">
-    <div className="df-placeholder-page__card">
-      <h1 className="df-placeholder-page__title">{title}</h1>
-      <p className="df-placeholder-page__description">{description}</p>
-    </div>
+// Lazy-loaded page components for on-demand bundle downloading
+const Login = lazy(() => import('../features/auth/pages/Login.jsx'));
+const Register = lazy(() => import('../features/auth/pages/Register.jsx'));
+const Onboarding = lazy(() => import('../features/auth/pages/Onboarding.jsx'));
+const ForgotPassword = lazy(() => import('../features/auth/pages/ForgotPassword.jsx'));
+const Profile = lazy(() => import('../features/auth/pages/Profile.jsx'));
+
+const Dashboard = lazy(() => import('../features/dashboard/pages/Dashboard.jsx'));
+const QuotationsList = lazy(() => import('../features/quotations/pages/QuotationsList.jsx'));
+const QuotationDetail = lazy(() => import('../features/quotations/pages/QuotationDetail.jsx'));
+const MyQuotations = lazy(() => import('../features/quotations/pages/MyQuotations.jsx'));
+
+const ProductCatalog = lazy(() => import('../features/products/pages/ProductCatalog.jsx'));
+const ProductDetail = lazy(() => import('../features/products/pages/ProductDetail.jsx'));
+const DiscountRulesSetup = lazy(() => import('../features/discountRules/pages/DiscountRulesSetup.jsx'));
+
+const ApprovalsList = lazy(() => import('../features/approvals/pages/ApprovalsList.jsx'));
+const ApprovalDetail = lazy(() => import('../features/approvals/pages/ApprovalDetail.jsx'));
+
+const FulfillmentList = lazy(() => import('../features/fulfillment/pages/FulfillmentList.jsx'));
+const FulfillmentDetail = lazy(() => import('../features/fulfillment/pages/FulfillmentDetail.jsx'));
+
+const SubscriptionsList = lazy(() => import('../features/subscriptions/pages/SubscriptionsList.jsx'));
+const SubscriptionDetail = lazy(() => import('../features/subscriptions/pages/SubscriptionDetail.jsx'));
+
+const InvoicesList = lazy(() => import('../features/invoices/pages/InvoicesList.jsx'));
+const InvoiceDetail = lazy(() => import('../features/invoices/pages/InvoiceDetail.jsx'));
+const InvoiceCreate = lazy(() => import('../features/invoices/pages/InvoiceCreate.jsx'));
+const MyInvoices = lazy(() => import('../features/invoices/pages/MyInvoices.jsx'));
+
+const DealHealthDashboard = lazy(() => import('../features/dealHealth/pages/DealHealthDashboard.jsx'));
+const ReportsDashboard = lazy(() => import('../features/reports/pages/ReportsDashboard.jsx'));
+const StaffManagement = lazy(() => import('../features/staff/pages/StaffManagement.jsx'));
+
+// Sleek loading fallback for Suspense
+const RouteLoader = () => (
+  <div style={{
+    minHeight: '60vh',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexDirection: 'column',
+    gap: '1rem',
+    color: '#94a3b8',
+    fontFamily: 'Inter, sans-serif'
+  }}>
+    <div style={{
+      width: '32px',
+      height: '32px',
+      border: '3px solid rgba(59, 130, 246, 0.2)',
+      borderTopColor: '#3b82f6',
+      borderRadius: '50%',
+      animation: 'df-spin 0.8s linear infinite'
+    }} />
+    <span style={{ fontSize: '0.875rem', fontWeight: 500 }}>Loading view...</span>
   </div>
 );
 
+const withSuspense = (Component, props = {}) => (
+  <Suspense fallback={<RouteLoader />}>
+    <Component {...props} />
+  </Suspense>
+);
 
 import RoleGuard from '../features/auth/components/RoleGuard.jsx';
 
@@ -52,19 +81,19 @@ export const router = createBrowserRouter([
       },
       {
         path: '/dashboard',
-        element: <Dashboard />,
+        element: withSuspense(Dashboard),
       },
       {
         path: '/quotations',
-        element: <QuotationsList />,
+        element: withSuspense(QuotationsList),
       },
       {
         path: '/quotations/new',
-        element: <QuotationDetail isNew={true} />,
+        element: withSuspense(QuotationDetail, { isNew: true }),
       },
       {
         path: '/quotations/:id',
-        element: <QuotationDetail />,
+        element: withSuspense(QuotationDetail),
       },
 
       // Approvals: Admin, Sales Manager, Finance
@@ -73,11 +102,11 @@ export const router = createBrowserRouter([
         children: [
           {
             path: '/approvals',
-            element: <ApprovalsList />,
+            element: withSuspense(ApprovalsList),
           },
           {
             path: '/approvals/:id',
-            element: <ApprovalDetail />,
+            element: withSuspense(ApprovalDetail),
           },
         ],
       },
@@ -88,58 +117,58 @@ export const router = createBrowserRouter([
         children: [
           {
             path: '/fulfillment',
-            element: <FulfillmentList />,
+            element: withSuspense(FulfillmentDetail),
           },
           {
             path: '/fulfillment/:orderId',
-            element: <FulfillmentDetail />,
+            element: withSuspense(FulfillmentDetail),
           },
         ],
       },
 
       {
         path: '/subscriptions',
-        element: <SubscriptionsList />,
+        element: withSuspense(SubscriptionsList),
       },
       {
         path: '/subscriptions/:id',
-        element: <SubscriptionDetail />,
+        element: withSuspense(SubscriptionDetail),
       },
       {
         path: '/invoices',
-        element: <InvoicesList />,
+        element: withSuspense(InvoicesList),
       },
       {
         path: '/invoices/new',
-        element: <InvoiceCreate />,
+        element: withSuspense(InvoiceCreate),
       },
       {
         path: '/invoices/:id',
-        element: <InvoiceDetail />,
+        element: withSuspense(InvoiceDetail),
       },
       {
         path: '/deal-health',
-        element: <DealHealthDashboard />,
+        element: withSuspense(DealHealthDashboard),
       },
       {
         path: '/reports',
-        element: <ReportsDashboard />,
+        element: withSuspense(ReportsDashboard),
       },
       {
         path: '/products',
-        element: <ProductCatalog />,
+        element: withSuspense(ProductCatalog),
       },
       {
         path: '/products/new',
-        element: <ProductDetail isNew={true} />,
+        element: withSuspense(ProductDetail, { isNew: true }),
       },
       {
         path: '/products/:id',
-        element: <ProductDetail />,
+        element: withSuspense(ProductDetail),
       },
       {
         path: '/profile',
-        element: <Profile />,
+        element: withSuspense(Profile),
       },
 
       // Staff Management: Admin only
@@ -148,7 +177,7 @@ export const router = createBrowserRouter([
         children: [
           {
             path: '/staff',
-            element: <StaffManagement />,
+            element: withSuspense(StaffManagement),
           },
         ],
       },
@@ -159,11 +188,11 @@ export const router = createBrowserRouter([
         children: [
           {
             path: '/discount-rules',
-            element: <DiscountRulesSetup />,
+            element: withSuspense(DiscountRulesSetup),
           },
           {
             path: '/discount-tiers',
-            element: <DiscountRulesSetup />,
+            element: withSuspense(DiscountRulesSetup),
           },
         ],
       },
@@ -174,11 +203,11 @@ export const router = createBrowserRouter([
         children: [
           {
             path: '/my_quotations',
-            element: <MyQuotations />,
+            element: withSuspense(MyQuotations),
           },
           {
             path: '/my_invoices',
-            element: <MyInvoices />,
+            element: withSuspense(MyInvoices),
           },
         ],
       },
@@ -191,19 +220,19 @@ export const router = createBrowserRouter([
     children: [
       {
         path: '/login',
-        element: <Login />,
+        element: withSuspense(Login),
       },
       {
         path: '/register',
-        element: <Register />,
+        element: withSuspense(Register),
       },
       {
         path: '/onboarding',
-        element: <Onboarding />,
+        element: withSuspense(Onboarding),
       },
       {
         path: '/forgot-password',
-        element: <ForgotPassword />,
+        element: withSuspense(ForgotPassword),
       },
     ],
   },

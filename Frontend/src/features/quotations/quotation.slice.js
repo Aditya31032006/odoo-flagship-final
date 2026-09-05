@@ -48,6 +48,7 @@ const initialState = {
   selectedStatus: '',
   activeQuotation: null,
   isLoading: false,
+  isInitialized: false,
   error: null,
 };
 
@@ -80,6 +81,7 @@ const quotationSlice = createSlice({
       })
       .addCase(fetchQuotations.fulfilled, (state, action) => {
         state.isLoading = false;
+        state.isInitialized = true;
         if (action.payload.view === 'kanban') {
           state.kanbanData = action.payload.data;
           state.summary = action.payload.summary;

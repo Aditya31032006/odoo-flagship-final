@@ -23,13 +23,24 @@ export const QuotationsList = () => {
     isLoading,
   } = useQuotations();
 
-  // Debounced search state for smooth keystrokes
   const [localSearch, setLocalSearch] = useState(searchQuery || '');
   const debouncedSearch = useDebounce(localSearch, 350);
 
   useEffect(() => {
     setSearch(debouncedSearch);
   }, [debouncedSearch, setSearch]);
+
+  const handleClearSearch = () => {
+    setLocalSearch('');
+    setSearch('');
+  };
+
+  const handleKeyDown = (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      setSearch(localSearch);
+    }
+  };
 
   const handleSelectQuote = (quote) => {
     if (quote?.id) {
@@ -90,11 +101,12 @@ export const QuotationsList = () => {
                 placeholder="Search by customer, quote #, or sales rep..."
                 value={localSearch}
                 onChange={(e) => setLocalSearch(e.target.value)}
+                onKeyDown={handleKeyDown}
               />
               {localSearch && (
                 <button
                   type="button"
-                  onClick={() => setLocalSearch('')}
+                  onClick={handleClearSearch}
                   title="Clear search"
                   style={{
                     background: 'transparent',
