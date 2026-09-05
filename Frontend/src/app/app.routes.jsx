@@ -24,6 +24,7 @@ import DealHealthDashboard from '../features/dealHealth/pages/DealHealthDashboar
 import InvoicesList from '../features/invoices/pages/InvoicesList.jsx';
 import InvoiceDetail from '../features/invoices/pages/InvoiceDetail.jsx';
 import InvoiceCreate from '../features/invoices/pages/InvoiceCreate.jsx';
+import ReportsDashboard from '../features/reports/pages/ReportsDashboard.jsx';
 import './placeholder.scss';
 
 // Lightweight placeholder view component for quick verification
@@ -104,12 +105,7 @@ export const router = createBrowserRouter([
       },
       {
         path: '/reports',
-        element: (
-          <PagePlaceholder
-            title="Analytics & Post-Deal Reports"
-            description="Comprehensive revenue analytics, fulfillment turnaround times, and sales performance."
-          />
-        ),
+        element: <ReportsDashboard />,
       },
       {
         path: '/products',

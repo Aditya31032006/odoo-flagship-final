@@ -1,0 +1,1203 @@
+@use 'sass:color';
+
+// DealFlow360 Executive Reports & Analytics Theme
+.df-reports {
+  min-height: calc(100vh - 64px);
+  padding: 2rem 2.5rem 4rem;
+  background: radial-gradient(circle at top right, rgba(99, 102, 241, 0.05), transparent 40%),
+              radial-gradient(circle at bottom left, rgba(14, 165, 233, 0.04), transparent 35%),
+              #0b0f17;
+  color: #f1f5f9;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+
+  // Header Area
+  &__header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 2rem;
+    gap: 1.5rem;
+    flex-wrap: wrap;
+
+    &-left {
+      max-width: 650px;
+    }
+
+    &-title {
+      font-size: 1.85rem;
+      font-weight: 700;
+      letter-spacing: -0.025em;
+      color: #ffffff;
+      margin: 0 0 0.4rem;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+
+      .df-reports__badge-tag {
+        font-size: 0.75rem;
+        font-weight: 600;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+        padding: 0.25rem 0.6rem;
+        border-radius: 9999px;
+        background: rgba(99, 102, 241, 0.15);
+        color: #818cf8;
+        border: 1px solid rgba(99, 102, 241, 0.3);
+      }
+    }
+
+    &-subtitle {
+      font-size: 0.95rem;
+      color: #94a3b8;
+      margin: 0;
+      line-height: 1.5;
+    }
+  }
+
+  // Filter Bar Component
+  &__filter-bar {
+    background: rgba(18, 24, 38, 0.85);
+    backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 14px;
+    padding: 1.25rem 1.5rem;
+    margin-bottom: 2rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1.25rem;
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3);
+    flex-wrap: wrap;
+
+    &-controls {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      flex-wrap: wrap;
+      flex: 1;
+    }
+
+    &-group {
+      display: flex;
+      flex-direction: column;
+      gap: 0.35rem;
+      min-width: 140px;
+
+      label {
+        font-size: 0.75rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        color: #64748b;
+      }
+
+      select {
+        background: rgba(30, 41, 59, 0.8);
+        color: #f8fafc;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 8px;
+        padding: 0.55rem 0.85rem;
+        font-size: 0.875rem;
+        font-weight: 500;
+        outline: none;
+        cursor: pointer;
+        transition: all 0.2s ease;
+
+        &:hover {
+          border-color: rgba(99, 102, 241, 0.5);
+          background: rgba(30, 41, 59, 1);
+        }
+
+        &:focus {
+          border-color: #6366f1;
+          box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.25);
+        }
+
+        option {
+          background: #0f172a;
+          color: #f8fafc;
+        }
+      }
+    }
+
+    &-actions {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    &-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.6rem 1.15rem;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      text-decoration: none;
+
+      svg {
+        width: 16px;
+        height: 16px;
+      }
+
+      &--pdf {
+        background: rgba(99, 102, 241, 0.15);
+        color: #a5b4fc;
+        border: 1px solid rgba(99, 102, 241, 0.35);
+
+        &:hover {
+          background: rgba(99, 102, 241, 0.25);
+          color: #ffffff;
+          transform: translateY(-1px);
+        }
+      }
+
+      &--csv {
+        background: rgba(16, 185, 129, 0.15);
+        color: #6ee7b7;
+        border: 1px solid rgba(16, 185, 129, 0.35);
+
+        &:hover {
+          background: rgba(16, 185, 129, 0.25);
+          color: #ffffff;
+          transform: translateY(-1px);
+        }
+      }
+    }
+  }
+
+  // Top KPI Cards Grid
+  &__kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 1.25rem;
+    margin-bottom: 2rem;
+  }
+
+  &__kpi-card {
+    background: rgba(18, 24, 38, 0.75);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 14px;
+    padding: 1.4rem 1.5rem;
+    position: relative;
+    overflow: hidden;
+    transition: transform 0.2s ease, border-color 0.2s ease;
+
+    &:hover {
+      transform: translateY(-2px);
+      border-color: rgba(99, 102, 241, 0.3);
+    }
+
+    &::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: linear-gradient(90deg, #6366f1, #06b6d4);
+      opacity: 0.8;
+    }
+
+    &--green::before {
+      background: linear-gradient(90deg, #10b981, #059669);
+    }
+
+    &--amber::before {
+      background: linear-gradient(90deg, #f59e0b, #d97706);
+    }
+
+    &--purple::before {
+      background: linear-gradient(90deg, #8b5cf6, #ec4899);
+    }
+
+    &-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 0.75rem;
+    }
+
+    &-title {
+      font-size: 0.825rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: #94a3b8;
+      margin: 0;
+    }
+
+    &-icon {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.04);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #818cf8;
+
+      svg {
+        width: 18px;
+        height: 18px;
+      }
+    }
+
+    &-value {
+      font-size: 1.75rem;
+      font-weight: 700;
+      color: #ffffff;
+      letter-spacing: -0.02em;
+      margin: 0 0 0.35rem;
+    }
+
+    &-footer {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.8rem;
+      color: #64748b;
+    }
+
+    &-trend {
+      font-weight: 600;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.2rem;
+      padding: 0.15rem 0.45rem;
+      border-radius: 4px;
+
+      &--positive {
+        background: rgba(16, 185, 129, 0.12);
+        color: #34d399;
+      }
+
+      &--negative {
+        background: rgba(239, 68, 68, 0.12);
+        color: #f87171;
+      }
+
+      &--neutral {
+        background: rgba(148, 163, 184, 0.12);
+        color: #94a3b8;
+      }
+    }
+  }
+
+  // Dashboard Middle Section (Charts Grid)
+  &__charts-grid {
+    display: grid;
+    grid-template-columns: repeat(12, 1fr);
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+  }
+
+  &__chart-box {
+    background: rgba(18, 24, 38, 0.75);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 14px;
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+
+    &--col-8 {
+      grid-column: span 8;
+
+      @media (max-width: 1080px) {
+        grid-column: span 12;
+      }
+    }
+
+    &--col-4 {
+      grid-column: span 4;
+
+      @media (max-width: 1080px) {
+        grid-column: span 12;
+      }
+    }
+
+    &--col-6 {
+      grid-column: span 6;
+
+      @media (max-width: 1080px) {
+        grid-column: span 12;
+      }
+    }
+
+    &--col-12 {
+      grid-column: span 12;
+    }
+
+    &-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1.25rem;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+
+    &-title {
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: #ffffff;
+      margin: 0;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    &-subtitle {
+      font-size: 0.8rem;
+      color: #64748b;
+      margin: 0.2rem 0 0;
+    }
+
+    &-legend {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      font-size: 0.8rem;
+    }
+
+    &-legend-item {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      color: #94a3b8;
+    }
+
+    &-legend-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 3px;
+
+      &--pipeline {
+        background: #6366f1;
+      }
+
+      &--confirmed {
+        background: #10b981;
+      }
+
+      &--manager {
+        background: #3b82f6;
+      }
+
+      &--finance {
+        background: #ec4899;
+      }
+
+      &--onetime {
+        background: #0ea5e9;
+      }
+
+      &--recurring {
+        background: #8b5cf6;
+      }
+    }
+  }
+
+  // SVG Native Chart Styling
+  &__svg-chart-container {
+    width: 100%;
+    position: relative;
+    flex: 1;
+    min-height: 240px;
+
+    svg {
+      width: 100%;
+      height: 100%;
+      overflow: visible;
+    }
+
+    .chart-grid-line {
+      stroke: rgba(255, 255, 255, 0.05);
+      stroke-dasharray: 4 4;
+    }
+
+    .chart-axis-text {
+      fill: #64748b;
+      font-size: 11px;
+      font-weight: 500;
+    }
+
+    .chart-area-pipeline {
+      fill: url(#pipelineGradient);
+      opacity: 0.4;
+    }
+
+    .chart-line-pipeline {
+      fill: none;
+      stroke: #6366f1;
+      stroke-width: 2.5;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .chart-area-confirmed {
+      fill: url(#confirmedGradient);
+      opacity: 0.5;
+    }
+
+    .chart-line-confirmed {
+      fill: none;
+      stroke: #10b981;
+      stroke-width: 2.5;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .chart-data-point {
+      cursor: pointer;
+      transition: r 0.2s ease, stroke-width 0.2s ease;
+
+      &:hover {
+        r: 6;
+        stroke-width: 3;
+      }
+    }
+  }
+
+  // Bottlenecks Visual Stage Bars
+  &__bottleneck-bars {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+    margin-top: 0.5rem;
+
+    &-stage {
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+    }
+
+    &-stage-header {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.85rem;
+      font-weight: 500;
+      color: #cbd5e1;
+    }
+
+    &-stage-time {
+      font-weight: 600;
+      color: #ffffff;
+    }
+
+    &-progress-track {
+      width: 100%;
+      height: 8px;
+      background: rgba(255, 255, 255, 0.06);
+      border-radius: 9999px;
+      overflow: hidden;
+      position: relative;
+    }
+
+    &-progress-fill {
+      height: 100%;
+      border-radius: 9999px;
+      transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+
+      &--manager {
+        background: linear-gradient(90deg, #2563eb, #60a5fa);
+        box-shadow: 0 0 10px rgba(59, 130, 246, 0.35);
+      }
+
+      &--finance {
+        background: linear-gradient(90deg, #db2777, #f472b6);
+        box-shadow: 0 0 10px rgba(236, 72, 153, 0.35);
+      }
+
+      &--overall {
+        background: linear-gradient(90deg, #4f46e5, #818cf8);
+        box-shadow: 0 0 10px rgba(99, 102, 241, 0.35);
+      }
+    }
+  }
+
+  &__svg-bar-wrap {
+    width: 100%;
+    height: 8px;
+    border-radius: 9999px;
+    overflow: hidden;
+
+    .df-reports__svg-bar {
+      width: 100%;
+      height: 8px;
+      display: block;
+    }
+  }
+
+  &__bottleneck-stats-row {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.75rem;
+    margin-top: 1.5rem;
+    padding-top: 1.25rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+
+    &-stat {
+      text-align: center;
+
+      .val {
+        font-size: 1.25rem;
+        font-weight: 700;
+        color: #ffffff;
+      }
+
+      .lbl {
+        font-size: 0.75rem;
+        color: #64748b;
+        margin-top: 0.15rem;
+      }
+    }
+  }
+
+  // Revenue Mix Donut / Stacked Bar
+  &__revenue-mix {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+
+    &-bar {
+      height: 16px;
+      border-radius: 9999px;
+      overflow: hidden;
+      display: flex;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      position: relative;
+    }
+
+    &-empty {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.7rem;
+      color: #64748b;
+      font-weight: 500;
+      letter-spacing: 0.02em;
+    }
+
+    &-segment {
+      height: 100%;
+      transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+
+      &--onetime {
+        background: linear-gradient(90deg, #0284c7, #38bdf8);
+      }
+
+      &--recurring {
+        background: linear-gradient(90deg, #7c3aed, #a78bfa);
+      }
+    }
+
+    &-breakdown {
+      display: flex;
+      flex-direction: column;
+      gap: 0.85rem;
+    }
+
+    &-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0.75rem;
+      background: rgba(255, 255, 255, 0.02);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      border-radius: 8px;
+
+      .item-left {
+        display: flex;
+        align-items: center;
+        gap: 0.6rem;
+        font-size: 0.875rem;
+        color: #e2e8f0;
+      }
+
+      .item-right {
+        text-align: right;
+
+        .amt {
+          font-weight: 700;
+          color: #ffffff;
+          font-size: 0.95rem;
+        }
+
+        .pct {
+          font-size: 0.75rem;
+          color: #64748b;
+        }
+      }
+    }
+  }
+
+  // Top Products and Upsell Attach Matrix Table
+  &__upsell-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.875rem;
+
+    th {
+      text-align: left;
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: #64748b;
+      padding: 0.75rem 1rem;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    td {
+      padding: 0.85rem 1rem;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+      color: #cbd5e1;
+    }
+
+    tr:hover td {
+      background: rgba(255, 255, 255, 0.02);
+    }
+
+    .prod-cell {
+      display: flex;
+      flex-direction: column;
+
+      .name {
+        font-weight: 600;
+        color: #ffffff;
+      }
+
+      .sku {
+        font-size: 0.75rem;
+        color: #64748b;
+      }
+    }
+
+    .attach-bar-wrap {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+
+      .bar-track {
+        flex: 1;
+        height: 6px;
+        background: rgba(255, 255, 255, 0.06);
+        border-radius: 9999px;
+        overflow: hidden;
+      }
+
+      .bar-fill {
+        height: 100%;
+        background: linear-gradient(90deg, #059669, #34d399);
+        border-radius: 9999px;
+        transition: width 0.4s ease;
+      }
+
+      .pct {
+        font-weight: 600;
+        color: #34d399;
+        font-size: 0.8rem;
+        min-width: 38px;
+      }
+    }
+  }
+
+  // Sales Rep Leaderboard Table
+  &__leaderboard-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.875rem;
+
+    th {
+      text-align: left;
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: #64748b;
+      padding: 0.85rem 1rem;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    td {
+      padding: 0.95rem 1rem;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+      color: #cbd5e1;
+    }
+
+    tr:hover td {
+      background: rgba(255, 255, 255, 0.025);
+    }
+
+    .rank-col {
+      width: 45px;
+      font-weight: 700;
+      color: #818cf8;
+    }
+
+    .rank-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      font-size: 0.75rem;
+      font-weight: 700;
+
+      &--1 {
+        background: #fbbf24;
+        color: #78350f;
+      }
+
+      &--2 {
+        background: #cbd5e1;
+        color: #334155;
+      }
+
+      &--3 {
+        background: #f97316;
+        color: #7c2d12;
+      }
+    }
+
+    .rep-cell {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+
+      .avatar {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        background: rgba(99, 102, 241, 0.2);
+        color: #a5b4fc;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.8rem;
+        font-weight: 700;
+      }
+
+      .info {
+        display: flex;
+        flex-direction: column;
+
+        .name {
+          font-weight: 600;
+          color: #ffffff;
+        }
+
+        .email {
+          font-size: 0.75rem;
+          color: #64748b;
+        }
+      }
+    }
+
+    .discount-pill {
+      font-size: 0.75rem;
+      font-weight: 600;
+      padding: 0.2rem 0.5rem;
+      border-radius: 4px;
+      background: rgba(59, 130, 246, 0.1);
+      color: #60a5fa;
+
+      &--high {
+        background: rgba(239, 68, 68, 0.1);
+        color: #f87171;
+      }
+    }
+  }
+
+  // Loading & Empty States
+  &__loading-skeleton {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 6rem 2rem;
+    color: #94a3b8;
+    gap: 1rem;
+
+    .spinner {
+      width: 40px;
+      height: 40px;
+      border: 3px solid rgba(255, 255, 255, 0.1);
+      border-top-color: #6366f1;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+  }
+
+  &__error-card {
+    background: rgba(239, 68, 68, 0.1);
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    border-radius: 12px;
+    padding: 1.5rem;
+    color: #fca5a5;
+    margin-bottom: 2rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+// Dedicated Executive PDF Print Preview Modal & Printable Document
+.df-reports-print-modal-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(8px);
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+}
+
+.df-reports-print-modal {
+  background: #0f172a;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 16px;
+  width: 100%;
+  max-width: 960px;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6);
+  overflow: hidden;
+
+  &__bar {
+    padding: 1rem 1.5rem;
+    background: #1e293b;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+
+    &-title {
+      font-size: 1rem;
+      font-weight: 600;
+      color: #ffffff;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    &-actions {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+  }
+
+  &__btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.5rem 1rem;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+
+    &--print {
+      background: #6366f1;
+      color: #ffffff;
+      border: 1px solid #4f46e5;
+
+      &:hover {
+        background: #4f46e5;
+        transform: translateY(-1px);
+      }
+    }
+
+    &--close {
+      background: rgba(255, 255, 255, 0.06);
+      color: #94a3b8;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+
+      &:hover {
+        background: rgba(255, 255, 255, 0.12);
+        color: #ffffff;
+      }
+    }
+  }
+}
+
+// Executive Printable Document Sheet Styling (White Paper Clean Layout)
+.df-reports-print-doc {
+  background: #ffffff;
+  color: #0f172a;
+  padding: 2.5rem 3rem;
+  overflow-y: auto;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+
+  &__header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 1.5rem;
+    gap: 2rem;
+
+    &-brand {
+      .df-reports-print-doc__brand-badge {
+        font-size: 1.6rem;
+        font-weight: 800;
+        letter-spacing: -0.03em;
+        color: #1e1b4b;
+      }
+
+      .df-reports-print-doc__brand-sub {
+        font-size: 0.85rem;
+        color: #64748b;
+        margin-top: 0.25rem;
+        font-weight: 500;
+      }
+    }
+
+    &-meta {
+      text-align: right;
+      font-size: 0.825rem;
+      color: #334155;
+
+      .meta-title {
+        font-size: 1.05rem;
+        font-weight: 700;
+        color: #0f172a;
+        margin-bottom: 0.35rem;
+        text-transform: uppercase;
+        letter-spacing: 0.03em;
+      }
+
+      .meta-row {
+        margin-bottom: 0.2rem;
+      }
+    }
+  }
+
+  &__divider {
+    border: none;
+    height: 2px;
+    background: #e2e8f0;
+    margin: 1.5rem 0 2rem;
+  }
+
+  &__section {
+    margin-bottom: 2rem;
+
+    &-title {
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: #0f172a;
+      margin: 0 0 1rem;
+      border-bottom: 1.5px solid #f1f5f9;
+      padding-bottom: 0.4rem;
+    }
+  }
+
+  &__kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1rem;
+    margin-bottom: 1rem;
+  }
+
+  &__kpi-box {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 1rem 1.25rem;
+
+    .kpi-lbl {
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: #64748b;
+    }
+
+    .kpi-val {
+      font-size: 1.5rem;
+      font-weight: 800;
+      color: #0f172a;
+      margin: 0.25rem 0 0.15rem;
+    }
+
+    .kpi-sub {
+      font-size: 0.75rem;
+      color: #94a3b8;
+    }
+  }
+
+  &__table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.825rem;
+
+    th {
+      background: #f1f5f9;
+      color: #334155;
+      font-weight: 700;
+      text-align: left;
+      padding: 0.65rem 0.85rem;
+      border: 1px solid #e2e8f0;
+      font-size: 0.75rem;
+      text-transform: uppercase;
+    }
+
+    td {
+      padding: 0.65rem 0.85rem;
+      border: 1px solid #e2e8f0;
+      color: #1e293b;
+    }
+
+    .doc-badge {
+      display: inline-block;
+      font-size: 0.75rem;
+      font-weight: 600;
+      padding: 0.15rem 0.45rem;
+      border-radius: 4px;
+
+      &--green {
+        background: #dcfce7;
+        color: #166534;
+      }
+
+      &--blue {
+        background: #dbeafe;
+        color: #1e40af;
+      }
+    }
+  }
+
+  &__mix-boxes {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+
+    .mix-card {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      padding: 1rem 1.25rem;
+
+      .mix-type {
+        font-weight: 700;
+        color: #334155;
+        font-size: 0.875rem;
+      }
+
+      .mix-amt {
+        font-size: 1.35rem;
+        font-weight: 800;
+        color: #0f172a;
+        margin: 0.25rem 0 0.1rem;
+      }
+
+      .mix-pct {
+        font-size: 0.75rem;
+        color: #64748b;
+      }
+    }
+  }
+
+  &__footer {
+    margin-top: 3rem;
+    padding-top: 2rem;
+    border-top: 1px solid #e2e8f0;
+
+    .footer-notes {
+      font-size: 0.75rem;
+      color: #64748b;
+      line-height: 1.4;
+      margin-bottom: 2.5rem;
+    }
+
+    .footer-signoff {
+      display: flex;
+      justify-content: space-between;
+      gap: 3rem;
+
+      .sign-box {
+        flex: 1;
+
+        .sign-line {
+          height: 1px;
+          background: #334155;
+          margin-bottom: 0.4rem;
+        }
+
+        .sign-lbl {
+          font-size: 0.75rem;
+          font-weight: 600;
+          color: #475569;
+          text-transform: uppercase;
+        }
+      }
+    }
+  }
+}
+
+// Dedicated Print Mode for Clean PDF Generation
+@media print {
+  body {
+    background: #ffffff !important;
+    color: #000000 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  // Hide the entire web app except the printable document
+  .df-navbar-wrapper,
+  .df-reports > *:not(.df-reports-print-modal-backdrop),
+  .df-reports-print-modal__bar,
+  header,
+  nav {
+    display: none !important;
+  }
+
+  .df-reports-print-modal-backdrop {
+    position: static !important;
+    background: none !important;
+    backdrop-filter: none !important;
+    padding: 0 !important;
+  }
+
+  .df-reports-print-modal {
+    max-width: 100% !important;
+    max-height: none !important;
+    border: none !important;
+    box-shadow: none !important;
+    background: none !important;
+  }
+
+  .df-reports-print-doc {
+    padding: 0 !important;
+    background: #ffffff !important;
+    color: #000000 !important;
+    overflow: visible !important;
+  }
+}
+
