@@ -44,7 +44,7 @@ export function initEmailWorker() {
           const html = generateWelcomeEmail({ name: userName, email });
           await sendMail({
             toEmail: email,
-            subject: 'Welcome to GlobeTrotter! 🌍',
+            subject: 'Welcome to DealFlow360! 🌐',
             html,
           });
           break;
@@ -55,7 +55,7 @@ export function initEmailWorker() {
           const html = generateOtpEmail({ otp });
           await sendMail({
             toEmail: email,
-            subject: 'Your Password Reset OTP - GlobeTrotter',
+            subject: 'Your DealFlow360 Password Reset OTP 🔒',
             html,
           });
           break;

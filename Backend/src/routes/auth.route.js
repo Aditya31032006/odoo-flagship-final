@@ -1,41 +1,47 @@
-import express from 'express'
-import multer from "multer";
+import express from 'express';
 import {
     registerValidation,
     loginValidation,
     forgotPasswordValidation,
     resetPasswordValidation
-} from "../validation/auth.validation.js"
+} from "../validation/auth.validation.js";
 import passport from 'passport';
 import {
     registerController,
     loginController,
     logoutController,
+    getMeController,
+    getCompaniesController,
+    completeOnboardingController,
     forgotPasswordController,
     resetPasswordController,
     googleAuthCallbackController
-} from '../controllers/auth.controller.js'
-import authMiddleware from '../middleware/auth.middleware.js'
+} from '../controllers/auth.controller.js';
+import authMiddleware from '../middleware/auth.middleware.js';
 
-import { STATUS_CODES } from '../constants/statusCodes.js';
-import { MESSAGES } from '../constants/messages.js';
+const authRouter = express.Router();
 
-const authRouter = express.Router()
-const upload = multer({ storage: multer.memoryStorage() });
-
-authRouter.post('/register', upload.single('profile_photo'), registerValidation, registerController);
+// Direct JSON Body Routes (no unused multer / file upload middleware)
+authRouter.post('/register', registerValidation, registerController);
 authRouter.post('/login', loginValidation, loginController);
 authRouter.get('/logout', authMiddleware, logoutController);
+authRouter.get('/me', authMiddleware, getMeController);
+authRouter.get('/companies', getCompaniesController);
+authRouter.post('/complete-onboarding', authMiddleware, completeOnboardingController);
 authRouter.post('/forgot-password', forgotPasswordValidation, forgotPasswordController);
 authRouter.post('/reset-password', resetPasswordValidation, resetPasswordController);
 
 // Google OAuth Routes
 authRouter.get(
     '/google',
-    passport.authenticate('google', {
-        scope: ['email', 'profile'],
-        session: false,
-    })
+    (req, res, next) => {
+        const state = req.query.state ? req.query.state.toString() : undefined;
+        passport.authenticate('google', {
+            scope: ['email', 'profile'],
+            session: false,
+            state: state,
+        })(req, res, next);
+    }
 );
 
 authRouter.get(
@@ -46,9 +52,5 @@ authRouter.get(
     }),
     googleAuthCallbackController
 );
-
-authRouter.get('/me', authMiddleware, (req, res) => {
-    res.status(STATUS_CODES.OK).json({ message: MESSAGES.USER.RETRIEVED, user: req.user });
-});
 
 export default authRouter;

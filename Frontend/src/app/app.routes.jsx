@@ -1,18 +1,9 @@
 import React from 'react';
-import { createBrowserRouter, Navigate, Outlet } from 'react-router';
-import Navbar from '../shared/components/Navbar';
-
-// Layout wrapper for authenticated/main pages that includes the Navbar
-const AppLayout = () => {
-  return (
-    <div className="app-container">
-      <Navbar />
-      <main className="app-main-content">
-        <Outlet />
-      </main>
-    </div>
-  );
-};
+import { createBrowserRouter, Navigate } from 'react-router';
+import ProtectedRoute from '../features/auth/components/ProtectedRoute.jsx';
+import PublicRoute from '../features/auth/components/PublicRoute.jsx';
+import Login from '../features/auth/pages/Login.jsx';
+import Register from '../features/auth/pages/Register.jsx';
 
 // Lightweight placeholder view component for quick verification
 const PagePlaceholder = ({ title, description }) => (
@@ -36,52 +27,10 @@ const PagePlaceholder = ({ title, description }) => (
   </div>
 );
 
-// Auth Page Placeholder (Navbar is excluded outside this layout)
-const AuthPlaceholder = ({ type }) => (
-  <div style={{
-    minHeight: '100vh',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    background: '#0f172a',
-    color: '#f8fafc',
-    fontFamily: 'system-ui, -apple-system, sans-serif'
-  }}>
-    <div style={{
-      background: '#1e293b',
-      padding: '2.5rem',
-      borderRadius: '16px',
-      border: '1px solid #334155',
-      textAlign: 'center',
-      maxWidth: '400px',
-      width: '90%'
-    }}>
-      <h2 style={{ fontSize: '1.5rem', fontWeight: 700, marginBottom: '0.75rem' }}>
-        {type === 'login' ? 'Welcome Back' : 'Create Account'}
-      </h2>
-      <p style={{ color: '#94a3b8', fontSize: '0.875rem', marginBottom: '1.5rem' }}>
-        DealFlow360 Authentication Portal (Navbar is excluded on this page)
-      </p>
-      <a href="/dashboard" style={{
-        display: 'inline-block',
-        background: '#2563eb',
-        color: '#ffffff',
-        padding: '0.625rem 1.25rem',
-        borderRadius: '8px',
-        textDecoration: 'none',
-        fontWeight: 600,
-        fontSize: '0.875rem'
-      }}>
-        Back to Dashboard
-      </a>
-    </div>
-  </div>
-);
-
-// Create router configuration using createBrowserRouter
 export const router = createBrowserRouter([
+  // Protected Routes (Require Authentication, Includes Navbar Layout & Outlet)
   {
-    element: <AppLayout />,
+    element: <ProtectedRoute />,
     children: [
       {
         path: '/',
@@ -170,13 +119,25 @@ export const router = createBrowserRouter([
       },
     ],
   },
-  // Auth routes placed outside AppLayout so Navbar is automatically excluded
+
+  // Public Guest Routes (Accessible Only When NOT Logged In)
   {
-    path: '/login',
-    element: <AuthPlaceholder type="login" />,
+    element: <PublicRoute />,
+    children: [
+      {
+        path: '/login',
+        element: <Login />,
+      },
+      {
+        path: '/register',
+        element: <Register />,
+      },
+    ],
   },
+
+  // Catch-all route -> redirect to dashboard
   {
-    path: '/register',
-    element: <AuthPlaceholder type="register" />,
+    path: '*',
+    element: <Navigate to="/dashboard" replace />,
   },
 ]);
