@@ -8,6 +8,7 @@ import {
   getProductCatalogSummaryRepo,
   getAllProductsRepo,
   getProductCategoriesRepo,
+  createProductCategoryRepo,
   getProductDetailRepo,
   createProductRepo,
   updateProductRepo,
@@ -105,6 +106,19 @@ export const getProductCategoriesController = async (req, res, next) => {
   try {
     const categories = await getProductCategoriesRepo();
     return res.status(STATUS_CODES.OK).json({ success: true, data: categories });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const createProductCategoryController = async (req, res, next) => {
+  try {
+    const { name } = req.body;
+    if (!name || !name.trim()) {
+      return res.status(STATUS_CODES.BAD_REQUEST).json({ success: false, message: 'Category name is required.' });
+    }
+    const category = await createProductCategoryRepo(name.trim());
+    return res.status(STATUS_CODES.CREATED).json({ success: true, data: category });
   } catch (error) {
     next(error);
   }

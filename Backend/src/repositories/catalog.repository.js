@@ -183,6 +183,28 @@ export const getProductCategoriesRepo = async () => {
   }
 };
 
+export const createProductCategoryRepo = async (name) => {
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    const result = await client.query(
+      `INSERT INTO product_categories (name) 
+       VALUES ($1) 
+       ON CONFLICT (name) DO UPDATE SET name = EXCLUDED.name 
+       RETURNING id, name;`,
+      [name.trim()]
+    );
+    await client.query('COMMIT');
+    return result.rows[0];
+  } catch (error) {
+    console.error('Error in createProductCategoryRepo:', error);
+    await client.query('ROLLBACK');
+    throw error;
+  } finally {
+    client.release();
+  }
+};
+
 export const getProductDetailRepo = async (productId) => {
   const client = await pool.connect();
   try {

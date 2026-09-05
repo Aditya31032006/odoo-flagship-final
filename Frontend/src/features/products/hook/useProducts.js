@@ -50,10 +50,28 @@ export const useProducts = ({ id = null, isEditingExisting = false, autoFetch = 
   }, []);
 
   useEffect(() => {
-    if (id || isEditingExisting) {
-      loadCategories();
-    }
-  }, [id, isEditingExisting, loadCategories]);
+    loadCategories();
+  }, [loadCategories]);
+
+  const handleCreateCategory = useCallback(
+    async (name) => {
+      try {
+        const newCat = await productsApi.createCategory(name);
+        if (newCat) {
+          setCategories((prev) => {
+            if (prev.some((c) => String(c.id) === String(newCat.id))) return prev;
+            return [...prev, newCat];
+          });
+          toast.success(`Category "${newCat.name}" created successfully`);
+          return newCat;
+        }
+      } catch (err) {
+        toast.error(err.response?.data?.message || err.message || 'Failed to create category');
+        return null;
+      }
+    },
+    [toast]
+  );
 
   // 2. Product Detail loading
   const loadProductData = useCallback(
@@ -442,6 +460,7 @@ export const useProducts = ({ id = null, isEditingExisting = false, autoFetch = 
     updateSubscriptionPlanField,
     saveSubscriptionPlanRow,
     deleteSubscriptionPlan,
+    createCategory: handleCreateCategory,
     saveProduct,
     deleteProduct,
   };
