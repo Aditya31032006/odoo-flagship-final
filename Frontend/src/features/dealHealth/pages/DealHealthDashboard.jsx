@@ -127,6 +127,7 @@ const ConfigureThresholdsModal = React.memo(({ isOpen, onClose, currentConfig, o
 const DealHealthDashboard = () => {
   const navigate = useNavigate();
   const user = useSelector((state) => state.auth?.user);
+  const toast = useToast();
 
   const [flags, setFlags] = useState([]);
   const [summary, setSummary] = useState({
@@ -244,7 +245,7 @@ const DealHealthDashboard = () => {
             <div className="df-deal-health__header-actions">
               <button
                 type="button"
-                className="df-btn-primary df-deal-health__btn-scan"
+                className="df-cta-btn df-deal-health__btn-scan"
                 onClick={handleTriggerScan}
                 disabled={isScanning}
               >
@@ -253,7 +254,7 @@ const DealHealthDashboard = () => {
               <PermissionGate allowedRoles={['admin', 'sales_manager']}>
                 <button
                   type="button"
-                  className="df-btn-secondary df-deal-health__btn-config"
+                  className="df-cta-btn df-deal-health__btn-config"
                   onClick={() => setIsConfigModalOpen(true)}
                 >
                   ⚙ Configure Thresholds

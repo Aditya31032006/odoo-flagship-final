@@ -210,55 +210,28 @@ export const FulfillmentList = () => {
         )}
 
         {/* Section 1: Live Warehouse Stock Table with Add Option */}
-        <div className="df-fulfillment__section-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
-          <h2 className="df-fulfillment__section-title" style={{ margin: 0 }}>Warehouse Inventory & On-Hand Stock</h2>
-          <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', flexWrap: 'wrap' }}>
-            <div style={{ position: 'relative', width: '260px', maxWidth: '100%' }}>
-              <input
-                type="text"
-                placeholder="Search stock by product, SKU, warehouse..."
-                value={stockSearch}
-                onChange={(e) => setStockSearch(e.target.value)}
-                style={{
-                  width: '100%',
-                  background: 'rgba(30, 41, 59, 0.7)',
-                  border: '1px solid rgba(255, 255, 255, 0.12)',
-                  borderRadius: '8px',
-                  padding: '0.5rem 2rem 0.5rem 0.8rem',
-                  color: '#ffffff',
-                  fontSize: '0.8125rem',
-                  outline: 'none',
-                }}
-              />
-              {stockSearch && (
-                <button
-                  type="button"
-                  onClick={() => setStockSearch('')}
-                  style={{
-                    position: 'absolute',
-                    right: '8px',
-                    top: '50%',
-                    transform: 'translateY(-50%)',
-                    background: 'transparent',
-                    border: 'none',
-                    color: '#94a3b8',
-                    cursor: 'pointer',
-                    fontSize: '13px',
-                  }}
-                >
-                  ✕
-                </button>
-              )}
-            </div>
-            {/* <PermissionGate allowedRoles={['admin', 'operations']}>
-              <button
-                type="button"
-                className="df-fulfillment__add-btn"
-                onClick={handleOpenAddStock}
-              >
-                + Add Warehouse Stock
+        <div className="df-toolbar-row" style={{ marginBottom: '0.75rem' }}>
+          <h2 className="df-fulfillment__section-title" style={{ margin: 0 }}>Warehouse Inventory &amp; On-Hand Stock</h2>
+          <div className="df-search-wrap" style={{ width: '260px' }}>
+            <span className="df-search-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" />
+              </svg>
+            </span>
+            <input
+              type="text"
+              className="df-search-input"
+              placeholder="Search stock by product, SKU, warehouse..."
+              value={stockSearch}
+              onChange={(e) => setStockSearch(e.target.value)}
+            />
+            {stockSearch && (
+              <button type="button" className="df-search-clear" onClick={() => setStockSearch('')}>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                  <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+                </svg>
               </button>
-            </PermissionGate> */}
+            )}
           </div>
         </div>
 
@@ -339,55 +312,28 @@ export const FulfillmentList = () => {
         </div>
 
         {/* Section 2: Orders Awaiting Fulfillment Table with Create Option */}
-        <div className="df-fulfillment__section-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem', marginTop: '2.5rem' }}>
+        <div className="df-toolbar-row" style={{ marginTop: '2.5rem', marginBottom: '0.75rem' }}>
           <h2 className="df-fulfillment__section-title" style={{ margin: 0 }}>Orders Awaiting Fulfillment</h2>
-          <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', flexWrap: 'wrap' }}>
-            <div style={{ position: 'relative', width: '260px', maxWidth: '100%' }}>
-              <input
-                type="text"
-                placeholder="Search orders by number, customer..."
-                value={orderSearch}
-                onChange={(e) => setOrderSearch(e.target.value)}
-                style={{
-                  width: '100%',
-                  background: 'rgba(30, 41, 59, 0.7)',
-                  border: '1px solid rgba(255, 255, 255, 0.12)',
-                  borderRadius: '8px',
-                  padding: '0.5rem 2rem 0.5rem 0.8rem',
-                  color: '#ffffff',
-                  fontSize: '0.8125rem',
-                  outline: 'none',
-                }}
-              />
-              {orderSearch && (
-                <button
-                  type="button"
-                  onClick={() => setOrderSearch('')}
-                  style={{
-                    position: 'absolute',
-                    right: '8px',
-                    top: '50%',
-                    transform: 'translateY(-50%)',
-                    background: 'transparent',
-                    border: 'none',
-                    color: '#94a3b8',
-                    cursor: 'pointer',
-                    fontSize: '13px',
-                  }}
-                >
-                  ✕
-                </button>
-              )}
-            </div>
-            {/* <PermissionGate allowedRoles={['admin', 'operations', 'finance']}>
-              <button
-                type="button"
-                className="df-fulfillment__add-btn"
-                onClick={handleOpenAddOrder}
-              >
-                + Create Fulfillment Order
+          <div className="df-search-wrap" style={{ width: '260px' }}>
+            <span className="df-search-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" />
+              </svg>
+            </span>
+            <input
+              type="text"
+              className="df-search-input"
+              placeholder="Search orders by number, customer..."
+              value={orderSearch}
+              onChange={(e) => setOrderSearch(e.target.value)}
+            />
+            {orderSearch && (
+              <button type="button" className="df-search-clear" onClick={() => setOrderSearch('')}>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                  <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+                </svg>
               </button>
-            </PermissionGate> */}
+            )}
           </div>
         </div>
 

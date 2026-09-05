@@ -84,46 +84,31 @@ export const ProductCatalog = () => {
         </div>
 
         {/* Products Section Header & Search Toolbar */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', margin: '2rem 0 1rem 0', flexWrap: 'wrap', gap: '1rem' }}>
+        <div className="df-toolbar-row" style={{ margin: '2rem 0 1rem 0' }}>
           <h2 className="df-products__section-title" style={{ margin: 0 }}>Products</h2>
-          <div style={{ position: 'relative', width: '320px', maxWidth: '100%' }}>
+          <div className="df-search-wrap" style={{ width: '320px' }}>
+            <span className="df-search-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" />
+              </svg>
+            </span>
             <input
               type="text"
+              className="df-search-input"
               placeholder="Search products by name, category..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              style={{
-                width: '100%',
-                background: 'rgba(30, 41, 59, 0.7)',
-                border: '1px solid rgba(255, 255, 255, 0.12)',
-                borderRadius: '8px',
-                padding: '0.6rem 2.2rem 0.6rem 0.9rem',
-                color: '#ffffff',
-                fontSize: '0.875rem',
-                outline: 'none',
-              }}
             />
             {searchQuery && (
-              <button
-                type="button"
-                onClick={() => setSearchQuery('')}
-                style={{
-                  position: 'absolute',
-                  right: '10px',
-                  top: '50%',
-                  transform: 'translateY(-50%)',
-                  background: 'transparent',
-                  border: 'none',
-                  color: '#94a3b8',
-                  cursor: 'pointer',
-                  fontSize: '14px',
-                }}
-              >
-                ✕
+              <button type="button" className="df-search-clear" onClick={() => setSearchQuery('')}>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                  <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+                </svg>
               </button>
             )}
           </div>
         </div>
+
 
         {/* Products Table matching Wireframe #16 */}
         <div className="df-products__table-wrapper">

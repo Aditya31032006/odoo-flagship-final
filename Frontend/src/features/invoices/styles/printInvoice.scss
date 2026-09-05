@@ -1,3 +1,4 @@
+@use '../../../shared/styles/variables' as vars;
 /* ==========================================================================
    DealFlow360 - Official Invoice Print Modal & Document Stylesheet
    (Matching Reports Page Architecture & PDF Generation)
@@ -24,7 +25,7 @@
   max-width: 900px;
   background: #0f172a;
   border: 1px solid rgba(255, 255, 255, 0.15);
-  border-radius: 16px;
+  border-radius: vars.$radius-xs;
   box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);
   overflow: hidden;
   display: flex;
@@ -61,7 +62,7 @@
     align-items: center;
     gap: 0.4rem;
     padding: 0.5rem 1.1rem;
-    border-radius: 8px;
+    border-radius: vars.$radius-xs;
     font-size: 0.8125rem;
     font-weight: 600;
     cursor: pointer;
@@ -178,7 +179,7 @@
     .party-box {
       background: #f8fafc;
       border: 1px solid #e2e8f0;
-      border-radius: 8px;
+      border-radius: vars.$radius-xs;
       padding: 1.25rem;
 
       .party-lbl {
@@ -265,7 +266,7 @@
     .remittance-box {
       background: #f8fafc;
       border: 1px solid #e2e8f0;
-      border-radius: 8px;
+      border-radius: vars.$radius-xs;
       padding: 1.15rem;
 
       h4 {
@@ -291,7 +292,7 @@
 
     .totals-calculation-box {
       border: 1px solid #e2e8f0;
-      border-radius: 8px;
+      border-radius: vars.$radius-xs;
       overflow: hidden;
 
       .calc-row {
@@ -367,7 +368,7 @@
     font-size: 0.75rem;
     font-weight: 700;
     padding: 0.2rem 0.6rem;
-    border-radius: 4px;
+    border-radius: vars.$radius-xs;
     text-transform: uppercase;
 
     &--green {

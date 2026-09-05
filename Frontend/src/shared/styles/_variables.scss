@@ -1,42 +1,42 @@
 // Design System Variables for DealFlow360
 
 // Color Palette
-$primary-50: #eff6ff;
-$primary-100: #dbeafe;
-$primary-200: #bfdbfe;
-$primary-300: #93c5fd;
-$primary-400: #60a5fa;
+$primary-50: #f4f7fc;
+$primary-100: #e2ecfc;
+$primary-200: #c5dcfa;
+$primary-300: #98c3f6;
+$primary-400: #62a3f0;
 $primary-500: #3b82f6;
 $primary-600: #2563eb;
 $primary-700: #1d4ed8;
 $primary-800: #1e40af;
 $primary-900: #1e3a8a;
 
-// Surface & Background Colors (Light Theme Glassmorphism Tokens)
-$bg-app: #f8fafc;
-$bg-surface: rgba(255, 255, 255, 0.72);
-$bg-surface-elevated: rgba(255, 255, 255, 0.85);
-$bg-card: rgba(255, 255, 255, 0.68);
-$bg-card-hover: rgba(255, 255, 255, 0.88);
-$bg-card-border: rgba(255, 255, 255, 0.85);
+// Surface & Background Colors (Awwwards/Linear Style Crisp Light Theme)
+$bg-app: #f6f7f9;
+$bg-surface: #ffffff;
+$bg-surface-elevated: #ffffff;
+$bg-card: #ffffff;
+$bg-card-hover: #ffffff;
+$bg-card-border: #e5e7eb;
 
 // Navbar Floating Glass Tokens
-$nav-floating-bg: rgba(255, 255, 255, 0.68);
-$nav-floating-border: rgba(255, 255, 255, 0.75);
-$nav-floating-shadow: 0 12px 32px 0 rgba(31, 38, 135, 0.08), 0 2px 8px 0 rgba(0, 0, 0, 0.02);
-$nav-dropdown-bg: rgba(255, 255, 255, 0.88);
-$nav-dropdown-border: rgba(255, 255, 255, 0.8);
-$nav-dropdown-shadow: 0 20px 40px -10px rgba(15, 23, 42, 0.12), 0 0 1px 1px rgba(255, 255, 255, 0.8);
+$nav-floating-bg: rgba(255, 255, 255, 0.92);
+$nav-floating-border: rgba(229, 231, 235, 0.9);
+$nav-floating-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.05), 0 1px 3px 0 rgba(0, 0, 0, 0.02);
+$nav-dropdown-bg: #ffffff;
+$nav-dropdown-border: #e5e7eb;
+$nav-dropdown-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.08), 0 0 1px rgba(0, 0, 0, 0.08);
 
-$bg-nav: rgba(255, 255, 255, 0.85);
-$bg-nav-dark: rgba(15, 23, 42, 0.88);
-$bg-nav-light: rgba(255, 255, 255, 0.92);
-$bg-nav-gradient: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
-$bg-active-pill: #eff6ff;
-$bg-active-pill-text: #2563eb;
-$bg-active-pill-border: #bfdbfe;
-$bg-active-pill-glow: rgba(37, 99, 235, 0.15);
-$bg-hover: rgba(15, 23, 42, 0.04);
+$bg-nav: rgba(255, 255, 255, 0.92);
+$bg-nav-dark: #18181b;
+$bg-nav-light: #ffffff;
+$bg-nav-gradient: #ffffff;
+$bg-active-pill: #18181b;
+$bg-active-pill-text: #ffffff;
+$bg-active-pill-border: #18181b;
+$bg-active-pill-glow: rgba(24, 24, 27, 0.1);
+$bg-hover: rgba(0, 0, 0, 0.04);
 
 // Neutral Colors
 $slate-50: #f8fafc;
@@ -49,13 +49,13 @@ $slate-600: #475569;
 $slate-700: #334155;
 $slate-800: #1e293b;
 $slate-900: #0f172a;
-$slate-950: #020617;
+$slate-950: #09090b;
 
 // Semantic Text
-$text-primary: #0f172a;
-$text-secondary: #475569;
-$text-muted: #64748b;
-$text-faint: #94a3b8;
+$text-primary: #09090b;
+$text-secondary: #52525b;
+$text-muted: #71717a;
+$text-faint: #a1a1aa;
 
 // Accent Colors
 $accent-cyan: #0284c7;
@@ -78,16 +78,16 @@ $font-weight-medium: 500;
 $font-weight-semibold: 600;
 $font-weight-bold: 700;
 
-// Dimensions & Spacing
-$navbar-height: 58px;
-$navbar-height-compact: 52px;
+// Dimensions & Spacing (Subtle Soft Geometric Edges - Balanced Between Square & Round)
+$navbar-height: 54px;
+$navbar-height-compact: 48px;
 $border-radius-xs: 4px;
 $border-radius-sm: 6px;
-$border-radius-md: 8px;
-$border-radius-lg: 12px;
-$border-radius-xl: 16px;
-$border-radius-2xl: 20px;
-$border-radius-full: 9999px;
+$border-radius-md: 6px;
+$border-radius-lg: 8px;
+$border-radius-xl: 10px;
+$border-radius-2xl: 12px;
+$border-radius-full: 6px;
 
 $radius-xs: $border-radius-xs;
 $radius-sm: $border-radius-sm;

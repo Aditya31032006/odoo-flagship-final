@@ -76,7 +76,7 @@ export const ApprovalsList = () => {
         )}
 
         {/* KPI Badges / Counts Bar & Search Input */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem', marginBottom: '1.5rem' }}>
+        <div className="df-toolbar-row">
           <div className="df-approvals__kpis" style={{ margin: 0 }}>
             <div className="df-approvals__kpi-card df-approvals__kpi-card--pending">
               <span>{counts?.pending_count || 0} Pending</span>
@@ -89,44 +89,29 @@ export const ApprovalsList = () => {
             </div>
           </div>
 
-          <div style={{ position: 'relative', width: '300px', maxWidth: '100%' }}>
+          <div className="df-search-wrap">
+            <span className="df-search-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" />
+              </svg>
+            </span>
             <input
               type="text"
+              className="df-search-input"
               placeholder="Search by quote #, customer, stage..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              style={{
-                width: '100%',
-                background: 'rgba(30, 41, 59, 0.7)',
-                border: '1px solid rgba(255, 255, 255, 0.12)',
-                borderRadius: '8px',
-                padding: '0.6rem 2.2rem 0.6rem 0.9rem',
-                color: '#ffffff',
-                fontSize: '0.875rem',
-                outline: 'none',
-              }}
             />
             {searchQuery && (
-              <button
-                type="button"
-                onClick={() => setSearchQuery('')}
-                style={{
-                  position: 'absolute',
-                  right: '10px',
-                  top: '50%',
-                  transform: 'translateY(-50%)',
-                  background: 'transparent',
-                  border: 'none',
-                  color: '#94a3b8',
-                  cursor: 'pointer',
-                  fontSize: '14px',
-                }}
-              >
-                ✕
+              <button type="button" className="df-search-clear" onClick={() => setSearchQuery('')}>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                  <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+                </svg>
               </button>
             )}
           </div>
         </div>
+
 
         {/* Approvals Table Card */}
         <div className="df-approvals__card">

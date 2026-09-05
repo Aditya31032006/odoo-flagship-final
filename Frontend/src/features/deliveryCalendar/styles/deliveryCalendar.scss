@@ -59,7 +59,7 @@
   &__kpi-card {
     background: var(--df-bg-card);
     border: 1px solid var(--df-border-card);
-    border-radius: 12px;
+    border-radius: vars.$radius-xs;
     padding: 1.25rem 1.5rem;
     box-shadow: var(--df-card-shadow);
     position: relative;
@@ -133,7 +133,7 @@
   &__sidebar-card {
     background: var(--df-bg-card);
     border: 1px solid var(--df-border-card);
-    border-radius: 12px;
+    border-radius: vars.$radius-xs;
     padding: 1.25rem;
     box-shadow: var(--df-card-shadow);
 
@@ -204,7 +204,7 @@
     padding: 0.65rem 0.8rem;
     background: var(--df-bg-surface);
     border: 1px solid var(--df-border-subtle);
-    border-radius: 8px;
+    border-radius: vars.$radius-xs;
     cursor: pointer;
     transition: all 0.2s ease;
 
@@ -251,7 +251,7 @@
   &__main {
     background: var(--df-bg-card);
     border: 1px solid var(--df-border-card);
-    border-radius: 14px;
+    border-radius: vars.$radius-xs;
     padding: 1.5rem;
     box-shadow: var(--df-card-shadow);
     display: flex;
@@ -287,7 +287,7 @@
       gap: 0.35rem;
       background: var(--df-bg-surface);
       border: 1px solid var(--df-border-subtle);
-      border-radius: 8px;
+      border-radius: vars.$radius-xs;
       padding: 2px;
     }
 
@@ -296,7 +296,7 @@
       border: none;
       color: var(--df-text-primary);
       padding: 0.35rem 0.65rem;
-      border-radius: 6px;
+      border-radius: vars.$radius-xs;
       cursor: pointer;
       font-size: 0.8125rem;
       font-weight: 600;
@@ -325,7 +325,7 @@
       font-size: 0.75rem;
       font-weight: 700;
       padding: 0.35rem 0.85rem;
-      border-radius: 6px;
+      border-radius: vars.$radius-xs;
       letter-spacing: 0.05em;
       box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
     }
@@ -357,7 +357,7 @@
     gap: 2px;
     background: var(--df-border-subtle);
     border: 1px solid var(--df-border-subtle);
-    border-radius: 10px;
+    border-radius: vars.$radius-xs;
     overflow: hidden;
   }
 
@@ -408,7 +408,7 @@
       font-weight: 700;
       color: var(--df-text-muted);
       background: rgba(255, 255, 255, 0.07);
-      border-radius: 4px;
+      border-radius: vars.$radius-xs;
       padding: 1px 5px;
     }
 
@@ -431,7 +431,7 @@
       }
       &::-webkit-scrollbar-thumb {
         background: rgba(255, 255, 255, 0.2);
-        border-radius: 4px;
+        border-radius: vars.$radius-xs;
 
         &:hover {
           background: #38bdf8;
@@ -443,7 +443,7 @@
   // Delivery Event Pill Inside Calendar Cell
   &__event-pill {
     padding: 0.3rem 0.5rem;
-    border-radius: 5px;
+    border-radius: vars.$radius-xs;
     font-size: 0.72rem;
     font-weight: 600;
     display: flex;
@@ -537,7 +537,7 @@
   &__modal {
     background: var(--df-modal-bg, #0f172a);
     border: 1px solid var(--df-border-card, #334155);
-    border-radius: 12px;
+    border-radius: vars.$radius-xs;
     width: 100%;
     max-width: 720px;
     max-height: 90vh;
@@ -578,7 +578,7 @@
       color: var(--df-text-muted);
       background: var(--df-bg-surface, #1e293b);
       border: 1px solid var(--df-border-subtle, #334155);
-      border-radius: 6px;
+      border-radius: vars.$radius-xs;
       padding: 2px 8px;
     }
 
@@ -593,7 +593,7 @@
         color: #38bdf8;
         background: #1e293b;
         border: 1px solid #334155;
-        border-radius: 6px;
+        border-radius: vars.$radius-xs;
         padding: 0.15rem 0.5rem;
         font-family: monospace;
       }
@@ -623,7 +623,7 @@
       color: var(--df-text-muted);
       width: 32px;
       height: 32px;
-      border-radius: 6px;
+      border-radius: vars.$radius-xs;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -644,7 +644,7 @@
       background: var(--df-bg-surface, #1e293b);
       border: 1px solid var(--df-border-subtle, #334155);
       border-left: 4px solid #0284c7;
-      border-radius: 8px;
+      border-radius: vars.$radius-xs;
       padding: 0.85rem 1.15rem;
       margin-bottom: 1.25rem;
       display: flex;
@@ -654,7 +654,7 @@
       &-icon {
         width: 36px;
         height: 36px;
-        border-radius: 8px;
+        border-radius: vars.$radius-xs;
         background: #0f172a;
         border: 1px solid #334155;
         display: flex;
@@ -700,7 +700,7 @@
     &-info-item {
       background: var(--df-bg-surface, #1e293b);
       border: 1px solid var(--df-border-subtle, #334155);
-      border-radius: 8px;
+      border-radius: vars.$radius-xs;
       padding: 0.75rem 1rem;
       display: flex;
       flex-direction: column;
@@ -730,7 +730,7 @@
     &-products-section {
       background: var(--df-bg-surface, #1e293b);
       border: 1px solid var(--df-border-subtle, #334155);
-      border-radius: 8px;
+      border-radius: vars.$radius-xs;
       padding: 1rem 1.15rem;
       margin-bottom: 1.5rem;
 
@@ -752,7 +752,7 @@
           font-weight: 700;
           color: #ffffff;
           background: #0284c7;
-          border-radius: 4px;
+          border-radius: vars.$radius-xs;
           padding: 2px 8px;
         }
       }
@@ -815,7 +815,7 @@
         color: var(--df-text-muted);
         background: #0f172a;
         padding: 2px 6px;
-        border-radius: 4px;
+        border-radius: vars.$radius-xs;
         border: 1px solid #334155;
         font-family: monospace;
       }
@@ -830,7 +830,7 @@
         align-items: center;
         gap: 0.2rem;
         padding: 3px 8px;
-        border-radius: 4px;
+        border-radius: vars.$radius-xs;
         font-size: 0.75rem;
         font-weight: 600;
         background: #0f172a;
@@ -866,7 +866,7 @@
       padding: 0.55rem 1.15rem !important;
       font-size: 0.8125rem !important;
       font-weight: 600 !important;
-      border-radius: 6px !important;
+      border-radius: vars.$radius-xs !important;
       background: #1e293b !important;
       border: 1px solid #475569 !important;
       color: #cbd5e1 !important;
@@ -885,7 +885,7 @@
       padding: 0.55rem 1.25rem !important;
       font-size: 0.8125rem !important;
       font-weight: 700 !important;
-      border-radius: 6px !important;
+      border-radius: vars.$radius-xs !important;
       background: #0284c7 !important;
       border: 1px solid #38bdf8 !important;
       color: #ffffff !important;
@@ -905,7 +905,7 @@
   align-items: center;
   gap: 0.35rem;
   padding: 3px 10px;
-  border-radius: 4px;
+  border-radius: vars.$radius-xs;
   font-size: 0.75rem;
   font-weight: 700;
   letter-spacing: 0.02em;

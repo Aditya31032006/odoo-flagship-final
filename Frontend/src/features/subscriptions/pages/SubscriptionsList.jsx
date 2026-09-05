@@ -138,7 +138,7 @@ export const SubscriptionsList = () => {
             <PermissionGate allowedRoles={['admin', 'finance']}>
               <button
                 type="button"
-                className="df-btn-primary df-subscriptions__btn-primary"
+                className="df-cta-btn"
                 onClick={() => setIsPlanModalOpen(true)}
               >
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
@@ -152,7 +152,7 @@ export const SubscriptionsList = () => {
         </div>
 
         {/* Search & Status KPI Cards matching Wireframe #9 */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem', marginBottom: '1.25rem' }}>
+        <div className="df-toolbar-row">
           <div className="df-subscriptions__status-cards" style={{ margin: 0 }}>
             <button
               type="button"
@@ -186,41 +186,24 @@ export const SubscriptionsList = () => {
             )}
           </div>
 
-          <div style={{ position: 'relative', width: '280px', maxWidth: '100%' }}>
+          <div className="df-search-wrap">
+            <span className="df-search-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" />
+              </svg>
+            </span>
             <input
               type="text"
+              className="df-search-input"
               placeholder="Search plan, customer, order..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              style={{
-                width: '100%',
-                background: 'rgba(30, 41, 59, 0.7)',
-                border: '1px solid rgba(255, 255, 255, 0.12)',
-                borderRadius: '8px',
-                padding: '0.5rem 2rem 0.5rem 0.8rem',
-                color: '#ffffff',
-                fontSize: '0.8125rem',
-                outline: 'none',
-              }}
             />
             {searchQuery && (
-              <button
-                type="button"
-                onClick={() => setSearchQuery('')}
-                title="Clear search"
-                style={{
-                  position: 'absolute',
-                  right: '8px',
-                  top: '50%',
-                  transform: 'translateY(-50%)',
-                  background: 'transparent',
-                  border: 'none',
-                  color: '#94a3b8',
-                  cursor: 'pointer',
-                  fontSize: '13px',
-                }}
-              >
-                ✕
+              <button type="button" className="df-search-clear" onClick={() => setSearchQuery('')} title="Clear search">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                  <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+                </svg>
               </button>
             )}
           </div>

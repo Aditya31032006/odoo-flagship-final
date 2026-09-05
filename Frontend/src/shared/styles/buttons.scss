@@ -1,317 +1,292 @@
 // Button Design System for DealFlow360
+// ─────────────────────────────────────────────────────────────────────────────
+// Hover animation: background-position slide (gradient trick)
+// Left half = hover fill color, right half = rest color.
+// background-position transitions from "right" → "left" on hover.
+// No pseudo-element, no stacking issues — text is always on top.
+// ─────────────────────────────────────────────────────────────────────────────
 @use './variables' as vars;
 @use './mixins' as mix;
 
+// ─── .df-btn — full BEM system ────────────────────────────────────────────────
 .df-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 0.5rem;
-  font-family: inherit;
-  font-weight: 500;
+  gap: 0.45rem;
+  font-family: vars.$font-family-base;
+  font-weight: 600;
   line-height: 1.25;
   text-decoration: none;
-  border-radius: vars.$radius-md;
+  border-radius: vars.$radius-sm;
   border: 1px solid transparent;
   cursor: pointer;
   outline: none;
   user-select: none;
   white-space: nowrap;
-  transition: all vars.$transition-spring;
-  position: relative;
-  overflow: hidden;
+  // Background-position slide handles the animation
+  background-size: 200% 100%;
+  background-position: right center;
+  transition: background-position 0.24s cubic-bezier(0.4, 0, 0.2, 1),
+              color 0.18s ease,
+              border-color 0.18s ease;
+
+  svg { flex-shrink: 0; }
 
   &:focus-visible {
-    box-shadow: vars.$shadow-focus;
+    outline: 2px solid #18181b;
+    outline-offset: 2px;
   }
 
   &:disabled,
   &[disabled] {
-    opacity: 0.55;
+    opacity: 0.45;
     cursor: not-allowed;
-    transform: none !important;
-    box-shadow: none !important;
   }
 
   // Sizes
   &--sm {
-    padding: 0.375rem 0.75rem;
+    padding: 0.35rem 0.75rem;
     font-size: 0.8125rem;
-    border-radius: vars.$radius-sm;
+    border-radius: vars.$radius-xs;
+    svg { width: 14px; height: 14px; }
   }
 
   &--md {
     padding: 0.5rem 1.125rem;
     font-size: 0.875rem;
+    svg { width: 15px; height: 15px; }
   }
 
   &--lg {
-    padding: 0.75rem 1.5rem;
-    font-size: 1rem;
-    font-weight: 600;
-    border-radius: vars.$radius-lg;
+    padding: 0.65rem 1.5rem;
+    font-size: 0.9375rem;
+    border-radius: vars.$radius-md;
+    svg { width: 16px; height: 16px; }
   }
 
-  // Variants
+  // ── Primary: zinc-900 → zinc-700 on hover
   &--primary {
-    background: linear-gradient(135deg, vars.$primary-500 0%, vars.$primary-700 100%);
+    // gradient: left=hover fill, right=rest
+    background-image: linear-gradient(to right, #3f3f46 50%, #18181b 50%);
     color: #ffffff;
-    box-shadow: 0 4px 14px rgba(37, 99, 235, 0.25);
+    border-color: #18181b;
 
     &:hover:not(:disabled) {
-      background: linear-gradient(135deg, vars.$primary-400 0%, vars.$primary-600 100%);
-      transform: translateY(-2px);
-      box-shadow: 0 6px 20px rgba(37, 99, 235, 0.35);
+      background-position: left center;
+      border-color: #3f3f46;
+      color: #ffffff;
     }
 
     &:active:not(:disabled) {
-      transform: scale(0.97) translateY(0);
-      box-shadow: 0 2px 8px rgba(37, 99, 235, 0.2);
+      background-image: linear-gradient(to right, #09090b 50%, #09090b 50%);
     }
   }
 
+  // ── Secondary: white → zinc-100 on hover
   &--secondary {
-    background: #ffffff;
-    color: vars.$slate-700;
-    border-color: vars.$slate-200;
-    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.05);
+    background-image: linear-gradient(to right, #f4f4f5 50%, #ffffff 50%);
+    color: #18181b;
+    border-color: #e4e4e7;
 
     &:hover:not(:disabled) {
-      background: vars.$slate-50;
-      color: vars.$slate-900;
-      border-color: vars.$slate-300;
-      transform: translateY(-2px);
-      box-shadow: 0 4px 12px rgba(15, 23, 42, 0.08);
+      background-position: left center;
+      border-color: #d4d4d8;
+      color: #09090b;
     }
 
     &:active:not(:disabled) {
-      transform: scale(0.97) translateY(0);
-      background: vars.$slate-100;
+      background-image: linear-gradient(to right, #e4e4e7 50%, #e4e4e7 50%);
     }
   }
 
+  // ── Ghost: transparent → zinc-100 on hover
   &--ghost {
-    background: transparent;
-    color: vars.$slate-600;
+    background-image: linear-gradient(to right, #f4f4f5 50%, transparent 50%);
+    color: #52525b;
     border-color: transparent;
 
     &:hover:not(:disabled) {
-      background: rgba(15, 23, 42, 0.05);
-      color: vars.$slate-900;
-      transform: translateY(-1px);
-    }
-
-    &:active:not(:disabled) {
-      transform: scale(0.97);
-      background: rgba(15, 23, 42, 0.08);
+      background-position: left center;
+      border-color: #e4e4e7;
+      color: #18181b;
     }
   }
 
+  // ── Danger: muted red tint → solid red on hover
   &--danger {
-    background: rgba(239, 68, 68, 0.1);
-    color: #dc2626;
-    border-color: rgba(239, 68, 68, 0.2);
+    background-image: linear-gradient(to right, #dc2626 50%, #fef2f2 50%);
+    color: #b91c1c;
+    border-color: #fecaca;
 
     &:hover:not(:disabled) {
-      background: #dc2626;
+      background-position: left center;
+      border-color: #dc2626;
       color: #ffffff;
-      transform: translateY(-2px);
-      box-shadow: 0 4px 14px rgba(220, 38, 38, 0.25);
     }
 
     &:active:not(:disabled) {
-      transform: scale(0.97) translateY(0);
+      background-image: linear-gradient(to right, #b91c1c 50%, #b91c1c 50%);
     }
   }
 
+  // ── Icon: square icon button
   &--icon {
     padding: 0.5rem;
-    border-radius: vars.$radius-full;
-    background: #ffffff;
-    color: vars.$slate-600;
-    border: 1px solid vars.$slate-200;
-    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
+    background-image: linear-gradient(to right, #f4f4f5 50%, #ffffff 50%);
+    color: #52525b;
+    border-color: #e4e4e7;
+
+    svg { width: 16px; height: 16px; }
 
     &:hover:not(:disabled) {
-      color: vars.$primary-600;
-      border-color: vars.$primary-200;
-      background: vars.$primary-50;
-      transform: translateY(-2px);
-      box-shadow: 0 4px 12px rgba(37, 99, 235, 0.12);
-    }
-
-    &:active:not(:disabled) {
-      transform: scale(0.94);
+      background-position: left center;
+      border-color: #d4d4d8;
+      color: #18181b;
     }
   }
 }
 
-// ============================================================
-// ULTRA-INTERACTIVE MAGNETIC & SPOTLIGHT BUTTON SYSTEM
-// ============================================================
+// ─── .df-btn-interactive — simplified, no GSAP effects ──────────────────────
 .df-btn-interactive {
-  position: relative;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  height: 42px;
-  padding: 0 1.35rem;
+  gap: 0.5rem;
+  height: 40px;
+  padding: 0 1.25rem;
   font-family: vars.$font-family-base;
-  font-size: 0.9375rem;
+  font-size: 0.875rem;
   font-weight: 600;
   line-height: 1;
   text-decoration: none;
-  border-radius: 12px;
+  border-radius: vars.$radius-sm;
   cursor: pointer;
   user-select: none;
   white-space: nowrap;
-  overflow: hidden;
   box-sizing: border-box;
-  transform-style: preserve-3d;
-  will-change: transform, box-shadow;
-  transition: box-shadow 0.3s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  background-size: 200% 100%;
+  background-position: right center;
+  transition: background-position 0.24s cubic-bezier(0.4, 0, 0.2, 1),
+              color 0.18s ease,
+              border-color 0.18s ease;
 
-  // Inner Content Layout
   &__inner {
-    position: relative;
-    z-index: 3;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    gap: 0.55rem;
+    gap: 0.5rem;
     pointer-events: none;
-    transform: translateZ(10px);
   }
 
   &__icon {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-
-    svg {
-      width: 17px;
-      height: 17px;
-    }
+    svg { width: 16px; height: 16px; }
   }
 
-  &__label {
-    letter-spacing: -0.01em;
-  }
+  &__label { letter-spacing: -0.01em; }
 
-  // Radial Cursor Spotlight
-  &__spotlight {
-    position: absolute;
-    inset: 0;
-    pointer-events: none;
-    opacity: 0;
-    border-radius: inherit;
-    z-index: 2;
-    transition: opacity 0.3s ease;
-  }
+  // No-op class names (kept so JSX renders without errors)
+  &__spotlight, &__shimmer, &__border-glow { display: none; }
 
-  // Shimmer Sweep
-  &__shimmer {
-    position: absolute;
-    top: 0;
-    left: -120%;
-    width: 60%;
-    height: 100%;
-    background: linear-gradient(
-      90deg,
-      transparent 0%,
-      rgba(255, 255, 255, 0.35) 50%,
-      transparent 100%
-    );
-    transform: skewX(-25deg);
-    pointer-events: none;
-    z-index: 2;
-  }
-
-  &:hover {
-    .df-btn-interactive__spotlight {
-      opacity: 1;
-    }
-
-    .df-btn-interactive__shimmer {
-      animation: btn-shimmer-sweep 0.9s ease forwards;
-    }
-  }
-
-  // Primary Variant ("New Quotation") - Luminous Electric Cobalt
+  // Primary
   &--primary {
-    background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 50%, #1e40af 100%);
+    background-image: linear-gradient(to right, #3f3f46 50%, #18181b 50%);
     color: #ffffff;
-    border: 1px solid rgba(147, 197, 253, 0.4);
-    box-shadow: 
-      0 8px 24px -4px rgba(37, 99, 235, 0.38),
-      0 2px 6px -1px rgba(37, 99, 235, 0.2),
-      inset 0 1px 0 rgba(255, 255, 255, 0.3);
+    border: 1px solid #18181b;
 
-    .df-btn-interactive__spotlight {
-      background: radial-gradient(
-        circle 90px at var(--mouse-x, 50%) var(--mouse-y, 50%),
-        rgba(255, 255, 255, 0.35),
-        transparent 75%
-      );
-    }
-
-    &:hover {
-      border-color: rgba(191, 219, 254, 0.8);
-      box-shadow: 
-        0 14px 34px -4px rgba(37, 99, 235, 0.55),
-        0 0 24px rgba(59, 130, 246, 0.45),
-        inset 0 1px 0 rgba(255, 255, 255, 0.5);
-
-      .df-btn-interactive__icon {
-        transform: rotate(180deg) scale(1.25);
-        color: #93c5fd;
-      }
+    &:hover:not(:disabled) {
+      background-position: left center;
+      border-color: #3f3f46;
+      color: #ffffff;
     }
   }
 
-  // Secondary Variant ("View Approvals") - Frosted Holographic Glass
+  // Secondary
   &--secondary {
-    background: rgba(255, 255, 255, 0.85);
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
-    color: #1e293b;
-    border: 1px solid rgba(203, 213, 225, 0.9);
-    box-shadow: 
-      0 6px 20px -4px rgba(15, 23, 42, 0.07),
-      0 1px 3px rgba(0, 0, 0, 0.02),
-      inset 0 0 0 1px rgba(255, 255, 255, 0.9);
+    background-image: linear-gradient(to right, #f4f4f5 50%, #ffffff 50%);
+    color: #18181b;
+    border: 1px solid #e4e4e7;
 
-    .df-btn-interactive__spotlight {
-      background: radial-gradient(
-        circle 90px at var(--mouse-x, 50%) var(--mouse-y, 50%),
-        rgba(59, 130, 246, 0.18),
-        transparent 75%
-      );
-    }
-
-    &:hover {
-      background: #ffffff;
-      color: #0f172a;
-      border-color: #93c5fd;
-      box-shadow: 
-        0 14px 30px -4px rgba(37, 99, 235, 0.18),
-        0 0 18px rgba(59, 130, 246, 0.15),
-        inset 0 0 0 1px rgba(255, 255, 255, 1);
-
-      .df-btn-interactive__icon {
-        transform: translateY(-2px) rotate(-8deg) scale(1.2);
-        color: #2563eb;
-      }
+    &:hover:not(:disabled) {
+      background-position: left center;
+      border-color: #d4d4d8;
+      color: #09090b;
     }
   }
 }
 
-@keyframes btn-shimmer-sweep {
-  0% {
-    left: -120%;
+// ─── Convenience aliases — used site-wide ─────────────────────────────────────
+.df-btn-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.5rem 1.1rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  font-family: vars.$font-family-base;
+  border-radius: vars.$radius-sm;
+  border: 1px solid #18181b;
+  cursor: pointer;
+  white-space: nowrap;
+  text-decoration: none;
+  background-image: linear-gradient(to right, #3f3f46 50%, #18181b 50%);
+  background-size: 200% 100%;
+  background-position: right center;
+  color: #ffffff;
+  transition: background-position 0.24s cubic-bezier(0.4, 0, 0.2, 1),
+              color 0.18s ease,
+              border-color 0.18s ease;
+
+  svg { width: 15px; height: 15px; flex-shrink: 0; }
+
+  &:hover:not(:disabled) {
+    background-position: left center;
+    border-color: #3f3f46;
+    color: #ffffff;
   }
-  100% {
-    left: 200%;
+
+  &:active { background-image: linear-gradient(to right, #09090b 50%, #09090b 50%); }
+
+  &:disabled,
+  &[disabled] { opacity: 0.45; cursor: not-allowed; }
+}
+
+.df-btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.5rem 1.1rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  font-family: vars.$font-family-base;
+  border-radius: vars.$radius-sm;
+  border: 1px solid #e5e7eb;
+  cursor: pointer;
+  white-space: nowrap;
+  text-decoration: none;
+  background-image: linear-gradient(to right, #f4f4f5 50%, #ffffff 50%);
+  background-size: 200% 100%;
+  background-position: right center;
+  color: #18181b;
+  transition: background-position 0.24s cubic-bezier(0.4, 0, 0.2, 1),
+              color 0.18s ease,
+              border-color 0.18s ease;
+
+  svg { width: 15px; height: 15px; flex-shrink: 0; }
+
+  &:hover:not(:disabled) {
+    background-position: left center;
+    border-color: #d4d4d8;
+    color: #09090b;
   }
+
+  &:active {
+    background-image: linear-gradient(to right, #e4e4e7 50%, #e4e4e7 50%);
+  }
+
+  &:disabled,
+  &[disabled] { opacity: 0.45; cursor: not-allowed; }
 }

@@ -1,18 +1,17 @@
 // ============================================================
-// DEALFLOW360 - FULFILLMENT MODULE STYLESHEET
+// DEALFLOW360 - LIGHT EDITORIAL FULFILLMENT MODULE SCSS
+// Crisp Whites, Clear Tables, Sharp Edges, High Contrast
 // ============================================================
+@use '../../../shared/styles/variables' as vars;
+@use '../../../shared/styles/mixins' as mix;
 
 .df-fulfillment {
   width: 100%;
-  min-height: calc(100vh - 54px);
-  background-color: #0b0f19;
-  background-image: 
-    radial-gradient(at 0% 0%, rgba(56, 189, 248, 0.08) 0px, transparent 50%),
-    radial-gradient(at 100% 0%, rgba(99, 102, 241, 0.08) 0px, transparent 50%),
-    radial-gradient(at 50% 100%, rgba(15, 23, 42, 0.9) 0px, transparent 50%);
-  color: #f8fafc;
-  padding: 2rem 2rem 3.5rem 2rem;
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  min-height: calc(100vh - 76px);
+  background-color: vars.$bg-app;
+  color: vars.$text-primary;
+  padding: 2rem 2rem 4rem 2rem;
+  font-family: vars.$font-family-base;
   box-sizing: border-box;
 
   @media (max-width: 768px) {
@@ -43,7 +42,7 @@
   &__title {
     font-size: 1.875rem;
     font-weight: 700;
-    color: #ffffff;
+    color: #09090b;
     letter-spacing: -0.025em;
     line-height: 1.25;
     margin: 0 0 0.35rem 0;
@@ -51,7 +50,7 @@
 
   &__subtitle {
     font-size: 0.9375rem;
-    color: #94a3b8;
+    color: #71717a;
     line-height: 1.5;
     margin: 0;
   }
@@ -60,20 +59,19 @@
     display: inline-flex;
     align-items: center;
     gap: 0.5rem;
-    padding: 0.5rem 1rem;
-    background: rgba(30, 41, 59, 0.6);
-    border: 1px solid rgba(51, 65, 85, 0.8);
-    border-radius: 0.5rem;
-    color: #cbd5e1;
+    padding: 0.45rem 0.9rem;
+    background: #ffffff;
+    border: 1px solid #e5e7eb;
+    border-radius: vars.$radius-xs;
+    color: #18181b;
     font-size: 0.875rem;
-    font-weight: 500;
+    font-weight: 600;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all 0.15s ease;
 
     &:hover {
-      background: rgba(51, 65, 85, 0.8);
-      color: #ffffff;
-      border-color: #38bdf8;
+      background: #f4f4f5;
+      border-color: #d4d4d8;
     }
   }
 
@@ -88,9 +86,9 @@
   }
 
   &__section-title {
-    font-size: 1.25rem;
-    font-weight: 600;
-    color: #38bdf8;
+    font-size: 1.125rem;
+    font-weight: 700;
+    color: #09090b;
     margin: 0;
     letter-spacing: -0.01em;
   }
@@ -99,31 +97,30 @@
     display: inline-flex;
     align-items: center;
     gap: 0.5rem;
-    padding: 0.5rem 1rem;
-    background: rgba(56, 189, 248, 0.12);
-    border: 1px solid rgba(56, 189, 248, 0.35);
-    border-radius: 0.5rem;
-    color: #38bdf8;
+    padding: 0.45rem 1rem;
+    background: #18181b;
+    border: 1px solid #18181b;
+    border-radius: vars.$radius-xs;
+    color: #ffffff;
     font-size: 0.875rem;
     font-weight: 600;
     cursor: pointer;
-    transition: all 0.2s ease;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    transition: all 0.15s ease;
 
     &:hover {
-      background: rgba(56, 189, 248, 0.25);
-      border-color: #38bdf8;
-      transform: translateY(-1px);
+      background: #000000;
     }
   }
 
-  // Card & Table Wrapper
+  // Card & Table Wrapper (Sharp)
   &__card {
-    background: #0f172a;
-    border: 1px solid rgba(51, 65, 85, 0.6);
-    border-radius: 0.875rem;
+    background: #ffffff;
+    border: 1px solid #e5e7eb;
+    border-radius: vars.$radius-xs;
     overflow: hidden;
     margin-bottom: 1.5rem;
-    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
   }
 
   // Generic Tables
@@ -133,22 +130,22 @@
     text-align: left;
 
     thead {
-      background: rgba(15, 23, 42, 0.95);
-      border-bottom: 1px solid #334155;
+      background: #f9fafb;
+      border-bottom: 1px solid #e5e7eb;
 
       th {
-        padding: 1rem 1.25rem;
-        font-size: 0.8125rem;
+        padding: 0.875rem 1.25rem;
+        font-size: 0.75rem;
         font-weight: 600;
         text-transform: uppercase;
         letter-spacing: 0.05em;
-        color: #94a3b8;
+        color: #71717a;
       }
     }
 
     tbody {
       tr {
-        border-bottom: 1px solid rgba(51, 65, 85, 0.4);
+        border-bottom: 1px solid #f3f4f6;
         transition: all 0.15s ease;
 
         &:last-child {
@@ -159,16 +156,15 @@
           cursor: pointer;
 
           &:hover {
-            background: rgba(30, 41, 59, 0.7);
-            transform: translateY(-1px);
+            background: #fafafa;
           }
         }
       }
 
       td {
-        padding: 1.125rem 1.25rem;
+        padding: 1rem 1.25rem;
         font-size: 0.9375rem;
-        color: #e2e8f0;
+        color: #27272a;
       }
     }
   }
@@ -177,50 +173,50 @@
   &__code {
     font-family: 'JetBrains Mono', monospace;
     font-weight: 600;
-    color: #38bdf8;
+    color: #2563eb;
   }
 
   &__warehouse-name {
     font-weight: 600;
-    color: #ffffff;
+    color: #09090b;
   }
 
   &__product-name {
-    color: #e2e8f0;
+    color: #09090b;
     font-weight: 500;
   }
 
   &__available-highlight {
-    color: #34d399;
+    color: #059669;
     font-weight: 700;
   }
 
   &__cost-highlight {
-    color: #38bdf8;
+    color: #2563eb;
     font-weight: 700;
   }
 
   &__status-pill {
     display: inline-flex;
     align-items: center;
-    padding: 0.25rem 0.75rem;
-    border-radius: 9999px;
+    padding: 0.15rem 0.5rem;
+    border-radius: vars.$radius-xs;
     font-size: 0.8125rem;
-    font-weight: 500;
-    background: rgba(56, 189, 248, 0.12);
-    color: #38bdf8;
-    border: 1px solid rgba(56, 189, 248, 0.3);
+    font-weight: 600;
+    background: #f4f4f5;
+    color: #52525b;
+    border: 1px solid #e4e4e7;
 
     &--allocated {
-      background: rgba(16, 185, 129, 0.12);
-      color: #34d399;
-      border-color: rgba(16, 185, 129, 0.3);
+      background: #ecfdf5;
+      color: #059669;
+      border-color: #a7f3d0;
     }
 
     &--override {
-      background: rgba(245, 158, 11, 0.12);
-      color: #fbbf24;
-      border-color: rgba(245, 158, 11, 0.3);
+      background: #fffbeb;
+      color: #d97706;
+      border-color: #fde68a;
     }
   }
 
@@ -236,30 +232,30 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 32px;
-    height: 32px;
-    background: rgba(30, 41, 59, 0.6);
-    border: 1px solid rgba(51, 65, 85, 0.8);
-    border-radius: 0.375rem;
-    color: #cbd5e1;
+    width: 30px;
+    height: 30px;
+    background: #ffffff;
+    border: 1px solid #e5e7eb;
+    border-radius: vars.$radius-xs;
+    color: #52525b;
     cursor: pointer;
     font-size: 0.875rem;
     transition: all 0.15s ease;
 
     &:hover {
-      background: rgba(51, 65, 85, 0.9);
-      color: #ffffff;
-      border-color: #38bdf8;
+      background: #f4f4f5;
+      color: #09090b;
+      border-color: #d4d4d8;
     }
 
     &--delete {
-      color: #f87171;
-      border-color: rgba(239, 68, 68, 0.3);
+      color: #ef4444;
+      border-color: #fecdd3;
 
       &:hover {
-        background: rgba(239, 68, 68, 0.2);
-        color: #ef4444;
-        border-color: #ef4444;
+        background: #fef2f2;
+        color: #dc2626;
+        border-color: #fca5a5;
       }
     }
   }
@@ -270,32 +266,32 @@
     align-items: center;
     gap: 0.875rem;
     padding: 1rem 1.25rem;
-    border-radius: 0.625rem;
+    border-radius: vars.$radius-xs;
     font-size: 0.875rem;
     margin-bottom: 1.5rem;
 
     &--info {
-      background: rgba(245, 158, 11, 0.08);
-      border: 1px solid rgba(245, 158, 11, 0.35);
-      color: #fef3c7;
+      background: #eff6ff;
+      border: 1px solid #bfdbfe;
+      color: #1d4ed8;
     }
 
     &--prompt {
-      background: rgba(217, 119, 6, 0.12);
-      border: 1px solid rgba(217, 119, 6, 0.4);
-      color: #fde68a;
+      background: #fffbeb;
+      border: 1px solid #fde68a;
+      color: #b45309;
     }
 
     &--success {
-      background: rgba(16, 185, 129, 0.12);
-      border: 1px solid rgba(16, 185, 129, 0.4);
-      color: #a7f3d0;
+      background: #ecfdf5;
+      border: 1px solid #a7f3d0;
+      color: #047857;
     }
 
     &--danger {
-      background: rgba(239, 68, 68, 0.12);
-      border: 1px solid rgba(239, 68, 68, 0.4);
-      color: #fecaca;
+      background: #fef2f2;
+      border: 1px solid #fecaca;
+      color: #dc2626;
     }
   }
 
@@ -303,59 +299,53 @@
   &__actions-bar {
     display: flex;
     align-items: center;
-    gap: 1.25rem;
+    gap: 0.75rem;
     flex-wrap: wrap;
     margin-top: 2rem;
   }
 
   &__action-btn {
-    padding: 0.875rem 2rem;
-    border-radius: 0.5rem;
+    padding: 0.65rem 1.5rem;
+    border-radius: vars.$radius-xs;
     font-size: 0.9375rem;
     font-weight: 600;
     cursor: pointer;
     border: none;
-    transition: all 0.2s ease;
+    transition: all 0.15s ease;
     display: inline-flex;
     align-items: center;
-    gap: 0.625rem;
+    gap: 0.5rem;
 
     &--accept {
-      background: #0284c7;
+      background: #18181b;
       color: #ffffff;
-      border: 1px solid #38bdf8;
-      box-shadow: 0 4px 15px rgba(2, 132, 199, 0.35);
+      border: 1px solid #18181b;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 
       &:hover {
-        background: #0369a1;
-        box-shadow: 0 6px 20px rgba(2, 132, 199, 0.5);
-        transform: translateY(-1px);
+        background: #000000;
       }
     }
 
     &--override {
-      background: #1e293b;
-      color: #cbd5e1;
-      border: 1px solid #475569;
+      background: #ffffff;
+      color: #18181b;
+      border: 1px solid #e5e7eb;
 
       &:hover {
-        background: #334155;
-        color: #ffffff;
-        border-color: #38bdf8;
-        transform: translateY(-1px);
+        background: #f4f4f5;
+        border-color: #d4d4d8;
       }
     }
 
     &--complete {
-      background: linear-gradient(135deg, #065f46 0%, #047857 100%);
-      color: #ecfdf5;
-      border: 1px solid #34d399;
-      box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
+      background: #10b981;
+      color: #ffffff;
+      border: 1px solid #059669;
+      box-shadow: 0 1px 3px rgba(16, 185, 129, 0.2);
 
       &:hover {
-        background: linear-gradient(135deg, #047857 0%, #059669 100%);
-        box-shadow: 0 6px 20px rgba(16, 185, 129, 0.5);
-        transform: translateY(-1px);
+        background: #059669;
       }
     }
 
@@ -370,31 +360,31 @@
   &__empty {
     padding: 4rem 2rem;
     text-align: center;
-    color: #94a3b8;
+    color: #71717a;
   }
 
   &__empty-title {
     font-size: 1.125rem;
     font-weight: 600;
-    color: #e2e8f0;
+    color: #09090b;
     margin-bottom: 0.5rem;
   }
 }
 
 // ==========================================
-// MODAL & FORMS STYLES
+// MODAL & FORMS STYLES (SHARP)
 // ==========================================
 .df-fulfillment-modal {
   &__card {
-    background: #0f172a;
-    border: 1px solid #334155;
-    border-radius: 1rem;
+    background: #ffffff;
+    border: 1px solid #e5e7eb;
+    border-radius: vars.$radius-xs;
     width: 100%;
     max-width: 580px;
     padding: 2rem;
-    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);
-    animation: slideUp 0.25s ease;
-    color: #ffffff;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+    animation: slideUp 0.18s ease;
+    color: #09090b;
   }
 
   &__header {
@@ -402,32 +392,32 @@
     align-items: flex-start;
     justify-content: space-between;
     margin-bottom: 1.5rem;
-    border-bottom: 1px solid #334155;
+    border-bottom: 1px solid #e5e7eb;
     padding-bottom: 1rem;
   }
 
   &__title {
     font-size: 1.25rem;
     font-weight: 700;
-    color: #ffffff;
+    color: #09090b;
     margin: 0 0 0.25rem 0;
   }
 
   &__subtitle {
     font-size: 0.875rem;
-    color: #94a3b8;
+    color: #71717a;
   }
 
   &__close-btn {
     background: none;
     border: none;
     font-size: 1.5rem;
-    color: #94a3b8;
+    color: #71717a;
     cursor: pointer;
     line-height: 1;
 
     &:hover {
-      color: #ffffff;
+      color: #09090b;
     }
   }
 
@@ -456,40 +446,39 @@
   &__label {
     font-size: 0.875rem;
     font-weight: 600;
-    color: #cbd5e1;
+    color: #3f3f46;
   }
 
   &__select,
   &__input-text {
     width: 100%;
-    background: #1e293b;
-    border: 1px solid #334155;
-    border-radius: 0.5rem;
-    padding: 0.65rem 0.85rem;
-    color: #ffffff;
+    background: #ffffff;
+    border: 1px solid #e5e7eb;
+    border-radius: vars.$radius-xs;
+    padding: 0.55rem 0.85rem;
+    color: #09090b;
     font-size: 0.9375rem;
     outline: none;
-    transition: all 0.2s ease;
+    transition: all 0.15s ease;
 
     option {
-      background: #0f172a;
-      color: #ffffff;
+      background: #ffffff;
+      color: #09090b;
     }
 
     &:focus {
-      border-color: #38bdf8;
-      box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.2);
+      border-color: #18181b;
     }
   }
 
   &__error-text {
     font-size: 0.75rem;
-    color: #f87171;
+    color: #dc2626;
   }
 
   &__delete-msg {
     font-size: 0.9375rem;
-    color: #cbd5e1;
+    color: #3f3f46;
     line-height: 1.6;
     margin: 1rem 0 1.5rem 0;
   }
@@ -504,9 +493,9 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    background: #1e293b;
-    border: 1px solid #334155;
-    border-radius: 0.5rem;
+    background: #f9fafb;
+    border: 1px solid #e5e7eb;
+    border-radius: vars.$radius-xs;
     padding: 0.875rem 1.25rem;
   }
 
@@ -517,13 +506,13 @@
 
   &__wh-name {
     font-weight: 600;
-    color: #ffffff;
+    color: #09090b;
     font-size: 0.9375rem;
   }
 
   &__wh-code {
     font-size: 0.75rem;
-    color: #38bdf8;
+    color: #2563eb;
     font-family: 'JetBrains Mono', monospace;
   }
 
@@ -536,29 +525,29 @@
 
   &__input-label {
     font-size: 0.75rem;
-    color: #94a3b8;
+    color: #71717a;
   }
 
   &__input {
     width: 100px;
-    background: #0f172a;
-    border: 1px solid #475569;
-    border-radius: 0.375rem;
+    background: #ffffff;
+    border: 1px solid #e5e7eb;
+    border-radius: vars.$radius-xs;
     padding: 0.4rem 0.6rem;
     font-size: 0.9375rem;
-    color: #ffffff;
+    color: #09090b;
     text-align: center;
     outline: none;
 
     &:focus {
-      border-color: #38bdf8;
+      border-color: #18181b;
     }
   }
 
   &__summary-card {
-    background: rgba(30, 41, 59, 0.6);
-    border: 1px solid #334155;
-    border-radius: 0.5rem;
+    background: #f9fafb;
+    border: 1px solid #e5e7eb;
+    border-radius: vars.$radius-xs;
     padding: 1rem;
     display: flex;
     flex-direction: column;
@@ -570,55 +559,58 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    color: #cbd5e1;
+    color: #52525b;
   }
 
   &__highlight-allocated {
-    color: #38bdf8;
+    color: #2563eb;
+    font-weight: 600;
   }
 
   &__highlight-backorder {
-    color: #fbbf24;
+    color: #d97706;
+    font-weight: 600;
   }
 
   &__highlight-ok {
-    color: #34d399;
+    color: #059669;
+    font-weight: 600;
   }
 
   &__actions {
     display: flex;
     justify-content: flex-end;
-    gap: 1rem;
+    gap: 0.75rem;
     margin-top: 0.5rem;
   }
 
   &__btn {
-    padding: 0.65rem 1.5rem;
-    border-radius: 0.5rem;
+    padding: 0.55rem 1.35rem;
+    border-radius: vars.$radius-xs;
     font-size: 0.9375rem;
     font-weight: 600;
     cursor: pointer;
     border: none;
-    transition: all 0.2s ease;
+    transition: all 0.15s ease;
 
     &--cancel {
-      background: #1e293b;
-      border: 1px solid #475569;
-      color: #cbd5e1;
+      background: #ffffff;
+      border: 1px solid #e5e7eb;
+      color: #52525b;
 
       &:hover {
-        background: #334155;
-        color: #ffffff;
+        background: #f4f4f5;
+        color: #09090b;
       }
     }
 
     &--submit {
-      background: #0284c7;
+      background: #18181b;
       color: #ffffff;
-      border: 1px solid #38bdf8;
+      border: 1px solid #18181b;
 
       &:hover {
-        background: #0369a1;
+        background: #000000;
       }
 
       &:disabled {
@@ -628,12 +620,12 @@
     }
 
     &--danger {
-      background: #e11d48;
+      background: #ef4444;
       color: #ffffff;
-      border: 1px solid #f43f5e;
+      border: 1px solid #dc2626;
 
       &:hover {
-        background: #be123c;
+        background: #dc2626;
       }
 
       &:disabled {

@@ -1,16 +1,16 @@
+// ============================================================
+// DEALFLOW360 - LIGHT EDITORIAL STAFF & ACCESS CONTROL SCSS
+// Pure White Cards, Airy Layout, High-Contrast Typography
+// ============================================================
 @use '../../../shared/styles/variables' as vars;
 @use '../../../shared/styles/mixins' as mixins;
 
 .df-staff {
-  min-height: calc(100vh - 54px);
-  padding: 2rem 2rem 3.5rem 2rem;
-  background-color: #0b0f19;
-  background-image: 
-    radial-gradient(at 0% 0%, rgba(56, 189, 248, 0.08) 0px, transparent 50%),
-    radial-gradient(at 100% 0%, rgba(99, 102, 241, 0.08) 0px, transparent 50%),
-    radial-gradient(at 50% 100%, rgba(15, 23, 42, 0.9) 0px, transparent 50%);
-  color: #ffffff;
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  min-height: calc(100vh - 76px);
+  padding: 2rem 2rem 4rem 2rem;
+  background-color: vars.$bg-app;
+  color: vars.$text-primary;
+  font-family: vars.$font-family-base;
   box-sizing: border-box;
 
   @media (max-width: 768px) {
@@ -39,7 +39,7 @@
       h1 {
         font-size: 1.875rem;
         font-weight: 700;
-        color: #ffffff;
+        color: #09090b;
         letter-spacing: -0.025em;
         line-height: 1.25;
         margin: 0 0 0.35rem 0;
@@ -50,13 +50,13 @@
         svg {
           width: 26px;
           height: 26px;
-          color: #38bdf8;
+          color: #2563eb;
         }
       }
 
       p {
         font-size: 0.9375rem;
-        color: #94a3b8;
+        color: #71717a;
         line-height: 1.5;
         margin: 0;
       }
@@ -76,16 +76,14 @@
     gap: 1rem;
 
     .metric-card {
-      background: rgba(15, 23, 42, 0.7);
-      backdrop-filter: blur(16px);
-      -webkit-backdrop-filter: blur(16px);
-      border: 1px solid rgba(255, 255, 255, 0.1);
+      background: #ffffff;
+      border: 1px solid #e5e7eb;
       border-radius: vars.$border-radius-lg;
       padding: 1rem 1.25rem;
       display: flex;
       align-items: center;
       gap: 1rem;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+      box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.03);
 
       &-icon {
         width: 42px;
@@ -95,24 +93,24 @@
         flex-shrink: 0;
 
         &--total {
-          background: rgba(56, 189, 248, 0.15);
-          color: #38bdf8;
+          background: #eff6ff;
+          color: #2563eb;
         }
         &--sales {
-          background: rgba(99, 102, 241, 0.15);
-          color: #818cf8;
+          background: #eff6ff;
+          color: #2563eb;
         }
         &--ops {
-          background: rgba(168, 85, 247, 0.15);
-          color: #c084fc;
+          background: #faf5ff;
+          color: #7c3aed;
         }
         &--finance {
-          background: rgba(245, 158, 11, 0.15);
-          color: #fbbf24;
+          background: #fffbeb;
+          color: #d97706;
         }
         &--admin {
-          background: rgba(239, 68, 68, 0.15);
-          color: #f87171;
+          background: #fef2f2;
+          color: #dc2626;
         }
 
         svg {
@@ -127,16 +125,16 @@
 
         .label {
           font-size: 0.75rem;
-          color: #94a3b8;
-          font-weight: vars.$font-weight-medium;
+          color: #71717a;
+          font-weight: 600;
           text-transform: uppercase;
           letter-spacing: 0.04em;
         }
 
         .count {
           font-size: 1.35rem;
-          font-weight: vars.$font-weight-bold;
-          color: #ffffff;
+          font-weight: 700;
+          color: #09090b;
           line-height: 1.2;
         }
       }
@@ -164,7 +162,7 @@
         transform: translateY(-50%);
         width: 16px;
         height: 16px;
-        color: #64748b;
+        color: #71717a;
         pointer-events: none;
       }
 
@@ -174,22 +172,21 @@
         padding: 0 0.85rem 0 2.45rem;
         font-size: 0.85rem;
         font-family: inherit;
-        color: #ffffff;
-        background: rgba(30, 41, 59, 0.65);
-        border: 1px solid rgba(255, 255, 255, 0.12);
+        color: #09090b;
+        background: #ffffff;
+        border: 1px solid #e5e7eb;
         border-radius: vars.$border-radius-md;
         outline: none;
         transition: all vars.$transition-fast;
         box-sizing: border-box;
 
         &:focus {
-          background: rgba(15, 23, 42, 0.95);
-          border-color: #38bdf8;
-          box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.2);
+          border-color: #18181b;
+          box-shadow: 0 0 0 2px rgba(24, 24, 27, 0.08);
         }
 
         &::placeholder {
-          color: #64748b;
+          color: #a1a1aa;
         }
       }
     }
@@ -203,17 +200,17 @@
       select {
         height: 38px;
         padding: 0 1rem;
-        background: rgba(30, 41, 59, 0.65);
-        border: 1px solid rgba(255, 255, 255, 0.12);
+        background: #ffffff;
+        border: 1px solid #e5e7eb;
         border-radius: vars.$border-radius-md;
-        color: #ffffff;
+        color: #09090b;
         font-size: 0.8125rem;
         outline: none;
         cursor: pointer;
 
         option {
-          background: #0f172a;
-          color: #ffffff;
+          background: #ffffff;
+          color: #09090b;
         }
       }
     }
@@ -221,12 +218,10 @@
 
   // Data Table Container
   &__table-wrapper {
-    background: rgba(15, 23, 42, 0.75);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: #ffffff;
+    border: 1px solid #e5e7eb;
     border-radius: vars.$border-radius-lg;
-    box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.5);
+    box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.03);
     overflow: hidden;
   }
 
@@ -238,20 +233,20 @@
 
     th {
       padding: 0.875rem 1.25rem;
-      background: rgba(255, 255, 255, 0.03);
-      color: #94a3b8;
+      background: #f9fafb;
+      color: #71717a;
       font-size: 0.75rem;
-      font-weight: vars.$font-weight-semibold;
+      font-weight: 600;
       text-transform: uppercase;
       letter-spacing: 0.05em;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      border-bottom: 1px solid #e5e7eb;
       white-space: nowrap;
     }
 
     td {
       padding: 1rem 1.25rem;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-      color: #cbd5e1;
+      border-bottom: 1px solid #f3f4f6;
+      color: #27272a;
       vertical-align: middle;
     }
 
@@ -259,7 +254,7 @@
       transition: background vars.$transition-fast;
 
       &:hover {
-        background: rgba(255, 255, 255, 0.03);
+        background: #fafafa;
       }
 
       &:last-child td {
@@ -278,13 +273,12 @@
       width: 36px;
       height: 36px;
       border-radius: vars.$border-radius-full;
-      background: linear-gradient(135deg, #3b82f6 0%, #6366f1 100%);
+      background: #18181b;
       color: #ffffff;
       font-size: 0.8125rem;
-      font-weight: vars.$font-weight-bold;
+      font-weight: 700;
       @include mixins.flex-center;
       flex-shrink: 0;
-      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
     }
 
     .user-info {
@@ -292,13 +286,13 @@
       flex-direction: column;
 
       .name {
-        font-weight: vars.$font-weight-semibold;
-        color: #ffffff;
+        font-weight: 600;
+        color: #09090b;
       }
 
       .email {
         font-size: 0.75rem;
-        color: #94a3b8;
+        color: #71717a;
       }
     }
   }
@@ -308,36 +302,36 @@
     display: inline-flex;
     align-items: center;
     gap: 0.35rem;
-    padding: 0.3rem 0.65rem;
+    padding: 0.25rem 0.65rem;
     border-radius: vars.$border-radius-full;
     font-size: 0.725rem;
-    font-weight: vars.$font-weight-semibold;
+    font-weight: 600;
     text-transform: capitalize;
 
     &--admin {
-      background: rgba(239, 68, 68, 0.15);
-      border: 1px solid rgba(239, 68, 68, 0.35);
-      color: #fca5a5;
+      background: #fef2f2;
+      border: 1px solid #fecaca;
+      color: #dc2626;
     }
     &--sales_rep {
-      background: rgba(56, 189, 248, 0.15);
-      border: 1px solid rgba(56, 189, 248, 0.35);
-      color: #7dd3fc;
+      background: #eff6ff;
+      border: 1px solid #bfdbfe;
+      color: #2563eb;
     }
     &--sales_manager {
-      background: rgba(99, 102, 241, 0.15);
-      border: 1px solid rgba(99, 102, 241, 0.35);
-      color: #a5b4fc;
+      background: #faf5ff;
+      border: 1px solid #e9d5ff;
+      color: #7c3aed;
     }
     &--finance {
-      background: rgba(245, 158, 11, 0.15);
-      border: 1px solid rgba(245, 158, 11, 0.35);
-      color: #fde68a;
+      background: #fffbeb;
+      border: 1px solid #fde68a;
+      color: #d97706;
     }
     &--operations {
-      background: rgba(168, 85, 247, 0.15);
-      border: 1px solid rgba(168, 85, 247, 0.35);
-      color: #d8b4fe;
+      background: #faf5ff;
+      border: 1px solid #e9d5ff;
+      color: #7c3aed;
     }
   }
 
@@ -349,7 +343,7 @@
     padding: 0.25rem 0.65rem;
     border-radius: vars.$border-radius-full;
     font-size: 0.75rem;
-    font-weight: vars.$font-weight-medium;
+    font-weight: 600;
     cursor: pointer;
     border: none;
     transition: all vars.$transition-fast;
@@ -361,31 +355,30 @@
     }
 
     &--active {
-      background: rgba(16, 185, 129, 0.15);
-      border: 1px solid rgba(16, 185, 129, 0.35);
-      color: #86efac;
+      background: #ecfdf5;
+      border: 1px solid #a7f3d0;
+      color: #059669;
 
       .dot {
         background: #10b981;
-        box-shadow: 0 0 6px #10b981;
       }
 
       &:hover {
-        background: rgba(16, 185, 129, 0.25);
+        background: #d1fae5;
       }
     }
 
     &--inactive {
-      background: rgba(100, 116, 139, 0.15);
-      border: 1px solid rgba(100, 116, 139, 0.35);
-      color: #94a3b8;
+      background: #f4f4f5;
+      border: 1px solid #e4e4e7;
+      color: #71717a;
 
       .dot {
-        background: #64748b;
+        background: #a1a1aa;
       }
 
       &:hover {
-        background: rgba(100, 116, 139, 0.25);
+        background: #e4e4e7;
       }
     }
 
@@ -406,9 +399,9 @@
       height: 32px;
       border-radius: vars.$border-radius-md;
       @include mixins.flex-center;
-      background: rgba(255, 255, 255, 0.05);
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      color: #94a3b8;
+      background: #ffffff;
+      border: 1px solid #e5e7eb;
+      color: #71717a;
       cursor: pointer;
       transition: all vars.$transition-fast;
 
@@ -418,20 +411,21 @@
       }
 
       &:hover {
-        background: rgba(255, 255, 255, 0.15);
-        color: #ffffff;
+        background: #f4f4f5;
+        color: #09090b;
+        border-color: #d4d4d8;
       }
 
       &--edit:hover {
-        background: rgba(56, 189, 248, 0.2);
-        border-color: rgba(56, 189, 248, 0.4);
-        color: #38bdf8;
+        background: #eff6ff;
+        border-color: #bfdbfe;
+        color: #2563eb;
       }
 
       &--delete:hover {
-        background: rgba(239, 68, 68, 0.2);
-        border-color: rgba(239, 68, 68, 0.4);
-        color: #f87171;
+        background: #fef2f2;
+        border-color: #fecaca;
+        color: #dc2626;
       }
 
       &:disabled {
@@ -448,25 +442,24 @@
     gap: 0.5rem;
     height: 38px;
     padding: 0 1.25rem;
-    background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
-    border: 1px solid rgba(255, 255, 255, 0.15);
+    border: 1px solid #18181b;
     border-radius: vars.$border-radius-md;
     color: #ffffff;
     font-size: 0.8125rem;
-    font-weight: vars.$font-weight-semibold;
+    font-weight: 600;
     cursor: pointer;
-    box-shadow: 0 3px 10px rgba(37, 99, 235, 0.3);
-    transition: all vars.$transition-fast;
+    background-image: linear-gradient(to right, #3f3f46 50%, #18181b 50%);
+    background-size: 200% 100%;
+    background-position: right center;
+    transition: background-position 0.24s cubic-bezier(0.4, 0, 0.2, 1),
+                color 0.18s ease, border-color 0.18s ease;
 
-    svg {
-      width: 16px;
-      height: 16px;
-    }
+    svg { width: 16px; height: 16px; flex-shrink: 0; }
 
-    &:hover {
-      background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
-      transform: translateY(-1px);
-      box-shadow: 0 5px 14px rgba(37, 99, 235, 0.4);
+    &:hover:not(:disabled) {
+      background-position: left center;
+      color: #ffffff;
+      border-color: #3f3f46;
     }
   }
 
@@ -477,9 +470,9 @@
     left: 0;
     right: 0;
     bottom: 0;
-    background: rgba(0, 0, 0, 0.75);
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
     z-index: 1500;
     @include mixins.flex-center;
     padding: 1rem;
@@ -489,10 +482,10 @@
   &__modal {
     width: 100%;
     max-width: 520px;
-    background: #0f172a;
-    border: 1px solid rgba(255, 255, 255, 0.14);
+    background: #ffffff;
+    border: 1px solid #e5e7eb;
     border-radius: vars.$border-radius-lg;
-    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.7);
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
     overflow: hidden;
     animation: scaleUp 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 
@@ -501,12 +494,12 @@
       align-items: center;
       justify-content: space-between;
       padding: 1.25rem 1.5rem;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      border-bottom: 1px solid #e5e7eb;
 
       h2 {
         font-size: 1.15rem;
-        font-weight: vars.$font-weight-bold;
-        color: #ffffff;
+        font-weight: 700;
+        color: #09090b;
         margin: 0;
         display: flex;
         align-items: center;
@@ -515,21 +508,21 @@
         svg {
           width: 18px;
           height: 18px;
-          color: #38bdf8;
+          color: #2563eb;
         }
       }
 
       .btn-close {
         background: transparent;
         border: none;
-        color: #94a3b8;
+        color: #71717a;
         cursor: pointer;
         padding: 4px;
-        border-radius: 4px;
+        border-radius: vars.$radius-xs;
 
         &:hover {
-          color: #ffffff;
-          background: rgba(255, 255, 255, 0.1);
+          color: #09090b;
+          background: #f4f4f5;
         }
 
         svg {
@@ -547,21 +540,21 @@
     }
 
     &-info-banner {
-      background: rgba(56, 189, 248, 0.1);
-      border: 1px solid rgba(56, 189, 248, 0.25);
+      background: #eff6ff;
+      border: 1px solid #bfdbfe;
       border-radius: vars.$border-radius-md;
       padding: 0.75rem 0.95rem;
       display: flex;
       align-items: flex-start;
       gap: 0.65rem;
       font-size: 0.775rem;
-      color: #bae6fd;
+      color: #1d4ed8;
       line-height: 1.45;
 
       svg {
         width: 16px;
         height: 16px;
-        color: #38bdf8;
+        color: #2563eb;
         flex-shrink: 0;
         margin-top: 1px;
       }
@@ -573,42 +566,42 @@
       justify-content: flex-end;
       gap: 0.75rem;
       padding: 1.1rem 1.5rem;
-      border-top: 1px solid rgba(255, 255, 255, 0.08);
-      background: rgba(0, 0, 0, 0.2);
+      border-top: 1px solid #e5e7eb;
+      background: #f9fafb;
 
       .btn-cancel {
         height: 38px;
         padding: 0 1.1rem;
-        background: transparent;
-        border: 1px solid rgba(255, 255, 255, 0.15);
+        background: #ffffff;
+        border: 1px solid #e5e7eb;
         border-radius: vars.$border-radius-md;
-        color: #94a3b8;
+        color: #52525b;
         font-size: 0.8125rem;
-        font-weight: vars.$font-weight-medium;
+        font-weight: 600;
         cursor: pointer;
 
         &:hover {
-          background: rgba(255, 255, 255, 0.08);
-          color: #ffffff;
+          background: #f4f4f5;
+          color: #09090b;
         }
       }
 
       .btn-submit {
         height: 38px;
         padding: 0 1.25rem;
-        background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
-        border: 1px solid rgba(255, 255, 255, 0.15);
+        background: #18181b;
+        border: 1px solid #18181b;
         border-radius: vars.$border-radius-md;
         color: #ffffff;
         font-size: 0.8125rem;
-        font-weight: vars.$font-weight-semibold;
+        font-weight: 600;
         cursor: pointer;
         display: inline-flex;
         align-items: center;
         gap: 0.5rem;
 
         &:hover:not(:disabled) {
-          background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+          background: #000000;
         }
 
         &:disabled {
@@ -636,8 +629,8 @@
 
     label {
       font-size: 0.775rem;
-      font-weight: vars.$font-weight-medium;
-      color: #cbd5e1;
+      font-weight: 600;
+      color: #3f3f46;
     }
 
     .input-wrapper {
@@ -650,7 +643,7 @@
         left: 0.85rem;
         width: 16px;
         height: 16px;
-        color: #64748b;
+        color: #71717a;
         pointer-events: none;
       }
 
@@ -660,37 +653,36 @@
         padding: 0 0.85rem 0 2.45rem;
         font-size: 0.85rem;
         font-family: inherit;
-        color: #ffffff;
-        background: rgba(30, 41, 59, 0.65);
-        border: 1px solid rgba(255, 255, 255, 0.12);
+        color: #09090b;
+        background: #ffffff;
+        border: 1px solid #e5e7eb;
         border-radius: vars.$border-radius-md;
         outline: none;
         transition: all vars.$transition-fast;
         box-sizing: border-box;
 
         &:focus {
-          background: rgba(15, 23, 42, 0.95);
-          border-color: #38bdf8;
-          box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.2);
+          border-color: #18181b;
+          box-shadow: 0 0 0 2px rgba(24, 24, 27, 0.08);
         }
 
         &::placeholder {
-          color: #64748b;
+          color: #a1a1aa;
         }
       }
 
       select {
         cursor: pointer;
         option {
-          background: #0f172a;
-          color: #ffffff;
+          background: #ffffff;
+          color: #09090b;
         }
       }
     }
 
     .field-error {
       font-size: 0.725rem;
-      color: #f87171;
+      color: #dc2626;
     }
   }
 
@@ -710,16 +702,16 @@
     }
 
     &--success {
-      background: rgba(16, 185, 129, 0.12);
-      border: 1px solid rgba(16, 185, 129, 0.3);
-      color: #86efac;
+      background: #ecfdf5;
+      border: 1px solid #a7f3d0;
+      color: #059669;
       svg { color: #10b981; }
     }
 
     &--error {
-      background: rgba(239, 68, 68, 0.12);
-      border: 1px solid rgba(239, 68, 68, 0.3);
-      color: #fca5a5;
+      background: #fef2f2;
+      border: 1px solid #fecaca;
+      color: #dc2626;
       svg { color: #ef4444; }
     }
   }
@@ -728,19 +720,19 @@
   &__empty-state {
     padding: 3.5rem 1rem;
     text-align: center;
-    color: #94a3b8;
+    color: #71717a;
 
     svg {
       width: 48px;
       height: 48px;
-      color: #475569;
+      color: #a1a1aa;
       margin-bottom: 0.75rem;
     }
 
     h3 {
       font-size: 1.1rem;
-      font-weight: vars.$font-weight-semibold;
-      color: #ffffff;
+      font-weight: 700;
+      color: #09090b;
       margin: 0 0 0.35rem 0;
     }
 

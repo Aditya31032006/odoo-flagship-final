@@ -1,0 +1,140 @@
+// ============================================================
+// DEALFLOW360 — Shared Form & Input Design Tokens
+// One source of truth for all search inputs, toolbars, CTAs
+// ============================================================
+@use './variables' as vars;
+
+// ──────────────────────────────────────────────────────────
+// Toolbar Row — the flex bar that holds filters + search
+// ──────────────────────────────────────────────────────────
+.df-toolbar-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.875rem;
+  margin-bottom: 1.5rem;
+}
+
+.df-filter-chips {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+// ──────────────────────────────────────────────────────────
+// Search Input Wrapper — positions icon + input together
+// ──────────────────────────────────────────────────────────
+.df-search-wrap {
+  position: relative;
+  width: 280px;
+  max-width: 100%;
+
+  .df-search-icon {
+    position: absolute;
+    left: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #a1a1aa;
+    display: flex;
+    align-items: center;
+    pointer-events: none;
+
+    svg {
+      width: 15px;
+      height: 15px;
+    }
+  }
+
+  .df-search-clear {
+    position: absolute;
+    right: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: transparent;
+    border: none;
+    color: #a1a1aa;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    padding: 2px;
+    border-radius: vars.$radius-xs;
+    transition: color 0.12s ease;
+
+    &:hover {
+      color: #52525b;
+    }
+
+    svg {
+      width: 13px;
+      height: 13px;
+    }
+  }
+}
+
+// ──────────────────────────────────────────────────────────
+// The actual search <input> — light theme, clean & open
+// ──────────────────────────────────────────────────────────
+.df-search-input {
+  width: 100%;
+  box-sizing: border-box;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: vars.$radius-sm;
+  padding: 0.5rem 2rem 0.5rem 2.1rem;
+  color: vars.$text-primary;
+  font-size: 0.8125rem;
+  font-family: vars.$font-family-base;
+  outline: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+
+  &::placeholder {
+    color: #a1a1aa;
+  }
+
+  &:focus {
+    border-color: #93c5fd;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  }
+}
+
+// ──────────────────────────────────────────────────────────
+// Page Header CTA Button — gradient slide hover animation
+// ──────────────────────────────────────────────────────────
+.df-cta-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.5rem 1.1rem;
+  border: 1px solid #18181b;
+  border-radius: vars.$radius-sm;
+  color: #ffffff;
+  font-size: 0.875rem;
+  font-weight: 600;
+  font-family: vars.$font-family-base;
+  cursor: pointer;
+  white-space: nowrap;
+  text-decoration: none;
+  background-image: linear-gradient(to right, #3f3f46 50%, #18181b 50%);
+  background-size: 200% 100%;
+  background-position: right center;
+  transition: background-position 0.24s cubic-bezier(0.4, 0, 0.2, 1),
+              color 0.18s ease,
+              border-color 0.18s ease;
+
+  svg { width: 15px; height: 15px; flex-shrink: 0; }
+
+  &:hover:not(:disabled) {
+    background-position: left center;
+    border-color: #3f3f46;
+    color: #ffffff;
+  }
+
+  &:active { background-image: linear-gradient(to right, #09090b 50%, #09090b 50%); }
+
+  &:disabled,
+  &[disabled] { opacity: 0.45; cursor: not-allowed; }
+}
+
+

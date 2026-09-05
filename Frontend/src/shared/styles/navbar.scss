@@ -1,45 +1,47 @@
 @use './variables' as vars;
 @use './mixins' as mixins;
 
-// DealFlow360 Floating Glassmorphic Navigation Bar (Light Theme)
+// DealFlow360 Light Editorial Floating Mega-Navbar
 .df-navbar-wrapper {
   position: fixed;
   top: 10px;
-  left: 12px;
-  right: 12px;
-  max-width: calc(100% - 24px);
+  left: 16px;
+  right: 16px;
+  max-width: calc(100% - 32px);
   margin: 0 auto;
   z-index: 1000;
-  height: 54px;
   font-family: vars.$font-family-base;
-  animation: df-navbar-drop-in 0.75s cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation: df-navbar-drop-in 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
 .df-navbar {
-  @include mixins.flex-between;
-  height: 54px;
-  padding: 0 1.25rem;
-  background: rgba(255, 255, 255, 0.68);
-  backdrop-filter: blur(24px) saturate(180%);
-  -webkit-backdrop-filter: blur(24px) saturate(180%);
-  border: 1px solid rgba(255, 255, 255, 0.85);
-  border-radius: 16px;
-  box-shadow: 0 12px 32px 0 rgba(31, 38, 135, 0.08), 0 2px 8px 0 rgba(0, 0, 0, 0.02), inset 0 0 0 1px rgba(255, 255, 255, 0.6);
+  display: flex;
+  flex-direction: column;
+  background: rgba(255, 255, 255, 0.96);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border: 1px solid #e5e7eb;
+  border-radius: vars.$radius-lg;
+  box-shadow: vars.$nav-shadow;
   color: vars.$text-primary;
   user-select: none;
   position: relative;
-  transition: all vars.$transition-smooth;
+  transition: box-shadow 0.25s ease, border-color 0.25s ease;
+  // NOTE: overflow must NOT be hidden here — profile dropdown needs to escape the nav bounds
+  overflow: visible;
 
-  // Glass top highlight line
-  &::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 16px;
-    right: 16px;
-    height: 1px;
-    background: linear-gradient(90deg, rgba(255, 255, 255, 0.95) 0%, rgba(255, 255, 255, 0.3) 100%);
-    pointer-events: none;
+  &--expanded {
+    border-color: #d1d5db;
+    box-shadow: 0 16px 40px -8px rgba(0, 0, 0, 0.1), 0 2px 8px rgba(0, 0, 0, 0.04);
+  }
+
+  // Top Main Row
+  &__top-row {
+    @include mixins.flex-between;
+    height: 52px;
+    padding: 0 1.15rem;
+    width: 100%;
+    box-sizing: border-box;
   }
 
   // Brand / Logo Section
@@ -49,455 +51,586 @@
     text-decoration: none;
     color: vars.$text-primary;
     flex-shrink: 0;
-    padding-right: 0.75rem;
-    position: relative;
     cursor: pointer;
 
     &-logo {
       @include mixins.flex-center;
-      width: 32px;
-      height: 32px;
-      border-radius: vars.$border-radius-md;
-      background: linear-gradient(135deg, vars.$primary-500 0%, vars.$primary-700 100%);
-      box-shadow: 0 2px 8px rgba(37, 99, 235, 0.3);
-      transition: all vars.$transition-spring;
+      width: 28px;
+      height: 28px;
+      border-radius: vars.$radius-sm;
+      background: #18181b;
+      color: #ffffff;
+      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.15);
+      transition: box-shadow 0.15s ease;
 
       svg {
-        width: 18px;
-        height: 18px;
+        width: 15px;
+        height: 15px;
         color: #ffffff;
-        transition: transform vars.$transition-smooth;
       }
     }
 
     &-title {
-      font-size: vars.$font-size-md;
-      font-weight: vars.$font-weight-bold;
+      font-size: 0.9375rem;
+      font-weight: 700;
       letter-spacing: -0.02em;
-      color: vars.$slate-900;
+      color: #09090b;
       white-space: nowrap;
-      display: flex;
-      align-items: center;
-      gap: 0.25rem;
 
       span.accent {
-        color: vars.$primary-600;
+        color: #2563eb;
         font-weight: 800;
       }
     }
 
     &:hover {
       .df-navbar__brand-logo {
-        transform: translateY(-1px) scale(1.05);
-        box-shadow: 0 4px 14px rgba(37, 99, 235, 0.4);
-
-        svg {
-          transform: rotate(45deg);
-        }
+        background: #000000;
       }
     }
   }
 
-  // Center Navigation Links Container
-  &__nav-container {
-    @include mixins.flex-start;
+  // Center Group (Sharp Links + Expand Trigger)
+  &__center-group {
+    @include mixins.flex-center;
+    gap: 0.35rem;
     flex: 1;
-    height: 100%;
-    margin: 0 0.75rem;
-    overflow-x: auto;
-    overflow-y: hidden;
-    @include mixins.custom-scrollbar;
+    justify-content: center;
 
-    @include mixins.respond-to('lg') {
-      margin: 0 0.35rem;
+    @media (max-width: vars.$breakpoint-lg) {
+      display: none;
     }
   }
 
-  &__nav-links {
-    @include mixins.flex-start;
+  &__primary-links {
+    @include mixins.flex-center;
     gap: 0.25rem;
     list-style: none;
     margin: 0;
     padding: 0;
-    height: 100%;
-    align-items: center;
   }
 
-  // Individual Nav Link Item
-  &__nav-item {
+  // Sliding indicator container — holds the animated pills behind nav links
+  &__nav-track {
     position: relative;
-    height: 36px;
     display: flex;
     align-items: center;
   }
 
-  &__link {
-    @include mixins.flex-center;
-    gap: 0.375rem;
-    height: 34px;
-    padding: 0 0.75rem;
-    font-size: vars.$font-size-sm;
-    font-weight: vars.$font-weight-medium;
-    color: vars.$slate-600;
-    text-decoration: none;
-    border-radius: vars.$border-radius-md;
-    border: 1px solid transparent;
-    white-space: nowrap;
-    position: relative;
-    cursor: pointer;
-    transition: all vars.$transition-fast;
-
-    .nav-icon {
-      width: 15px;
-      height: 15px;
-      color: vars.$slate-500;
-      opacity: 0.9;
-      transition: transform vars.$transition-fast, color vars.$transition-fast;
-    }
-
-    // Hover State
-    &:hover:not(.active) {
-      background: rgba(15, 23, 42, 0.04);
-      color: vars.$slate-900;
-      transform: translateY(-1px);
-
-      .nav-icon {
-        color: vars.$primary-600;
-        transform: scale(1.08);
-      }
-    }
-
-    // Active State (Light Theme Active Pill)
-    &.active {
-      background: rgba(239, 246, 255, 0.95);
-      color: vars.$bg-active-pill-text;
-      font-weight: vars.$font-weight-semibold;
-      border-color: rgba(191, 219, 254, 0.9);
-      box-shadow: 0 2px 8px rgba(37, 99, 235, 0.12);
-      transform: translateY(0);
-
-      .nav-icon {
-        color: vars.$primary-600;
-        opacity: 1;
-      }
-    }
-
-    // Press/Active click state
-    &:active {
-      transform: scale(0.97);
-    }
+  // Active sliding pill — moves with CSS transform on route change
+  &__active-indicator {
+    position: absolute;
+    top: 0;
+    left: 0;
+    height: 100%;
+    background: #18181b;
+    border-radius: vars.$radius-sm;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.12);
+    pointer-events: none;
+    z-index: 0;
+    // Spring-like slide animation
+    transition: transform 0.32s cubic-bezier(0.34, 1.56, 0.64, 1),
+                width 0.22s cubic-bezier(0.16, 1, 0.3, 1),
+                opacity 0.18s ease;
   }
 
-  // Badges
-  &__badge {
+  // Hover highlight — slides between items, fades out when leaving the nav track
+  &__hover-indicator {
+    position: absolute;
+    top: 0;
+    left: 0;
+    height: 100%;
+    background: #e4e4e7;
+    border-radius: vars.$radius-sm;
+    pointer-events: none;
+    z-index: 0;
+    // Slides smoothly between items, opacity fades on enter/exit
+    transition: transform 0.16s ease,
+                width 0.16s ease,
+                opacity 0.14s ease;
+  }
+
+  &__nav-pill {
     display: inline-flex;
     align-items: center;
-    justify-content: center;
-    padding: 0.1rem 0.4rem;
-    font-size: 0.6875rem;
-    font-weight: vars.$font-weight-bold;
-    line-height: 1;
-    border-radius: vars.$border-radius-full;
-    background: #ef4444;
-    color: #ffffff;
-    box-shadow: 0 1px 3px rgba(239, 68, 68, 0.25);
-
-    &--health {
-      width: 7px;
-      height: 7px;
-      padding: 0;
-      background: #10b981;
-      box-shadow: 0 0 6px #10b981;
-      animation: pulse-dot 2s infinite ease-in-out;
-    }
-  }
-
-  // Right Utility Actions
-  &__actions {
-    @include mixins.flex-center;
-    gap: 0.5rem;
-    flex-shrink: 0;
-  }
-
-  // User Profile Pill in Navbar (Hover-Triggered)
-  &__user-container {
+    gap: 0.35rem;
+    padding: 0.4rem 0.75rem;
+    border-radius: vars.$radius-sm;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: #52525b;
+    text-decoration: none;
+    transition: color 0.18s ease;
     position: relative;
-    padding: 0.25rem 0;
-  }
+    z-index: 1; // above the indicators
+    border: 1px solid transparent;
+    background: transparent !important; // indicator handles background
 
-  &__user {
-    @include mixins.flex-center;
-    gap: 0.45rem;
-    padding: 0.2rem 0.6rem 0.2rem 0.25rem;
-    border-radius: vars.$border-radius-md;
-    background: rgba(255, 255, 255, 0.55);
-    border: 1px solid rgba(226, 232, 240, 0.85);
-    backdrop-filter: blur(8px);
-    cursor: pointer;
-    transition: all vars.$transition-fast;
-
-    &-avatar {
-      width: 26px;
-      height: 26px;
-      border-radius: vars.$border-radius-full;
-      background: linear-gradient(135deg, vars.$primary-500 0%, #6366f1 100%);
-      color: #ffffff;
-      font-size: 0.75rem;
-      font-weight: vars.$font-weight-bold;
-      @include mixins.flex-center;
-      box-shadow: 0 1px 3px rgba(37, 99, 235, 0.25);
-      transition: all 0.2s ease;
-
-      &.df-avatar--gold {
-        box-shadow: 0 0 0 2px #eab308, 0 0 8px rgba(234, 179, 8, 0.6);
-        border: 1px solid #0f172a;
-      }
-      &.df-avatar--silver {
-        box-shadow: 0 0 0 2px #cbd5e1, 0 0 8px rgba(203, 213, 225, 0.6);
-        border: 1px solid #0f172a;
-      }
-      &.df-avatar--bronze {
-        box-shadow: 0 0 0 2px #cd7f32, 0 0 8px rgba(205, 127, 50, 0.6);
-        border: 1px solid #0f172a;
-      }
-      &.df-avatar--standard {
-        box-shadow: 0 0 0 2px #ffffff, 0 0 6px rgba(255, 255, 255, 0.5);
-        border: 1px solid #0f172a;
-      }
+    &:hover {
+      color: #09090b;
     }
 
-    &-role {
-      font-size: vars.$font-size-xs;
-      font-weight: vars.$font-weight-medium;
-      color: vars.$slate-700;
+    &.active {
+      color: #ffffff;
+    }
+  }
 
-      @include mixins.respond-to('xl') {
-        display: none;
-      }
+  &__dot-pulse {
+    width: 6px;
+    height: 6px;
+    border-radius: vars.$radius-xs;
+    background: #10b981;
+    box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.2);
+    animation: df-dot-pulse 2s infinite ease-in-out;
+  }
+
+  // Center Expand Trigger (+ Modules Button)
+  &__expand-trigger {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.38rem 0.75rem;
+    background: #f4f4f5;
+    border: 1px solid #e4e4e7;
+    border-radius: vars.$radius-sm;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: #18181b;
+    cursor: pointer;
+    transition: color 0.15s ease, background-color 0.15s ease, border-color 0.15s ease;
+    outline: none;
+
+    .plus-icon {
+      font-size: 0.95rem;
+      font-weight: 700;
+      line-height: 1;
+      color: #2563eb;
+    }
+
+    .chevron {
+      width: 14px;
+      height: 14px;
+      transition: transform 0.25s ease;
     }
 
     &:hover {
-      background: rgba(255, 255, 255, 0.85);
-      border-color: vars.$slate-300;
+      background: #e4e4e7;
+      border-color: #d4d4d8;
     }
 
     &.active {
-      background: vars.$primary-50;
-      border-color: vars.$primary-200;
+      background: #18181b;
+      border-color: #18181b;
+      color: #ffffff;
 
-      .df-navbar__user-role {
-        color: vars.$primary-700;
-        font-weight: vars.$font-weight-semibold;
+      .plus-icon {
+        color: #60a5fa;
+      }
+
+      .chevron {
+        transform: rotate(180deg);
+        color: #ffffff;
       }
     }
   }
 
-  &__chevron-btn {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    background: transparent;
-    border: none;
-    padding: 2px;
-    margin: 0;
-    color: vars.$slate-400;
-    cursor: pointer;
-    border-radius: vars.$border-radius-sm;
-    transition: all vars.$transition-fast;
-
-    svg {
-      width: 13px;
-      height: 13px;
-      transition: transform vars.$transition-spring;
-    }
+  // User Actions Right Section
+  &__actions {
+    @include mixins.flex-end;
+    gap: 0.75rem;
+    flex-shrink: 0;
   }
 
-  // Solid clean dropdown menu (No blur/glass on dropdown option)
-  &__dropdown-menu {
-    position: absolute;
-    top: calc(100% + 8px);
-    right: 0;
-    width: 230px;
-    background: #ffffff;
-    border: 1px solid #e2e8f0;
-    border-radius: 12px;
-    box-shadow: 0 14px 34px -4px rgba(15, 23, 42, 0.14), 0 4px 10px -2px rgba(15, 23, 42, 0.06);
-    padding: 0.75rem;
-    z-index: 1100;
-    backdrop-filter: none;
-    -webkit-backdrop-filter: none;
-    animation: nav-dropdown-fade 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-    transform-origin: top right;
+  &__user-container {
+    position: relative;
+    padding: 4px 0;
 
-    // Invisible hover bridge so cursor can move between trigger and menu without losing hover
-    &::before {
+    &::after {
       content: '';
       position: absolute;
-      top: -12px;
-      left: 0;
-      right: 0;
-      height: 12px;
-    }
-
-    &-header {
-      padding: 0.25rem 0.35rem 0.5rem 0.35rem;
-      border-bottom: 1px solid #f1f5f9;
-      margin-bottom: 0.5rem;
-      cursor: default;
-    }
-
-    &-name {
-      font-size: 0.875rem;
-      font-weight: 600;
-      color: #0f172a;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-    }
-
-    &-email {
-      font-size: 0.75rem;
-      color: #64748b;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-      margin-top: 0.1rem;
-    }
-
-    &-company {
-      font-size: 0.7rem;
-      color: vars.$primary-600;
-      font-weight: 500;
-      margin-top: 0.25rem;
-    }
-
-    &-item,
-    &-profile-link {
-      width: 100%;
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-      padding: 0.5rem 0.625rem;
+      top: 100%;
+      left: -20px;
+      right: -20px;
+      height: 16px;
       background: transparent;
-      border: 1px solid transparent;
-      border-radius: 8px;
-      color: #334155;
-      font-size: 0.8125rem;
-      font-weight: 500;
-      cursor: pointer;
-      text-decoration: none;
-      margin-bottom: 0.35rem;
-      transition: all vars.$transition-fast;
-      box-sizing: border-box;
+    }
+  }
+
+  &__user-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.25rem 0.6rem 0.25rem 0.3rem;
+    background: #ffffff;
+    border: 1px solid #e5e7eb;
+    border-radius: vars.$radius-sm;
+    cursor: pointer;
+    transition: color 0.15s ease, background-color 0.15s ease, border-color 0.15s ease;
+
+    &:hover {
+      border-color: #d1d5db;
+      background: #f9fafb;
+    }
+
+    &.active {
+      border-color: #18181b;
+    }
+  }
+
+  &__avatar {
+    width: 24px;
+    height: 24px;
+    border-radius: vars.$radius-xs;
+    background: #18181b;
+    color: #ffffff;
+    font-size: 0.6875rem;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-transform: uppercase;
+  }
+
+  &__role-name {
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: #18181b;
+  }
+
+  &__profile-arrow {
+    display: flex;
+    align-items: center;
+    color: #71717a;
+    transition: transform 0.2s ease;
+
+    &.open {
+      transform: rotate(180deg);
+    }
+
+    svg {
+      width: 14px;
+      height: 14px;
+    }
+  }
+
+  // Profile Dropdown Menu — must have z-index above the mega-drawer
+  &__profile-dropdown {
+    position: absolute;
+    top: calc(100% + 6px);
+    right: 0;
+    width: 240px;
+    background: #ffffff;
+    border: 1px solid #e5e7eb;
+    border-radius: vars.$radius-lg;
+    box-shadow: 0 16px 36px -8px rgba(0, 0, 0, 0.12), 0 2px 6px rgba(0, 0, 0, 0.04);
+    padding: 0.5rem;
+    z-index: 1100;
+    animation: df-dropdown-pop 0.18s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+
+  &__profile-header {
+    padding: 0.5rem 0.65rem 0.65rem 0.65rem;
+    border-bottom: 1px solid #f3f4f6;
+    margin-bottom: 0.35rem;
+
+    .name {
+      font-size: 0.875rem;
+      font-weight: 700;
+      color: #09090b;
+    }
+
+    .email {
+      font-size: 0.75rem;
+      color: #71717a;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .company {
+      font-size: 0.75rem;
+      color: #2563eb;
+      margin-top: 0.2rem;
+      font-weight: 600;
+    }
+  }
+
+  &__profile-links {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+  }
+
+  .profile-link-item {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.5rem 0.65rem;
+    border-radius: vars.$radius-xs;
+    font-size: 0.8125rem;
+    color: #3f3f46;
+    text-decoration: none;
+    background: transparent;
+    border: none;
+    width: 100%;
+    text-align: left;
+    cursor: pointer;
+    transition: color 0.12s ease, background-color 0.12s ease;
+
+    svg {
+      width: 15px;
+      height: 15px;
+      color: #71717a;
+    }
+
+    &:hover {
+      background: #f4f4f5;
+      color: #09090b;
 
       svg {
-        width: 15px;
-        height: 15px;
-        color: #94a3b8;
-        flex-shrink: 0;
-        transition: color vars.$transition-fast;
+        color: #09090b;
+      }
+    }
+
+    &--logout {
+      color: #ef4444;
+
+      svg {
+        color: #ef4444;
       }
 
       &:hover {
-        background: #f1f5f9;
-        border-color: #e2e8f0;
-        color: #0f172a;
+        background: #fef2f2;
+        color: #dc2626;
 
         svg {
-          color: vars.$primary-600;
+          color: #dc2626;
         }
-      }
-    }
-
-    &-logout {
-      width: 100%;
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-      padding: 0.5rem 0.625rem;
-      background: #fef2f2;
-      border: 1px solid #fee2e2;
-      border-radius: 8px;
-      color: #dc2626;
-      font-size: 0.8125rem;
-      font-weight: 500;
-      cursor: pointer;
-      transition: all vars.$transition-fast;
-      box-sizing: border-box;
-      margin-top: 0.25rem;
-
-      svg {
-        width: 15px;
-        height: 15px;
-        flex-shrink: 0;
-      }
-
-      &:hover {
-        background: #fee2e2;
-        color: #b91c1c;
       }
     }
   }
 
   &__signin-btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.35rem;
-    padding: 0.35rem 0.85rem;
-    border-radius: 8px;
-    background: linear-gradient(135deg, vars.$primary-500 0%, vars.$primary-600 100%);
-    border: 1px solid vars.$primary-400;
+    padding: 0.4rem 1rem;
+    background: #18181b;
     color: #ffffff;
-    text-decoration: none;
+    border-radius: vars.$radius-sm;
     font-size: 0.8125rem;
     font-weight: 600;
-    box-shadow: 0 2px 6px rgba(37, 99, 235, 0.2);
-    transition: all vars.$transition-spring;
+    text-decoration: none;
+    transition: background-color 0.15s ease;
 
     &:hover {
-      transform: translateY(-1px);
-      box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+      background: #000000;
+    }
+  }
+
+  // Soft Animated Mega-Menu Drawer
+  // overflow: hidden here is intentional to clip the expanding drawer content during animation
+  &__mega-drawer {
+    max-height: 0;
+    opacity: 0;
+    visibility: hidden;
+    overflow: hidden;
+    transition: max-height 0.52s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.38s ease, visibility 0.38s ease;
+    border-top: 1px solid transparent;
+    border-radius: 0 0 vars.$radius-lg vars.$radius-lg;
+    background: #ffffff;
+
+    &--open {
+      max-height: 480px;
+      opacity: 1;
+      visibility: visible;
+      overflow: visible;
+      border-top-color: #f3f4f6;
+      padding: 1.25rem 1.25rem 1.5rem 1.25rem;
+    }
+  }
+
+  &__mega-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1.25rem;
+
+    @media (max-width: 1100px) {
+      grid-template-columns: repeat(2, 1fr);
+    }
+
+    @media (max-width: 640px) {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  &__mega-col {
+    display: flex;
+    flex-direction: column;
+    gap: 0.65rem;
+
+    &-title {
+      h4 {
+        font-size: 0.8125rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        color: #09090b;
+        margin: 0;
+      }
+
+      span {
+        font-size: 0.75rem;
+        color: #71717a;
+      }
+    }
+  }
+
+  &__mega-items {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    position: relative;
+    z-index: 1;
+  }
+
+  // Vertical hover pill track for each mega column
+  &__mega-items-track {
+    position: relative;
+  }
+
+  // Sliding vertical hover pill inside mega menu columns
+  &__mega-hover-indicator {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    border-radius: vars.$radius-sm;
+    background: #e4e4e7;
+    pointer-events: none;
+    z-index: 0;
+    transition: transform 0.18s ease,
+                height 0.18s ease,
+                opacity 0.14s ease;
+  }
+
+  &__mega-card {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.65rem;
+    padding: 0.55rem 0.65rem;
+    border-radius: vars.$radius-sm;
+    text-decoration: none;
+    border: 1px solid transparent;
+    position: relative;
+    z-index: 1; // above the hover indicator
+    // Only transition icon & text color — background handled by indicator
+    transition: border-color 0.15s ease;
+
+    .icon-wrap {
+      width: 28px;
+      height: 28px;
+      border-radius: vars.$radius-sm;
+      background: #f4f4f5;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #18181b;
+      flex-shrink: 0;
+      transition: color 0.15s ease, background-color 0.15s ease;
+
+      svg {
+        width: 15px;
+        height: 15px;
+      }
+    }
+
+    .text-wrap {
+      display: flex;
+      flex-direction: column;
+      gap: 0.1rem;
+
+      .item-name {
+        font-size: 0.8125rem;
+        font-weight: 600;
+        color: #18181b;
+        display: flex;
+        align-items: center;
+        gap: 0.35rem;
+        transition: color 0.15s ease;
+
+        .pulse-dot {
+          width: 5px;
+          height: 5px;
+          border-radius: vars.$radius-xs;
+          background: #10b981;
+        }
+      }
+
+      .item-desc {
+        font-size: 0.6875rem;
+        color: #71717a;
+        line-height: 1.3;
+      }
+    }
+
+    &:hover {
+      border-color: #e4e4e7;
+
+      .icon-wrap {
+        background: #18181b;
+        color: #ffffff;
+      }
+
+      .text-wrap .item-name {
+        color: #000000;
+      }
+    }
+
+    &.active {
+      background: #f4f7fc;
+      border-color: #bfdbfe;
+
+      .icon-wrap {
+        background: #2563eb;
+        color: #ffffff;
+      }
+
+      .text-wrap .item-name {
+        color: #1d4ed8;
+      }
     }
   }
 }
 
 // Keyframe Animations
 @keyframes df-navbar-drop-in {
-  0% {
+  from {
     opacity: 0;
-    transform: translateY(-36px);
+    transform: translateY(-8px);
   }
-  100% {
+  to {
     opacity: 1;
     transform: translateY(0);
   }
 }
 
-@keyframes pulse-dot {
-  0% {
-    transform: scale(0.95);
-    opacity: 0.7;
-    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
-  }
-  70% {
-    transform: scale(1.2);
-    opacity: 1;
-    box-shadow: 0 0 0 6px rgba(16, 185, 129, 0);
-  }
-  100% {
-    transform: scale(0.95);
-    opacity: 0.7;
-    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0);
-  }
-}
-
-@keyframes nav-dropdown-fade {
+@keyframes df-dropdown-pop {
   from {
     opacity: 0;
-    transform: translateY(-6px) scale(0.98);
+    transform: scale(0.98) translateY(-4px);
   }
   to {
     opacity: 1;
-    transform: translateY(0) scale(1);
+    transform: scale(1) translateY(0);
+  }
+}
+
+@keyframes df-dot-pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.6;
   }
 }

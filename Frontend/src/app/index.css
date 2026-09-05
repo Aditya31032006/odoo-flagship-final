@@ -30,6 +30,10 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   overflow-x: hidden;
+  /* Always reserve scrollbar gutter so pages with/without scrollbars
+     never change the layout width — fixes navbar jump on navigation */
+  overflow-y: scroll;
+  scrollbar-gutter: stable;
 }
 
 #root {

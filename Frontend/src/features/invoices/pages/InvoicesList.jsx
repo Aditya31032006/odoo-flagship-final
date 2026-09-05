@@ -86,12 +86,11 @@ const InvoicesList = () => {
             </div>
             <button
               type="button"
-              className="df-btn-primary df-invoices__btn-payment"
+              className="df-cta-btn"
               onClick={() => navigate('/invoices/new')}
             >
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
-                <line x1="12" y1="5" x2="12" y2="19" />
-                <line x1="5" y1="12" x2="19" y2="12" />
+                <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
               </svg>
               New Invoice
             </button>
@@ -99,7 +98,7 @@ const InvoicesList = () => {
         </div>
 
         {/* Status Filter Cards & Search Toolbar */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem', marginBottom: '1.25rem' }}>
+        <div className="df-toolbar-row">
           <div className="df-invoices__status-cards" style={{ margin: 0 }}>
             <button
               type="button"
@@ -126,41 +125,24 @@ const InvoicesList = () => {
             )}
           </div>
 
-          <div style={{ position: 'relative', width: '280px', maxWidth: '100%' }}>
+          <div className="df-search-wrap">
+            <span className="df-search-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" />
+              </svg>
+            </span>
             <input
               type="text"
-              placeholder="Search by invoice #, customer, order..."
+              className="df-search-input"
+              placeholder="Search by invoice #, customer..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              style={{
-                width: '100%',
-                background: 'rgba(30, 41, 59, 0.7)',
-                border: '1px solid rgba(255, 255, 255, 0.12)',
-                borderRadius: '8px',
-                padding: '0.5rem 2rem 0.5rem 0.8rem',
-                color: '#ffffff',
-                fontSize: '0.8125rem',
-                outline: 'none',
-              }}
             />
             {searchQuery && (
-              <button
-                type="button"
-                onClick={() => setSearchQuery('')}
-                title="Clear search"
-                style={{
-                  position: 'absolute',
-                  right: '8px',
-                  top: '50%',
-                  transform: 'translateY(-50%)',
-                  background: 'transparent',
-                  border: 'none',
-                  color: '#94a3b8',
-                  cursor: 'pointer',
-                  fontSize: '13px',
-                }}
-              >
-                ✕
+              <button type="button" className="df-search-clear" onClick={() => setSearchQuery('')} title="Clear search">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                  <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+                </svg>
               </button>
             )}
           </div>

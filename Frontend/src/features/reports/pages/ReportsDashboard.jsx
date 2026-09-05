@@ -75,7 +75,7 @@ function ReportsDashboard() {
   return (
     <div className="df-reports">
       {/* Header with Top-Right Actions */}
-      <div className="df-reports__header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem' }}>
+      <div className="df-reports__header">
         <div className="df-reports__header-left">
           <h1 className="df-reports__header-title">
             Admin / Reporting Dashboard

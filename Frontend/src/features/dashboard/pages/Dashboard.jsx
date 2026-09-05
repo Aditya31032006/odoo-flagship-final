@@ -5,7 +5,6 @@ import useAuth from '../../auth/hook/useAuth.js';
 import DashboardStatsCard from '../components/DashboardStatsCard.jsx';
 import RecentActivityFeed from '../components/RecentActivityFeed.jsx';
 import { useStaggerEntrance } from '../../../shared/animations/useStaggerEntrance.js';
-import { InteractiveButton } from '../../../shared/components/InteractiveButton.jsx';
 import '../styles/dashboard.scss';
 
 export const Dashboard = () => {
@@ -41,31 +40,21 @@ export const Dashboard = () => {
           </div>
 
           <div className="df-dashboard__actions-row">
-            <InteractiveButton
-              to="/quotations/new"
-              variant="primary"
-              icon={
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
-                  <line x1="12" x2="12" y1="5" y2="19" />
-                  <line x1="5" x2="19" y1="12" y2="12" />
-                </svg>
-              }
-            >
-              New Quotation
-            </InteractiveButton>
+            <Link to="/quotations/new" className="df-btn-primary">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="12" x2="12" y1="5" y2="19" />
+                <line x1="5" x2="19" y1="12" y2="12" />
+              </svg>
+              <span>New Quotation</span>
+            </Link>
 
-            <InteractiveButton
-              to="/approvals"
-              variant="secondary"
-              icon={
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M9 11l3 3L22 4" />
-                  <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
-                </svg>
-              }
-            >
-              View Approvals
-            </InteractiveButton>
+            <Link to="/approvals" className="df-btn-secondary">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M9 11l3 3L22 4" />
+                <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
+              </svg>
+              <span>View Approvals</span>
+            </Link>
           </div>
         </header>
 
