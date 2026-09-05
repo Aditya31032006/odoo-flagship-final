@@ -388,6 +388,17 @@ export function generateStaffInvitationEmail({ name, email, role, tempPassword }
           <a href="${loginUrl}" class="btn">Sign In to DealFlow360 &rarr;</a>
         </div>
 
+        <p style="margin-top: 25px; color: #f8fafc;">Best regards,<br><strong>DealFlow360 Team</strong></p>
+      </div>
+      <div class="footer">
+        &copy; ${new Date().getFullYear()} DealFlow360. All rights reserved.
+      </div>
+    </div>
+  </body>
+  </html>
+  `;
+}
+
 /**
  * Generates an HTML email sent to customer when quotation is Approved with Negotiate and Confirm buttons
  */
