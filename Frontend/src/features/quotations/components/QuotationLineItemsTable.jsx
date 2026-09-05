@@ -179,11 +179,15 @@ export const QuotationLineItemsTable = ({
                           </option>
                         ))}
                       </select>
-                      {item.is_upsell && (
+                      {item.is_subscription ? (
+                        <span className="sku-hint" style={{ color: '#38bdf8', fontWeight: 600 }}>
+                          🔁 Recurring Subscription ({item.billing_cycle || 'monthly'})
+                        </span>
+                      ) : item.is_upsell ? (
                         <span className="sku-hint">
                           ✦ Added from Upsell Recommendation
                         </span>
-                      )}
+                      ) : null}
                     </td>
 
                     {/* Quantity */}

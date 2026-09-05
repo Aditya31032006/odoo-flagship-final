@@ -224,6 +224,9 @@ export const useQuotationForm = ({ quotationId = null } = {}) => {
           discount_percentage: 0,
           tax_percentage: Number(variant.tax_percentage || 0),
           is_upsell: Boolean(variant.is_upsell),
+          is_subscription: Boolean(variant.is_subscription),
+          billing_cycle: variant.billing_cycle || null,
+          subscription_plan_id: variant.subscription_plan_id || null,
         },
         tierMaxDiscount
       );
@@ -280,7 +283,7 @@ export const useQuotationForm = ({ quotationId = null } = {}) => {
   const addUpsellSuggestion = useCallback(
     (sug) => {
       addProductLine({
-        product_variant_id: sug.suggested_variant_id,
+        product_variant_id: sug.suggested_variant_id || (sug.is_subscription ? `sub-var-${sug.subscription_plan_id}` : null),
         product_id: sug.suggested_product_id,
         product_name: sug.suggested_product_name,
         variant_name: sug.suggested_variant_name,
@@ -288,10 +291,13 @@ export const useQuotationForm = ({ quotationId = null } = {}) => {
         category_id: sug.category_id,
         category_name: sug.category_name,
         category_max_discount: sug.category_max_discount,
-        default_selling_price: sug.suggested_selling_price,
+        default_selling_price: sug.suggested_selling_price || sug.suggested_base_price,
         base_price: sug.suggested_base_price,
         tax_percentage: sug.suggested_tax_percentage,
         is_upsell: true,
+        is_subscription: Boolean(sug.is_subscription),
+        billing_cycle: sug.billing_cycle || null,
+        subscription_plan_id: sug.subscription_plan_id || null,
       });
     },
     [addProductLine]

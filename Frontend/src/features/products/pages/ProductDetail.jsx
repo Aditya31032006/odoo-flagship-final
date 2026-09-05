@@ -16,6 +16,7 @@ export const ProductDetail = ({ isNew = false }) => {
     categories,
     variants,
     pricelists,
+    subscriptionPlans,
     isLoading,
     isSaving,
     isDeleting,
@@ -32,6 +33,11 @@ export const ProductDetail = ({ isNew = false }) => {
     updatePricelistField,
     savePricelistRow,
     deletePricelist,
+    addSubscriptionPlan,
+    toggleEditSubscriptionPlan,
+    updateSubscriptionPlanField,
+    saveSubscriptionPlanRow,
+    deleteSubscriptionPlan,
     saveProduct,
     deleteProduct,
   } = useProducts({ id, isEditingExisting });
@@ -63,8 +69,24 @@ export const ProductDetail = ({ isNew = false }) => {
 
   // Initial load
   useEffect(() => {
-    loadProductData(reset);
-  }, [loadProductData, reset]);
+    if (isEditingExisting && id) {
+      loadProductData(id).then((data) => {
+        if (data) {
+          reset({
+            name: data.name || '',
+            category_id: data.category_id || '',
+            base_price: data.base_price || '',
+            unit: data.unit || 'Each',
+            description: data.description || '',
+            tax_percentage: data.tax_percentage || '18',
+            is_subscription: Boolean(data.is_subscription),
+            recurring_cycle: data.recurring_cycle || 'Monthly',
+            quantity_on_hand: data.quantity_on_hand || '10',
+          });
+        }
+      });
+    }
+  }, [id, isEditingExisting, loadProductData, reset]);
 
   const onFormSubmit = async (formData) => {
     const res = await saveProduct(formData);
@@ -583,11 +605,182 @@ export const ProductDetail = ({ isNew = false }) => {
             </table>
           </div>
 
-          {/* Notice Banner matching Wireframe #17 */}
-          <div className="df-product-detail__notice-banner">
-            Product details should be filled.
-            <br />
-            Recurring order with this product will be invoiced at the beginning of the period.
+        
+
+          {/* Section: Related Subscription Plans & Recurring Add-ons */}
+          <div className="df-product-detail__panel">
+            <div className="df-product-detail__panel-header">
+              <div>
+                <h3>RELATED SUBSCRIPTION PLANS & RECURRING ADD-ONS</h3>
+                <p style={{ margin: '0.25rem 0 0 0', fontSize: '0.8125rem', color: '#94a3b8' }}>
+                  Define warranty, care plans, or recurring service packages that can be attached and suggested in quotations.
+                </p>
+              </div>
+              <button
+                type="button"
+                className="df-product-detail__add-sub-btn"
+                onClick={() => addSubscriptionPlan('monthly', productName ? `${productName} Care Plan` : 'Care Plan')}
+              >
+                + Add Subscription Plan
+              </button>
+            </div>
+
+            <table className="df-product-detail__subtable">
+              <thead>
+                <tr>
+                  <th style={{ minWidth: '180px' }}>Plan / Service Name</th>
+                  <th style={{ width: '140px' }}>Billing Cycle</th>
+                  <th style={{ width: '130px' }}>Price (₹)</th>
+                  <th style={{ width: '160px' }}>Proration / Cancellation</th>
+                  <th className="col-actions">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {subscriptionPlans.length === 0 ? (
+                  <tr>
+                    <td colSpan="5" className="df-product-detail__empty-table">
+                      No subscription plans attached to this product yet. Click "+ Add Subscription Plan" to configure recurring warranty or service tiers.
+                    </td>
+                  </tr>
+                ) : (
+                  subscriptionPlans.map((plan, index) => (
+                    <tr key={plan.id || index} className={plan.isEditing ? 'df-row-editing' : ''}>
+                      {/* Plan Name Column */}
+                      <td>
+                        {plan.isEditing ? (
+                          <input
+                            type="text"
+                            placeholder="e.g. 3-Year Comprehensive Care Plan"
+                            value={plan.name}
+                            onChange={(e) => updateSubscriptionPlanField(index, 'name', e.target.value)}
+                            className="df-table-input"
+                          />
+                        ) : (
+                          <span style={{ fontWeight: 600, color: '#f8fafc' }}>
+                            {plan.name || 'Unnamed Plan'}
+                          </span>
+                        )}
+                      </td>
+
+                      {/* Billing Cycle Column */}
+                      <td>
+                        {plan.isEditing ? (
+                          <select
+                            value={plan.billing_cycle}
+                            onChange={(e) => updateSubscriptionPlanField(index, 'billing_cycle', e.target.value)}
+                            className="df-table-input"
+                          >
+                            <option value="monthly">Monthly</option>
+                            <option value="quarterly">Quarterly</option>
+                            <option value="yearly">Yearly</option>
+                          </select>
+                        ) : (
+                          <span className="badge-role" style={{ textTransform: 'capitalize', fontSize: '0.75rem' }}>
+                            {plan.billing_cycle}
+                          </span>
+                        )}
+                      </td>
+
+                      {/* Price Column */}
+                      <td>
+                        {plan.isEditing ? (
+                          <input
+                            type="number"
+                            step="0.01"
+                            min="0"
+                            placeholder="e.g. 199.00"
+                            value={plan.price}
+                            onChange={(e) => updateSubscriptionPlanField(index, 'price', e.target.value)}
+                            className="df-table-input"
+                          />
+                        ) : (
+                          <span style={{ color: '#38bdf8', fontWeight: 600 }}>
+                            ₹{Number(plan.price || 0).toLocaleString('en-IN')}
+                          </span>
+                        )}
+                      </td>
+
+                      {/* Proration / Cancellation Column */}
+                      <td>
+                        {plan.isEditing ? (
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem', fontSize: '0.75rem', color: '#cbd5e1' }}>
+                            <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', cursor: 'pointer' }}>
+                              <input
+                                type="checkbox"
+                                checked={Boolean(plan.allow_proration)}
+                                onChange={(e) => updateSubscriptionPlanField(index, 'allow_proration', e.target.checked)}
+                              />
+                              Proration
+                            </label>
+                            <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', cursor: 'pointer' }}>
+                              <input
+                                type="checkbox"
+                                checked={Boolean(plan.allow_cancellation)}
+                                onChange={(e) => updateSubscriptionPlanField(index, 'allow_cancellation', e.target.checked)}
+                              />
+                              Cancelable
+                            </label>
+                          </div>
+                        ) : (
+                          <span style={{ fontSize: '0.8rem', color: '#94a3b8' }}>
+                            {plan.allow_proration ? '✓ Prorate' : '✕ No prorate'} • {plan.allow_cancellation ? '✓ Cancelable' : '✕ Lock-in'}
+                          </span>
+                        )}
+                      </td>
+
+                      {/* Actions Column */}
+                      <td className="cell-actions">
+                        {plan.isEditing ? (
+                          <div className="df-action-btn-group">
+                            <button
+                              type="button"
+                              onClick={() => saveSubscriptionPlanRow(index)}
+                              className="df-action-btn df-action-btn--save"
+                              title="Save plan"
+                            >
+                              ✓ Save
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                if (plan.isNew) {
+                                  deleteSubscriptionPlan(index);
+                                } else {
+                                  toggleEditSubscriptionPlan(index, false);
+                                }
+                              }}
+                              className="df-action-btn df-action-btn--cancel"
+                              title="Cancel editing"
+                            >
+                              ✕
+                            </button>
+                          </div>
+                        ) : (
+                          <div className="df-action-btn-group">
+                            <button
+                              type="button"
+                              onClick={() => toggleEditSubscriptionPlan(index, true)}
+                              className="df-action-btn df-action-btn--edit"
+                              title="Edit plan"
+                            >
+                              ✎ Edit
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => deleteSubscriptionPlan(index)}
+                              className="df-action-btn df-action-btn--delete"
+                              title="Delete plan"
+                            >
+                              🗑 Delete
+                            </button>
+                          </div>
+                        )}
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
           </div>
 
           {/* Action buttons */}

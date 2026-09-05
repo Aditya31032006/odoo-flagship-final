@@ -19,7 +19,9 @@ export const UpsellSuggestionsWidget = memo(({
 
       <div className="df-quotation-detail__upsell-grid">
         {suggestions.map((sug) => {
-          const detailText = sug.is_promoted
+          const detailText = sug.is_subscription
+            ? `🔁 Recurring Plan • ₹${Number(sug.suggested_selling_price || sug.suggested_base_price).toLocaleString('en-IN')} / ${sug.billing_cycle || 'mo'}`
+            : sug.is_promoted
             ? 'Promo recommendation'
             : sug.minimum_margin_percentage
             ? `Margin +${sug.minimum_margin_percentage}%`
@@ -27,18 +29,23 @@ export const UpsellSuggestionsWidget = memo(({
 
           return (
             <div
-              key={sug.rule_id || sug.suggested_variant_id}
-              className="df-quotation-detail__upsell-card"
+              key={sug.rule_id || sug.subscription_plan_id || sug.suggested_variant_id}
+              className={`df-quotation-detail__upsell-card ${sug.is_subscription ? 'df-upsell-card--subscription' : ''}`}
               onClick={() => onAddSuggestion(sug)}
               title={`Click to add ${sug.suggested_product_name}`}
             >
               <div className="upsell-info">
-                <div className="title">+ {sug.suggested_product_name}</div>
-                <div className="detail">{detailText}</div>
+                <div className="title">
+                  {sug.is_subscription ? '🔁 ' : '+ '}
+                  {sug.suggested_product_name}
+                </div>
+                <div className="detail" style={sug.is_subscription ? { color: '#38bdf8', fontWeight: 500 } : {}}>
+                  {detailText}
+                </div>
               </div>
 
               <button type="button" className="btn-add">
-                Add +
+                {sug.is_subscription ? '+ Attach Plan' : 'Add +'}
               </button>
             </div>
           );

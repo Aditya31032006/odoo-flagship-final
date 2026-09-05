@@ -135,6 +135,7 @@ export const createProductController = async (req, res, next) => {
       tax_percentage = 0,
       is_active = true,
       variants = [],
+      subscription_plans = [],
       is_subscription,
       recurring_cycle,
     } = req.body;
@@ -153,6 +154,7 @@ export const createProductController = async (req, res, next) => {
       tax_percentage: Number(tax_percentage) || 0,
       is_active,
       variants,
+      subscription_plans,
       is_subscription,
       recurring_cycle,
     });
@@ -175,6 +177,7 @@ export const updateProductController = async (req, res, next) => {
       tax_percentage = 0,
       is_active = true,
       variants = [],
+      subscription_plans = [],
       is_subscription,
       recurring_cycle,
     } = req.body;
@@ -192,12 +195,13 @@ export const updateProductController = async (req, res, next) => {
       tax_percentage: Number(tax_percentage) || 0,
       is_active,
       variants,
+      subscription_plans,
       is_subscription,
       recurring_cycle,
     });
 
     if (!updated) {
-      return res.status(STATUS_CODES.NOT_FOUND).json({ success: false, message: 'Product not found.' });
+      return res.status(STATUS_CODES.NOT_FOUND).json({ success: false, message: 'Product not found' });
     }
 
     return res.status(STATUS_CODES.OK).json({ success: true, data: updated });

@@ -85,7 +85,10 @@ export const GET_UPSELL_RULES_FOR_PRODUCTS = `
     pv_sug.selling_price AS suggested_selling_price,
     pc_sug.id AS category_id,
     pc_sug.name AS category_name,
-    COALESCE(cdc.max_discount_percentage, 100)::NUMERIC(5,2) AS category_max_discount
+    COALESCE(cdc.max_discount_percentage, 100)::NUMERIC(5,2) AS category_max_discount,
+    FALSE AS is_subscription,
+    NULL AS billing_cycle,
+    NULL AS subscription_plan_id
   FROM upsell_rules ur
   JOIN products p_sug ON ur.suggested_product_id = p_sug.id
   JOIN product_categories pc_sug ON p_sug.category_id = pc_sug.id
@@ -95,7 +98,41 @@ export const GET_UPSELL_RULES_FOR_PRODUCTS = `
     AND p_sug.is_active = TRUE 
     AND pv_sug.is_active = TRUE
     AND ur.source_product_id = ANY($1::BIGINT[])
-  ORDER BY ur.priority DESC, ur.is_promoted DESC
+  
+  UNION ALL
+
+  SELECT
+    sp.id AS rule_id,
+    sp.product_id AS source_product_id,
+    p.id AS suggested_product_id,
+    0 AS minimum_margin_percentage,
+    10 AS priority,
+    TRUE AS is_promoted,
+    (p.name || ' - ' || sp.name || ' (' || UPPER(sp.billing_cycle::text) || ')') AS suggested_product_name,
+    sp.price AS suggested_base_price,
+    p.tax_percentage AS suggested_tax_percentage,
+    COALESCE(pv.id, 0) AS suggested_variant_id,
+    COALESCE(pv.sku, (p.name || '-SUB')) AS suggested_sku,
+    (sp.name || ' [' || UPPER(sp.billing_cycle::text) || ']') AS suggested_variant_name,
+    sp.price AS suggested_selling_price,
+    pc.id AS category_id,
+    pc.name AS category_name,
+    COALESCE(cdc.max_discount_percentage, 100)::NUMERIC(5,2) AS category_max_discount,
+    TRUE AS is_subscription,
+    sp.billing_cycle::text AS billing_cycle,
+    sp.id AS subscription_plan_id
+  FROM subscription_plans sp
+  JOIN products p ON sp.product_id = p.id
+  JOIN product_categories pc ON p.category_id = pc.id
+  LEFT JOIN category_discount_ceilings cdc ON pc.id = cdc.category_id
+  LEFT JOIN LATERAL (
+    SELECT id, sku FROM product_variants WHERE product_id = p.id AND is_active = TRUE ORDER BY id ASC LIMIT 1
+  ) pv ON TRUE
+  WHERE sp.is_active = TRUE
+    AND p.is_active = TRUE
+    AND sp.product_id = ANY($1::BIGINT[])
+
+  ORDER BY priority DESC, is_promoted DESC;
 `;
 
 export const GET_ACTIVE_APPROVAL_RULES = `
@@ -278,10 +315,32 @@ export const SOFT_DELETE_PRODUCT_VARIANT_BY_ID = `
   RETURNING id;
 `;
 
+export const GET_SUBSCRIPTION_PLANS_BY_PRODUCT_ID = `
+  SELECT 
+    id,
+    name,
+    billing_cycle,
+    price,
+    allow_proration,
+    allow_cancellation,
+    allow_partial_refund,
+    is_active
+  FROM subscription_plans
+  WHERE product_id = $1 AND is_active = TRUE
+  ORDER BY id ASC;
+`;
+
 export const INSERT_SUBSCRIPTION_PLAN_FOR_RECURRING_PRODUCT = `
   INSERT INTO subscription_plans (
     product_id, name, billing_cycle, price, allow_proration, allow_cancellation, allow_partial_refund, is_active
   ) VALUES ($1, $2, $3::subscription_cycle_enum, $4, true, true, true, true);
+`;
+
+export const INSERT_SUBSCRIPTION_PLAN_CUSTOM = `
+  INSERT INTO subscription_plans (
+    product_id, name, billing_cycle, price, allow_proration, allow_cancellation, allow_partial_refund, is_active
+  ) VALUES ($1, $2, $3::subscription_cycle_enum, $4, $5, $6, $7, true)
+  RETURNING *;
 `;
 
 export const FIND_SUBSCRIPTION_PLAN_BY_PRODUCT_ID = `
@@ -292,8 +351,27 @@ export const FIND_SUBSCRIPTION_PLAN_BY_PRODUCT_ID = `
 
 export const UPDATE_SUBSCRIPTION_PLAN_BY_ID = `
   UPDATE subscription_plans
-  SET name = $1, price = $2, billing_cycle = $3::subscription_cycle_enum, is_active = true
-  WHERE id = $4;
+  SET 
+    name = $1, 
+    price = $2, 
+    billing_cycle = $3::subscription_cycle_enum, 
+    allow_proration = $4,
+    allow_cancellation = $5,
+    allow_partial_refund = $6,
+    is_active = true
+  WHERE id = $7 AND product_id = $8;
+`;
+
+export const DELETE_SUBSCRIPTION_PLANS_EXCLUDING_IDS = `
+  UPDATE subscription_plans
+  SET is_active = FALSE
+  WHERE product_id = $1 AND id <> ALL($2::BIGINT[]);
+`;
+
+export const DEACTIVATE_ALL_SUBSCRIPTION_PLANS_FOR_PRODUCT = `
+  UPDATE subscription_plans
+  SET is_active = FALSE
+  WHERE product_id = $1;
 `;
 
 

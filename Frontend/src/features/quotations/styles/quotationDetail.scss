@@ -349,6 +349,17 @@
       }
     }
 
+    &.df-upsell-card--subscription {
+      border-color: rgba(56, 189, 248, 0.25);
+      background: radial-gradient(circle at top left, rgba(56, 189, 248, 0.08), rgba(15, 23, 42, 0.85));
+
+      .btn-add {
+        background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
+        color: #ffffff;
+        border: 1px solid rgba(56, 189, 248, 0.4);
+      }
+    }
+
     .btn-add {
       background: rgba(56, 189, 248, 0.15);
       color: #38bdf8;

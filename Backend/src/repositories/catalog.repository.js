@@ -23,10 +23,13 @@ import {
   GET_ACTIVE_PRODUCT_VARIANTS_BY_PRODUCT_ID,
   SOFT_DELETE_PRODUCT_BY_ID,
   SOFT_DELETE_PRODUCT_VARIANTS_BY_PRODUCT_ID,
-  SOFT_DELETE_PRODUCT_VARIANT_BY_ID,
   INSERT_SUBSCRIPTION_PLAN_FOR_RECURRING_PRODUCT,
+  INSERT_SUBSCRIPTION_PLAN_CUSTOM,
   FIND_SUBSCRIPTION_PLAN_BY_PRODUCT_ID,
   UPDATE_SUBSCRIPTION_PLAN_BY_ID,
+  GET_SUBSCRIPTION_PLANS_BY_PRODUCT_ID,
+  DELETE_SUBSCRIPTION_PLANS_EXCLUDING_IDS,
+  DEACTIVATE_ALL_SUBSCRIPTION_PLANS_FOR_PRODUCT,
 } from '../queries/catalog.query.js';
 
 export const getActiveCustomersRepo = async () => {
@@ -191,11 +194,13 @@ export const getProductDetailRepo = async (productId) => {
     }
 
     const variantsRes = await client.query(GET_PRODUCT_VARIANTS_BY_PRODUCT_ID, [productId]);
+    const subPlansRes = await client.query(GET_SUBSCRIPTION_PLANS_BY_PRODUCT_ID, [productId]);
     await client.query('COMMIT');
 
     return {
       ...prodRes.rows[0],
       variants: variantsRes.rows,
+      subscription_plans: subPlansRes.rows,
     };
   } catch (error) {
     console.error('Error in getProductDetailRepo:', error);
@@ -216,6 +221,7 @@ export const createProductRepo = async ({
   tax_percentage = 0,
   is_active = true,
   variants = [],
+  subscription_plans = [],
   is_subscription = false,
   recurring_cycle = 'monthly',
 }) => {
@@ -265,20 +271,44 @@ export const createProductRepo = async ({
       createdVariants.push(varRes.rows[0]);
     }
 
-    // If marked as recurring / subscription, automatically create active subscription plan
-    if (unit === 'Recurring' || Boolean(is_subscription)) {
+    // Save provided subscription plans
+    const createdPlans = [];
+    if (subscription_plans && Array.isArray(subscription_plans) && subscription_plans.length > 0) {
+      for (const plan of subscription_plans) {
+        const planName = (plan.name || '').trim() || `${name} Subscription`;
+        let cycle = 'monthly';
+        const c = String(plan.billing_cycle || '').toLowerCase();
+        if (['monthly', 'quarterly', 'yearly'].includes(c)) {
+          cycle = c;
+        }
+        const planPrice = Number(plan.price) >= 0 ? Number(plan.price) : base_price;
+        const planRes = await client.query(INSERT_SUBSCRIPTION_PLAN_CUSTOM, [
+          product.id,
+          planName,
+          cycle,
+          planPrice,
+          plan.allow_proration !== undefined ? Boolean(plan.allow_proration) : true,
+          plan.allow_cancellation !== undefined ? Boolean(plan.allow_cancellation) : true,
+          plan.allow_partial_refund !== undefined ? Boolean(plan.allow_partial_refund) : false,
+        ]);
+        createdPlans.push(planRes.rows[0]);
+      }
+    } else if (unit === 'Recurring' || Boolean(is_subscription)) {
+      // If marked as recurring / subscription, automatically create default active subscription plan
       let cycle = 'monthly';
       const c = String(recurring_cycle || '').toLowerCase();
       if (['monthly', 'quarterly', 'yearly'].includes(c)) {
         cycle = c;
       }
-      await client.query(INSERT_SUBSCRIPTION_PLAN_FOR_RECURRING_PRODUCT, [product.id, name, cycle, base_price]);
+      const planRes = await client.query(INSERT_SUBSCRIPTION_PLAN_FOR_RECURRING_PRODUCT, [product.id, name, cycle, base_price]);
+      createdPlans.push(planRes.rows[0]);
     }
 
     await client.query('COMMIT');
     return {
       ...product,
       variants: createdVariants,
+      subscription_plans: createdPlans,
     };
   } catch (error) {
     console.error('Error in createProductRepo:', error);
@@ -298,6 +328,7 @@ export const updateProductRepo = async (productId, {
   tax_percentage = 0,
   is_active = true,
   variants = [],
+  subscription_plans = [],
   is_subscription = false,
   recurring_cycle = 'monthly',
 }) => {
@@ -362,8 +393,55 @@ export const updateProductRepo = async (productId, {
       }
     }
 
-    // If marked as recurring / subscription, automatically create active subscription plan if missing
-    if (unit === 'Recurring' || Boolean(is_subscription)) {
+    // Sync subscription plans
+    if (subscription_plans && Array.isArray(subscription_plans)) {
+      const existingPlanIds = subscription_plans
+        .filter((p) => p.id && typeof p.id === 'number' && p.id < 1000000000000)
+        .map((p) => p.id);
+
+      if (existingPlanIds.length > 0) {
+        await client.query(DELETE_SUBSCRIPTION_PLANS_EXCLUDING_IDS, [productId, existingPlanIds]);
+      } else if (subscription_plans.length === 0 && !Boolean(is_subscription) && unit !== 'Recurring') {
+        await client.query(DEACTIVATE_ALL_SUBSCRIPTION_PLANS_FOR_PRODUCT, [productId]);
+      }
+
+      for (const plan of subscription_plans) {
+        const planName = (plan.name || '').trim() || `${name} Plan`;
+        let cycle = 'monthly';
+        const c = String(plan.billing_cycle || '').toLowerCase();
+        if (['monthly', 'quarterly', 'yearly'].includes(c)) {
+          cycle = c;
+        }
+        const planPrice = Number(plan.price) >= 0 ? Number(plan.price) : base_price;
+        const allowProration = plan.allow_proration !== undefined ? Boolean(plan.allow_proration) : true;
+        const allowCancellation = plan.allow_cancellation !== undefined ? Boolean(plan.allow_cancellation) : true;
+        const allowPartialRefund = plan.allow_partial_refund !== undefined ? Boolean(plan.allow_partial_refund) : false;
+
+        if (plan.id && typeof plan.id === 'number' && plan.id < 1000000000000) {
+          await client.query(UPDATE_SUBSCRIPTION_PLAN_BY_ID, [
+            planName,
+            planPrice,
+            cycle,
+            allowProration,
+            allowCancellation,
+            allowPartialRefund,
+            plan.id,
+            productId,
+          ]);
+        } else {
+          await client.query(INSERT_SUBSCRIPTION_PLAN_CUSTOM, [
+            productId,
+            planName,
+            cycle,
+            planPrice,
+            allowProration,
+            allowCancellation,
+            allowPartialRefund,
+          ]);
+        }
+      }
+    } else if (unit === 'Recurring' || Boolean(is_subscription)) {
+      // If marked as recurring / subscription, automatically create active subscription plan if missing
       let cycle = 'monthly';
       const c = String(recurring_cycle || '').toLowerCase();
       if (['monthly', 'quarterly', 'yearly'].includes(c)) {
@@ -373,16 +451,18 @@ export const updateProductRepo = async (productId, {
       if (existingPlan.rows.length === 0) {
         await client.query(INSERT_SUBSCRIPTION_PLAN_FOR_RECURRING_PRODUCT, [productId, name, cycle, base_price]);
       } else {
-        await client.query(UPDATE_SUBSCRIPTION_PLAN_BY_ID, [name, base_price, cycle, existingPlan.rows[0].id]);
+        await client.query(UPDATE_SUBSCRIPTION_PLAN_BY_ID, [name, base_price, cycle, true, true, false, existingPlan.rows[0].id, productId]);
       }
     }
 
     const finalVariants = await client.query(GET_ACTIVE_PRODUCT_VARIANTS_BY_PRODUCT_ID, [productId]);
-
+    const finalPlans = await client.query(GET_SUBSCRIPTION_PLANS_BY_PRODUCT_ID, [productId]);
     await client.query('COMMIT');
+
     return {
       ...updatedProduct,
       variants: finalVariants.rows,
+      subscription_plans: finalPlans.rows,
     };
   } catch (error) {
     console.error('Error in updateProductRepo:', error);

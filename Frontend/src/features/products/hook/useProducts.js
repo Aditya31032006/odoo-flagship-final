@@ -15,6 +15,7 @@ export const useProducts = ({ id = null, isEditingExisting = false, autoFetch = 
   const [categories, setCategories] = useState([]);
   const [variants, setVariants] = useState([]);
   const [pricelists, setPricelists] = useState([]);
+  const [subscriptionPlans, setSubscriptionPlans] = useState([]);
 
   const [isLoadingDetail, setIsLoadingDetail] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -36,14 +37,40 @@ export const useProducts = ({ id = null, isEditingExisting = false, autoFetch = 
     }
   }, [autoFetch, id, isInitialized, loadCatalog]);
 
+  // Fetch categories for forms
+  const loadCategories = useCallback(async () => {
+    try {
+      const cats = await productsApi.getCategories();
+      if (Array.isArray(cats) && cats.length > 0) {
+        setCategories(cats);
+      }
+    } catch (err) {
+      console.error('Failed to load categories:', err);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (id || isEditingExisting) {
+      loadCategories();
+    }
+  }, [id, isEditingExisting, loadCategories]);
+
   // 2. Product Detail loading
   const loadProductData = useCallback(
-    async (productId) => {
-      if (!productId || productId === 'new') return;
+    async (productIdParam) => {
+      // Guard against function or object being accidentally passed in
+      const targetId =
+        (typeof productIdParam === 'number' || (typeof productIdParam === 'string' && productIdParam !== 'new' && !isNaN(Number(productIdParam))))
+          ? productIdParam
+          : (id && id !== 'new' && !isNaN(Number(id)))
+          ? id
+          : null;
+
+      if (!targetId) return null;
       try {
         setIsLoadingDetail(true);
         setFormError(null);
-        const data = await productsApi.getProductDetail(productId);
+        const data = await productsApi.getProductDetail(targetId);
         if (data) {
           if (data.categories) setCategories(data.categories);
           if (data.variants) {
@@ -54,6 +81,21 @@ export const useProducts = ({ id = null, isEditingExisting = false, autoFetch = 
                 attribute: v.variant_name?.split(':')[0]?.trim() || '',
                 values: v.variant_name?.split(':')[1]?.trim() || '',
                 extra_price: v.selling_price || '0',
+                isEditing: false,
+                isNew: false,
+              }))
+            );
+          }
+          if (data.subscription_plans) {
+            setSubscriptionPlans(
+              data.subscription_plans.map((sp) => ({
+                id: sp.id,
+                name: sp.name || '',
+                billing_cycle: sp.billing_cycle || 'monthly',
+                price: sp.price !== undefined ? String(sp.price) : '0',
+                allow_proration: sp.allow_proration !== undefined ? Boolean(sp.allow_proration) : true,
+                allow_cancellation: sp.allow_cancellation !== undefined ? Boolean(sp.allow_cancellation) : true,
+                allow_partial_refund: sp.allow_partial_refund !== undefined ? Boolean(sp.allow_partial_refund) : false,
                 isEditing: false,
                 isNew: false,
               }))
@@ -75,18 +117,13 @@ export const useProducts = ({ id = null, isEditingExisting = false, autoFetch = 
         return data;
       } catch (err) {
         setFormError(err.message || 'Failed to load product details');
+        return null;
       } finally {
         setIsLoadingDetail(false);
       }
     },
-    []
+    [id]
   );
-
-  useEffect(() => {
-    if (isEditingExisting && id) {
-      loadProductData(id);
-    }
-  }, [id, isEditingExisting, loadProductData]);
 
   // 3. Variant operations
   const addVariant = () => {
@@ -214,7 +251,69 @@ export const useProducts = ({ id = null, isEditingExisting = false, autoFetch = 
     }
   };
 
-  // 5. Product CRUD actions
+  // 5. Subscription Plan operations
+  const addSubscriptionPlan = (defaultCycle = 'monthly', defaultName = '') => {
+    setSubscriptionPlans((prev) => [
+      ...prev,
+      {
+        id: Date.now(),
+        name: defaultName || '',
+        billing_cycle: defaultCycle,
+        price: '',
+        allow_proration: true,
+        allow_cancellation: true,
+        allow_partial_refund: false,
+        isEditing: true,
+        isNew: true,
+      },
+    ]);
+  };
+
+  const toggleEditSubscriptionPlan = (index, shouldEdit = true) => {
+    setSubscriptionPlans((prev) => {
+      const copy = [...prev];
+      copy[index] = { ...copy[index], isEditing: shouldEdit };
+      return copy;
+    });
+  };
+
+  const updateSubscriptionPlanField = (index, field, value) => {
+    setSubscriptionPlans((prev) => {
+      const copy = [...prev];
+      copy[index] = { ...copy[index], [field]: value };
+      return copy;
+    });
+  };
+
+  const saveSubscriptionPlanRow = (index) => {
+    const plan = subscriptionPlans[index];
+    if (!plan.name.trim()) {
+      toast.error('Subscription plan name is required');
+      return false;
+    }
+    setSubscriptionPlans((prev) => {
+      const copy = [...prev];
+      copy[index] = { ...copy[index], isEditing: false, isNew: false };
+      return copy;
+    });
+    return true;
+  };
+
+  const deleteSubscriptionPlan = async (index) => {
+    const plan = subscriptionPlans[index];
+    const ok = await confirm({
+      title: 'Remove Subscription Plan',
+      message: `Are you sure you want to remove plan "${plan.name || 'this plan'}"?`,
+      confirmText: 'Remove',
+      type: 'danger',
+    });
+    if (ok) {
+      setSubscriptionPlans((prev) => prev.filter((_, i) => i !== index));
+      toast.success('Subscription plan removed');
+    }
+  };
+
+  // 6. Product CRUD actions
   const saveProduct = async (formData) => {
     try {
       setIsSaving(true);
@@ -246,6 +345,15 @@ export const useProducts = ({ id = null, isEditingExisting = false, autoFetch = 
             selling_price: sellingPrice,
           };
         }),
+        subscription_plans: subscriptionPlans.map((sp) => ({
+          id: sp.id,
+          name: (sp.name || '').trim() || `${formData.name} ${sp.billing_cycle}`,
+          billing_cycle: sp.billing_cycle || 'monthly',
+          price: sp.price !== '' ? Number(sp.price) : Number(formData.base_price) || 0,
+          allow_proration: Boolean(sp.allow_proration),
+          allow_cancellation: Boolean(sp.allow_cancellation),
+          allow_partial_refund: Boolean(sp.allow_partial_refund),
+        })),
         pricelists,
       };
 
@@ -308,6 +416,7 @@ export const useProducts = ({ id = null, isEditingExisting = false, autoFetch = 
     categories,
     variants,
     pricelists,
+    subscriptionPlans,
     isLoading: isLoadingDetail || isCatalogLoading,
     isSaving,
     isDeleting,
@@ -328,6 +437,11 @@ export const useProducts = ({ id = null, isEditingExisting = false, autoFetch = 
     updatePricelistField,
     savePricelistRow,
     deletePricelist,
+    addSubscriptionPlan,
+    toggleEditSubscriptionPlan,
+    updateSubscriptionPlanField,
+    saveSubscriptionPlanRow,
+    deleteSubscriptionPlan,
     saveProduct,
     deleteProduct,
   };
