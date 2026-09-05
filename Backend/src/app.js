@@ -5,6 +5,8 @@ import cookieParser from 'cookie-parser';
 import morgan from 'morgan';
 import './config/passport.js';
 import authRouter from './routes/auth.route.js';
+import dashboardRouter from './routes/dashboard.route.js';
+import quotationRouter from './routes/quotation.route.js';
 import handleError from './middleware/error.middleware.js';
 import config from './config/config.js';
 
@@ -21,8 +23,10 @@ app.use(express.json());
 app.use(cookieParser());
 app.use(morgan('dev'));
 
-// Mount Authentication & OAuth Routes
+// Mount Feature API Routes
 app.use('/api/auth', authRouter);
+app.use('/api/dashboard', dashboardRouter);
+app.use('/api/quotations', quotationRouter);
 
 // Global Error Handler
 app.use(handleError);

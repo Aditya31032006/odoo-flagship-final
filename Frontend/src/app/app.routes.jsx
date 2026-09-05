@@ -4,6 +4,8 @@ import ProtectedRoute from '../features/auth/components/ProtectedRoute.jsx';
 import PublicRoute from '../features/auth/components/PublicRoute.jsx';
 import Login from '../features/auth/pages/Login.jsx';
 import Register from '../features/auth/pages/Register.jsx';
+import Dashboard from '../features/dashboard/pages/Dashboard.jsx';
+import QuotationsList from '../features/quotations/pages/QuotationsList.jsx';
 
 // Lightweight placeholder view component for quick verification
 const PagePlaceholder = ({ title, description }) => (
@@ -38,21 +40,11 @@ export const router = createBrowserRouter([
       },
       {
         path: '/dashboard',
-        element: (
-          <PagePlaceholder
-            title="DealFlow360 Dashboard"
-            description="Sales Operations 360 overview, deal velocity, conversion rates, and real-time operational alerts."
-          />
-        ),
+        element: <Dashboard />,
       },
       {
         path: '/quotations',
-        element: (
-          <PagePlaceholder
-            title="Quotations Management"
-            description="Create and manage customer quotations with line-item pricing, tier discounts, and governance."
-          />
-        ),
+        element: <QuotationsList />,
       },
       {
         path: '/approvals',
