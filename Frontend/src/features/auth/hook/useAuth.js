@@ -13,12 +13,12 @@ import { authApi } from '../services/auth.api.js';
 
 export function useAuth() {
   const dispatch = useDispatch();
-  const { user, token, isAuthenticated, loading, error, successMessage } = useSelector(
+  const { user, isAuthenticated, loading, error, successMessage } = useSelector(
     (state) => state.auth
   );
 
   /**
-   * Log in user (role is returned directly from backend DB)
+   * Log in user (httpOnly cookie is set by backend)
    */
   const login = useCallback(
     async (credentials) => {
@@ -28,7 +28,6 @@ export function useAuth() {
         dispatch(
           setAuthSuccess({
             user: response.user,
-            token: response.token,
             message: response.message,
           })
         );
@@ -53,7 +52,6 @@ export function useAuth() {
         dispatch(
           setAuthSuccess({
             user: response.user,
-            token: response.token,
             message: response.message,
           })
         );
@@ -78,7 +76,6 @@ export function useAuth() {
         dispatch(
           setAuthSuccess({
             user: response.user,
-            token: response.token,
             message: response.message,
           })
         );
@@ -131,23 +128,27 @@ export function useAuth() {
   }, []);
 
   /**
-   * Fetch latest profile of currently authenticated user
+   * Fetch profile of currently authenticated user using httpOnly cookie
    */
   const fetchCurrentUser = useCallback(async () => {
-    if (!token && !localStorage.getItem('df_token')) return;
     dispatch(setLoading(true));
     try {
       const response = await authApi.getMe();
-      dispatch(setUser(response.user));
-      return { success: true, user: response.user };
+      if (response.user) {
+        dispatch(setUser(response.user));
+        return { success: true, user: response.user };
+      } else {
+        dispatch(logoutSuccess());
+        return { success: false };
+      }
     } catch {
       dispatch(logoutSuccess());
       return { success: false };
     }
-  }, [dispatch, token]);
+  }, [dispatch]);
 
   /**
-   * Log out user and clear stored credentials
+   * Log out user from backend and clear session
    */
   const logout = useCallback(async () => {
     try {
@@ -175,7 +176,6 @@ export function useAuth() {
 
   return {
     user,
-    token,
     isAuthenticated,
     loading,
     error,
