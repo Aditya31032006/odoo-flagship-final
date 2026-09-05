@@ -228,11 +228,7 @@ export const DiscountRulesSetup = () => {
           </div>
 
           {/* Footer Notice Banner matching Wireframe #18 */}
-          <div className="df-discount-rules__notice-banner">
-            When a quote mixes categories with different ceilings, the system must compute a blended risk score and route to the highest required level.
-            <br />
-            All approvals, rejections, and edits must be logged with user, timestamp, and reason.
-          </div>
+          
         </form>
       </div>
     </div>

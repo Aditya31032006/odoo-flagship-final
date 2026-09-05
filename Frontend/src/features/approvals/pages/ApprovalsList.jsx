@@ -135,9 +135,7 @@ export const ApprovalsList = () => {
         </div>
 
         {/* Info Banner */}
-        <div className="df-approvals__banner df-approvals__banner--info">
-          <span>Click any row to open its full approval detail, risk breakdown, and audit trail.</span>
-        </div>
+        
 
         {/* Filter Button */}
         <div>

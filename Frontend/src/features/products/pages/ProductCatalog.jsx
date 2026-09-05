@@ -128,9 +128,7 @@ export const ProductCatalog = () => {
         </div>
 
         {/* Bottom Banner matching Wireframe #16 */}
-        <div className="df-products__notice-banner">
-          Click a product row to open general info, variants and tier/currency price lists.
-        </div>
+      
       </div>
     </div>
   );

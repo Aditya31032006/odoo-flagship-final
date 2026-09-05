@@ -316,9 +316,7 @@ export const FulfillmentList = () => {
         </div>
 
         {/* Info Banner */}
-        <div className="df-fulfillment__banner df-fulfillment__banner--info">
-          <span>Click an order row to open its warehouse split detail.</span>
-        </div>
+        
       </div>
 
       {/* Warehouse Stock Modal */}
