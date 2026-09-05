@@ -36,6 +36,7 @@ const MyInvoices = lazy(() => import('../features/invoices/pages/MyInvoices.jsx'
 const DealHealthDashboard = lazy(() => import('../features/dealHealth/pages/DealHealthDashboard.jsx'));
 const ReportsDashboard = lazy(() => import('../features/reports/pages/ReportsDashboard.jsx'));
 const StaffManagement = lazy(() => import('../features/staff/pages/StaffManagement.jsx'));
+const DeliveryCalendar = lazy(() => import('../features/deliveryCalendar/pages/DeliveryCalendar.jsx'));
 
 // Sleek loading fallback for Suspense
 const RouteLoader = () => (
@@ -168,6 +169,14 @@ export const router = createBrowserRouter([
       {
         path: '/profile',
         element: withSuspense(Profile),
+      },
+      {
+        path: '/calendar',
+        element: withSuspense(DeliveryCalendar),
+      },
+      {
+        path: '/delivery-calendar',
+        element: withSuspense(DeliveryCalendar),
       },
 
       // Staff Management: Admin only

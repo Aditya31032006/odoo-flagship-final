@@ -56,6 +56,19 @@ const NAV_ITEMS = [
     ),
   },
   {
+    name: 'Delivery Calendar',
+    path: '/calendar',
+    allowedRoles: ['admin', 'operations', 'sales_manager', 'sales_rep', 'finance'],
+    icon: (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="nav-icon">
+        <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+        <line x1="16" y1="2" x2="16" y2="6" />
+        <line x1="8" y1="2" x2="8" y2="6" />
+        <line x1="3" y1="10" x2="21" y2="10" />
+      </svg>
+    ),
+  },
+  {
     name: 'Subscriptions',
     path: '/subscriptions',
     allowedRoles: ['admin', 'finance', 'sales_manager', 'sales_rep'],
@@ -207,36 +220,48 @@ function NavbarComponent() {
 
   const visibleNavItems = user?.role === 'customer'
     ? [
-        {
-          name: 'My Quotations',
-          path: '/my_quotations',
-          icon: (
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="nav-icon">
-              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-              <polyline points="14 2 14 8 20 8" />
-              <line x1="16" x2="8" y1="13" y2="13" />
-              <line x1="16" x2="8" y1="17" y2="17" />
-              <polyline points="10 9 9 9 8 9" />
-            </svg>
-          ),
-        },
-        {
-          name: 'My Invoices',
-          path: '/my_invoices',
-          icon: (
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="nav-icon">
-              <rect x="3" y="4" width="18" height="16" rx="2" />
-              <line x1="7" y1="8" x2="17" y2="8" />
-              <line x1="7" y1="12" x2="17" y2="12" />
-              <line x1="7" y1="16" x2="12" y2="16" />
-            </svg>
-          ),
-        },
-      ]
+      {
+        name: 'My Quotations',
+        path: '/my_quotations',
+        icon: (
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="nav-icon">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+            <polyline points="14 2 14 8 20 8" />
+            <line x1="16" x2="8" y1="13" y2="13" />
+            <line x1="16" x2="8" y1="17" y2="17" />
+            <polyline points="10 9 9 9 8 9" />
+          </svg>
+        ),
+      },
+      {
+        name: 'My Invoices',
+        path: '/my_invoices',
+        icon: (
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="nav-icon">
+            <rect x="3" y="4" width="18" height="16" rx="2" />
+            <line x1="7" y1="8" x2="17" y2="8" />
+            <line x1="7" y1="12" x2="17" y2="12" />
+            <line x1="7" y1="16" x2="12" y2="16" />
+          </svg>
+        ),
+      },
+      {
+        name: 'My Deliveries',
+        path: '/calendar',
+        icon: (
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="nav-icon">
+            <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+            <line x1="16" y1="2" x2="16" y2="6" />
+            <line x1="8" y1="2" x2="8" y2="6" />
+            <line x1="3" y1="10" x2="21" y2="10" />
+          </svg>
+        ),
+      },
+    ]
     : NAV_ITEMS.filter((item) => {
-        if (!item.allowedRoles) return true;
-        return user?.role === 'admin' || item.allowedRoles.includes(user?.role);
-      });
+      if (!item.allowedRoles) return true;
+      return user?.role === 'admin' || item.allowedRoles.includes(user?.role);
+    });
 
   if (isAuthRoute) {
     return null;
@@ -302,7 +327,9 @@ function NavbarComponent() {
                 className={`df-navbar__user ${location.pathname === '/profile' ? 'active' : ''}`}
                 title="Hover for Profile Options"
               >
-                <div className="df-navbar__user-avatar">{getInitials(user.name)}</div>
+                <div className={`df-navbar__user-avatar ${user.role === 'customer' ? (user.ring_class || 'df-avatar--standard') : ''}`}>
+                  {getInitials(user.name)}
+                </div>
                 <span className="df-navbar__user-role">{formatRole(user.role)}</span>
                 <span className="df-navbar__chevron-btn">
                   <svg
@@ -324,11 +351,18 @@ function NavbarComponent() {
               {profileDropdownOpen && (
                 <div className="df-navbar__dropdown-menu">
                   <div className="df-navbar__dropdown-menu-header">
-                    <div className="df-navbar__dropdown-menu-name">
-                      {user.name}
-                    </div>
-                    <div className="df-navbar__dropdown-menu-email">
-                      {user.email}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.4rem' }}>
+                      <div className={`df-navbar__user-avatar ${user.role === 'customer' ? (user.ring_class || 'df-avatar--standard') : ''}`} style={{ width: '34px', height: '34px', fontSize: '0.875rem', flexShrink: 0 }}>
+                        {getInitials(user.name)}
+                      </div>
+                      <div style={{ overflow: 'hidden' }}>
+                        <div className="df-navbar__dropdown-menu-name">
+                          {user.name}
+                        </div>
+                        <div className="df-navbar__dropdown-menu-email">
+                          {user.email}
+                        </div>
+                      </div>
                     </div>
                     {user.company_name && (
                       <div className="df-navbar__dropdown-menu-company">

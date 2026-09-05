@@ -17,6 +17,7 @@ import subscriptionRouter from './routes/subscription.route.js';
 import dealHealthRouter from './routes/dealHealth.route.js';
 import invoiceRouter from './routes/invoice.route.js';
 import reportRouter from './routes/report.route.js';
+import deliveryCalendarRouter from './routes/deliveryCalendar.route.js';
 import handleError from './middleware/error.middleware.js';
 import config from './config/config.js';
 
@@ -47,6 +48,7 @@ app.use('/api/subscriptions', subscriptionRouter);
 app.use('/api/deal-health', dealHealthRouter);
 app.use('/api/invoices', invoiceRouter);
 app.use('/api/reports', reportRouter);
+app.use('/api/delivery-calendar', deliveryCalendarRouter);
 
 // Global Error Handler
 app.use(handleError);

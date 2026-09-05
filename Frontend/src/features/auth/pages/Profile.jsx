@@ -601,16 +601,16 @@ export default function Profile() {
                     {isForgotMode
                       ? 'Password Recovery'
                       : activeProfile.has_password
-                      ? 'Security & Password'
-                      : 'Set Account Password'}
+                        ? 'Security & Password'
+                        : 'Set Account Password'}
                   </span>
                 </h2>
                 <span className="panel-subtitle">
                   {isForgotMode
                     ? 'Verify your identity via 6-digit email OTP'
                     : activeProfile.has_password
-                    ? 'Manage your credentials or reset via OTP'
-                    : 'Create a new password for your account'}
+                      ? 'Manage your credentials or reset via OTP'
+                      : 'Create a new password for your account'}
                 </span>
               </div>
 

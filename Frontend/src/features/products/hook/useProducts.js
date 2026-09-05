@@ -81,8 +81,8 @@ export const useProducts = ({ id = null, isEditingExisting = false, autoFetch = 
         (typeof productIdParam === 'number' || (typeof productIdParam === 'string' && productIdParam !== 'new' && !isNaN(Number(productIdParam))))
           ? productIdParam
           : (id && id !== 'new' && !isNaN(Number(id)))
-          ? id
-          : null;
+            ? id
+            : null;
 
       if (!targetId) return null;
       try {
