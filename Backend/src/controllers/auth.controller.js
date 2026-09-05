@@ -314,22 +314,29 @@ export const changePasswordController = async (req, res, next) => {
             return res.status(STATUS_CODES.NOT_FOUND).json({ message: MESSAGES.USER.NOT_FOUND });
         }
 
-        if (!user.password_hash) {
-            return res.status(STATUS_CODES.BAD_REQUEST).json({
-                message: 'This account was created with Google OAuth. Please set a password through reset flow.'
-            });
-        }
-
-        const isCurrentValid = await verifyPassword(current_password, user.password_hash);
-        if (!isCurrentValid) {
-            return res.status(STATUS_CODES.BAD_REQUEST).json({ message: 'Current password is incorrect.' });
+        // If user already has a password set, enforce current password verification
+        const hasExistingPassword = Boolean(user.password_hash && user.password_hash.trim());
+        if (hasExistingPassword) {
+            if (!current_password) {
+                return res.status(STATUS_CODES.BAD_REQUEST).json({ 
+                    message: 'Current password is required to change your password.' 
+                });
+            }
+            const isCurrentValid = await verifyPassword(current_password, user.password_hash);
+            if (!isCurrentValid) {
+                return res.status(STATUS_CODES.BAD_REQUEST).json({ 
+                    message: 'Current password is incorrect.' 
+                });
+            }
         }
 
         const hashedNewPassword = await hashPassword(new_password);
         await changeUserPasswordByIdRepo(userId, hashedNewPassword);
 
         return res.status(STATUS_CODES.OK).json({
-            message: 'Password changed successfully!'
+            message: hasExistingPassword 
+                ? 'Password changed successfully!' 
+                : 'Password set successfully! You can now log in using your email and password.'
         });
     } catch (error) {
         next(error);

@@ -121,16 +121,17 @@ export default function Profile() {
     setPasswordAlert({ type: '', text: '' });
 
     const res = await changePassword({
-      current_password: data.current_password,
+      current_password: data.current_password || '',
       new_password: data.new_password,
     });
     setPasswordSaving(false);
 
     if (res?.success) {
-      setPasswordAlert({ type: 'success', text: 'Password changed successfully!' });
+      setPasswordAlert({ type: 'success', text: res.message || 'Password updated successfully!' });
       resetPasswordForm();
+      setFullProfile((prev) => (prev ? { ...prev, has_password: true } : prev));
     } else {
-      setPasswordAlert({ type: 'error', text: res?.error || 'Failed to change password.' });
+      setPasswordAlert({ type: 'error', text: res?.error || 'Failed to update password.' });
     }
   };
 
@@ -501,9 +502,11 @@ export default function Profile() {
                   <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
                   <path d="M7 11V7a5 5 0 0 1 10 0v4" />
                 </svg>
-                Security & Password
+                {activeProfile.has_password ? 'Security & Password' : 'Set Account Password'}
               </h2>
-              <span className="panel-subtitle">Update your password</span>
+              <span className="panel-subtitle">
+                {activeProfile.has_password ? 'Update your existing password' : 'Create a new password for your account'}
+              </span>
             </div>
 
             {passwordAlert.text && (
@@ -523,47 +526,62 @@ export default function Profile() {
               </div>
             )}
 
-            <form className="df-profile__form" onSubmit={handleSubmitPassword(onSavePassword)} noValidate>
-              {/* Current Password */}
-              <div className="form-group">
-                <label htmlFor="current_password">Current Password *</label>
-                <div className="input-wrapper">
-                  <input
-                    id="current_password"
-                    type={showCurrentPassword ? 'text' : 'password'}
-                    autoComplete="current-password"
-                    placeholder="Enter current password"
-                    {...registerPassword('current_password', {
-                      required: 'Current password is required',
-                    })}
-                  />
-                  <svg className="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
-                    <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-                  </svg>
-                  <button
-                    type="button"
-                    className="toggle-password"
-                    onClick={() => setShowCurrentPassword((prev) => !prev)}
-                    title={showCurrentPassword ? 'Hide password' : 'Show password'}
-                  >
-                    {showCurrentPassword ? (
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
-                        <line x1="1" y1="1" x2="23" y2="23" />
-                      </svg>
-                    ) : (
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
-                        <circle cx="12" cy="12" r="3" />
-                      </svg>
-                    )}
-                  </button>
-                </div>
-                {passwordErrors.current_password && (
-                  <span className="field-error">{passwordErrors.current_password.message}</span>
-                )}
+            {!activeProfile.has_password && (
+              <div className="df-profile__info-banner">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <circle cx="12" cy="12" r="10" />
+                  <line x1="12" y1="16" x2="12" y2="12" />
+                  <line x1="12" y1="8" x2="12.01" y2="8" />
+                </svg>
+                <span>
+                  This account currently has no password set (e.g. Google Sign-In). Enter a new password below to enable email & password login.
+                </span>
               </div>
+            )}
+
+            <form className="df-profile__form" onSubmit={handleSubmitPassword(onSavePassword)} noValidate>
+              {/* Current Password - Only required if user already has a password */}
+              {activeProfile.has_password && (
+                <div className="form-group">
+                  <label htmlFor="current_password">Current Password *</label>
+                  <div className="input-wrapper">
+                    <input
+                      id="current_password"
+                      type={showCurrentPassword ? 'text' : 'password'}
+                      autoComplete="current-password"
+                      placeholder="Enter current password"
+                      {...registerPassword('current_password', {
+                        required: activeProfile.has_password ? 'Current password is required' : false,
+                      })}
+                    />
+                    <svg className="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                      <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                    </svg>
+                    <button
+                      type="button"
+                      className="toggle-password"
+                      onClick={() => setShowCurrentPassword((prev) => !prev)}
+                      title={showCurrentPassword ? 'Hide password' : 'Show password'}
+                    >
+                      {showCurrentPassword ? (
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
+                          <line x1="1" y1="1" x2="23" y2="23" />
+                        </svg>
+                      ) : (
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                          <circle cx="12" cy="12" r="3" />
+                        </svg>
+                      )}
+                    </button>
+                  </div>
+                  {passwordErrors.current_password && (
+                    <span className="field-error">{passwordErrors.current_password.message}</span>
+                  )}
+                </div>
+              )}
 
               {/* New Password */}
               <div className="form-group">
@@ -636,10 +654,10 @@ export default function Profile() {
                 {passwordSaving ? (
                   <>
                     <div className="spinner" />
-                    <span>Updating Password...</span>
+                    <span>{activeProfile.has_password ? 'Updating Password...' : 'Setting Password...'}</span>
                   </>
                 ) : (
-                  <span>Update Password</span>
+                  <span>{activeProfile.has_password ? 'Update Password' : 'Set Account Password'}</span>
                 )}
               </button>
             </form>

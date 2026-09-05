@@ -125,9 +125,11 @@ export const updateProfileValidation = [
 
 export const changePasswordValidation = [
   body('current_password')
-    .notEmpty()
-    .withMessage('Current password is required'),
+    .optional({ values: 'falsy' })
+    .trim(),
   body('new_password')
+    .notEmpty()
+    .withMessage('New password is required')
     .isLength({ min: 6 })
     .withMessage('New password must be at least 6 characters long'),
   validate
