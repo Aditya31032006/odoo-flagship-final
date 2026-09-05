@@ -1,6 +1,7 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import useAuth from '../../auth/hook/useAuth.js';
 import quotationApi from '../services/quotation.api.js';
+import { useDebounce } from '../../../shared/hooks/useDebounce.js';
 import NegotiationPanel from '../components/NegotiationPanel.jsx';
 import '../styles/myQuotations.scss';
 
@@ -13,6 +14,7 @@ export default function MyQuotations() {
   const [quotations, setQuotations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  const debouncedSearch = useDebounce(searchQuery, 300);
   const [selectedStatus, setSelectedStatus] = useState('all');
 
   // Selected quotation for detail & negotiation modal
@@ -24,8 +26,9 @@ export default function MyQuotations() {
   const fetchCompanyQuotations = useCallback(async () => {
     setLoading(true);
     try {
-      const data = await quotationApi.getQuotations({ view: 'list' });
-      setQuotations(Array.isArray(data) ? data : []);
+      const res = await quotationApi.getQuotations({ view: 'list' });
+      const list = Array.isArray(res?.data) ? res.data : Array.isArray(res) ? res : [];
+      setQuotations(list);
     } catch (err) {
       console.error('Failed to load customer quotations:', err);
     } finally {
@@ -56,21 +59,25 @@ export default function MyQuotations() {
     setQuoteDetail(null);
   };
 
-  // Filter list
-  const filteredQuotations = quotations.filter((q) => {
-    const matchesSearch =
-      !searchQuery ||
-      q.quotation_number?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      q.sales_rep_name?.toLowerCase().includes(searchQuery.toLowerCase());
+  // Filter list with debounced query
+  const filteredQuotations = useMemo(() => {
+    return quotations.filter((q) => {
+      const query = debouncedSearch.trim().toLowerCase();
+      const matchesSearch =
+        !query ||
+        q.quotation_number?.toLowerCase().includes(query) ||
+        q.sales_rep_name?.toLowerCase().includes(query) ||
+        q.company_name?.toLowerCase().includes(query);
 
-    const matchesStatus =
-      selectedStatus === 'all' || q.status === selectedStatus;
+      const matchesStatus =
+        selectedStatus === 'all' || q.status === selectedStatus;
 
-    return matchesSearch && matchesStatus;
-  });
+      return matchesSearch && matchesStatus;
+    });
+  }, [quotations, debouncedSearch, selectedStatus]);
 
   const totalValue = quotations.reduce((acc, q) => acc + Number(q.grand_total || 0), 0);
-  const activeCount = quotations.filter((q) => ['sent', 'negotiating', 'approved'].includes(q.status)).length;
+  const activeCount = quotations.filter((q) => ['pending_approval', 'approved', 'negotiating'].includes(q.status)).length;
 
   return (
     <div className="df-my-quotes">
@@ -113,17 +120,39 @@ export default function MyQuotations() {
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
+          {searchQuery && (
+            <button
+              type="button"
+              onClick={() => setSearchQuery('')}
+              style={{
+                background: 'transparent',
+                border: 'none',
+                color: '#94a3b8',
+                cursor: 'pointer',
+                fontSize: '14px',
+                padding: '0 6px',
+              }}
+            >
+              ✕
+            </button>
+          )}
         </div>
 
         <div className="status-filters">
-          {['all', 'sent', 'negotiating', 'confirmed'].map((st) => (
+          {[
+            { id: 'all', label: 'All Quotes' },
+            { id: 'pending_approval', label: 'Pending Approval' },
+            { id: 'approved', label: 'Approved' },
+            { id: 'negotiating', label: 'Negotiating' },
+            { id: 'confirmed', label: 'Confirmed' },
+          ].map((st) => (
             <button
-              key={st}
+              key={st.id}
               type="button"
-              className={selectedStatus === st ? 'active' : ''}
-              onClick={() => setSelectedStatus(st)}
+              className={selectedStatus === st.id ? 'active' : ''}
+              onClick={() => setSelectedStatus(st.id)}
             >
-              {st === 'all' ? 'All Quotes' : st.charAt(0).toUpperCase() + st.slice(1)}
+              {st.label}
             </button>
           ))}
         </div>

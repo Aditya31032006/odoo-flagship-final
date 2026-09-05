@@ -1,3 +1,4 @@
+import { pool } from '../config/database.js';
 import {
   getQuotationsListRepo,
   getQuotationsKanbanSummaryRepo,
@@ -12,7 +13,15 @@ export const getQuotationsController = async (req, res, next) => {
   try {
     const user = req.user;
     const salesRepId = user.role === 'sales_rep' ? user.id : null;
-    const customerId = user.role === 'customer' ? user.customer_id : null;
+    let customerId = user.customer_id || null;
+
+    if (user.role === 'customer' && !customerId) {
+      const custRes = await pool.query('SELECT id FROM customers WHERE email = $1', [user.email]);
+      if (custRes.rows.length > 0) {
+        customerId = custRes.rows[0].id;
+      }
+    }
+
     const { view = 'kanban', status = null, search = null } = req.query;
 
     const quotations = await getQuotationsListRepo({
