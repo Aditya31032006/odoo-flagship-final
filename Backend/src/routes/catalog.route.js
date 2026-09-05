@@ -9,6 +9,7 @@ import {
   getProductCatalogSummaryController,
   getAllProductsController,
   getProductCategoriesController,
+  createProductCategoryController,
   getProductDetailController,
   createProductController,
   updateProductController,
@@ -34,6 +35,11 @@ router.get('/approval-rules', getApprovalRulesCatalogController);
 router.get('/products/summary', getProductCatalogSummaryController);
 router.get('/products/all', getAllProductsController);
 router.get('/products/categories', getProductCategoriesController);
+router.post(
+  '/products/categories',
+  authorizeRoles(ROLES.ADMIN, ROLES.SALES_MANAGER, ROLES.OPERATIONS),
+  createProductCategoryController
+);
 router.get('/products/:id', getProductDetailController);
 
 // Restricted Product & Variant Management

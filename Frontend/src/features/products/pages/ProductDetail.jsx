@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router';
 import { useForm } from 'react-hook-form';
 import useProducts from '../hook/useProducts.js';
@@ -10,6 +10,11 @@ export const ProductDetail = ({ isNew = false }) => {
   const { id } = useParams();
   const navigate = useNavigate();
   const isEditingExisting = Boolean(id && id !== 'new' && !isNew);
+
+  const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
+  const [newCategoryName, setNewCategoryName] = useState('');
+  const [isSubmittingCategory, setIsSubmittingCategory] = useState(false);
+  const [categoryModalError, setCategoryModalError] = useState('');
 
   // React 4-Layer Architecture: Single Unified Hook
   const {
@@ -38,6 +43,7 @@ export const ProductDetail = ({ isNew = false }) => {
     updateSubscriptionPlanField,
     saveSubscriptionPlanRow,
     deleteSubscriptionPlan,
+    createCategory,
     saveProduct,
     deleteProduct,
   } = useProducts({ id, isEditingExisting });
@@ -189,13 +195,29 @@ export const ProductDetail = ({ isNew = false }) => {
                 </div>
 
                 <div className="df-product-detail__field">
-                  <label htmlFor="category_id">Category *</label>
+                  <div className="df-product-detail__category-header">
+                    <label htmlFor="category_id">Category *</label>
+                    <PermissionGate allowedRoles={['admin', 'sales_manager', 'operations']}>
+                      <button
+                        type="button"
+                        className="df-product-detail__category-add-btn"
+                        onClick={() => {
+                          setCategoryModalError('');
+                          setNewCategoryName('');
+                          setIsCategoryModalOpen(true);
+                        }}
+                      >
+                        + New Category
+                      </button>
+                    </PermissionGate>
+                  </div>
                   <select
                     id="category_id"
                     {...register('category_id', {
                       required: 'Please select a category',
                     })}
                   >
+                    <option value="" disabled>Select a category...</option>
                     {categories.map((c) => (
                       <option key={c.id} value={c.id}>
                         {c.name}
@@ -813,6 +835,82 @@ export const ProductDetail = ({ isNew = false }) => {
             </PermissionGate>
           </div>
         </form>
+
+        {/* New Category Modal Popup */}
+        {isCategoryModalOpen && (
+          <div className="df-product-detail__modal-overlay">
+            <div className="df-product-detail__modal-card">
+              <div className="df-product-detail__modal-header">
+                <h3>Create New Category</h3>
+                <button
+                  type="button"
+                  onClick={() => setIsCategoryModalOpen(false)}
+                >
+                  &times;
+                </button>
+              </div>
+
+              {categoryModalError && (
+                <div className="df-product-detail__modal-error">
+                  {categoryModalError}
+                </div>
+              )}
+
+              <form
+                onSubmit={async (e) => {
+                  e.preventDefault();
+                  if (!newCategoryName.trim()) {
+                    setCategoryModalError('Please enter a category name');
+                    return;
+                  }
+                  setIsSubmittingCategory(true);
+                  const created = await createCategory(newCategoryName.trim());
+                  setIsSubmittingCategory(false);
+                  if (created) {
+                    setValue('category_id', String(created.id));
+                    setNewCategoryName('');
+                    setIsCategoryModalOpen(false);
+                  }
+                }}
+              >
+                <div className="df-product-detail__field" style={{ marginBottom: '1.25rem' }}>
+                  <label htmlFor="new_cat_name" style={{ display: 'block', marginBottom: '0.4rem', color: '#cbd5e1' }}>
+                    Category Name *
+                  </label>
+                  <input
+                    id="new_cat_name"
+                    type="text"
+                    placeholder="e.g. Laptops, Workstations, Cloud Subscriptions"
+                    value={newCategoryName}
+                    onChange={(e) => {
+                      setNewCategoryName(e.target.value);
+                      if (categoryModalError) setCategoryModalError('');
+                    }}
+                    autoFocus
+                  />
+                </div>
+
+                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem' }}>
+                  <button
+                    type="button"
+                    className="df-products__btn-secondary"
+                    onClick={() => setIsCategoryModalOpen(false)}
+                    disabled={isSubmittingCategory}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="df-products__btn-primary"
+                    disabled={isSubmittingCategory || !newCategoryName.trim()}
+                  >
+                    {isSubmittingCategory ? 'Creating...' : 'Create Category'}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

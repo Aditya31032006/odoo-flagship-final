@@ -26,6 +26,11 @@ export const productsApi = {
     return res.data?.data || [];
   },
 
+  createCategory: async (name) => {
+    const res = await apiClient.post('/catalog/products/categories', { name });
+    return res.data?.data;
+  },
+
   getProductDetail: async (id) => {
     const res = await apiClient.get(`/catalog/products/${id}`);
     return res.data?.data;
