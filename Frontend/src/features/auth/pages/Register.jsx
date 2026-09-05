@@ -253,14 +253,29 @@ export default function Register() {
                     <input
                       id="gst_number"
                       type="text"
+                      maxLength={15}
                       placeholder="27AABCU9603R1ZM"
-                      {...register('gst_number')}
+                      style={{ textTransform: 'uppercase' }}
+                      {...register('gst_number', {
+                        validate: (value) => {
+                          if (!value || !value.trim()) return true;
+                          const formatted = value.trim().toUpperCase();
+                          const gstRegex = /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/;
+                          if (!gstRegex.test(formatted)) {
+                            return 'Invalid GST format (15 characters, e.g. 27AABCU9603R1ZM)';
+                          }
+                          return true;
+                        }
+                      })}
                     />
                     <svg className="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                       <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
                       <polyline points="14 2 14 8 20 8" />
                     </svg>
                   </div>
+                  {errors.gst_number && (
+                    <span className="field-error">{errors.gst_number.message}</span>
+                  )}
                 </div>
               </div>
 
@@ -442,18 +457,34 @@ export default function Register() {
             </div>
 
             <div className="form-group">
-              <label htmlFor="mobile">Mobile Number (Optional)</label>
+              <label htmlFor="mobile">Mobile Number (10 Digits, Optional)</label>
               <div className="input-wrapper">
                 <input
                   id="mobile"
                   type="tel"
-                  placeholder="+91 98765 43210"
-                  {...register('mobile')}
+                  maxLength={10}
+                  placeholder="9876543210"
+                  {...register('mobile', {
+                    validate: (value) => {
+                      if (!value || !value.trim()) return true;
+                      const digits = value.replace(/\D/g, '');
+                      if (digits.length !== 10) {
+                        return 'Mobile number must not exceed or be less than 10 digits';
+                      }
+                      if (!/^[6-9]\d{9}$/.test(digits)) {
+                        return 'Mobile number must start with 6, 7, 8, or 9';
+                      }
+                      return true;
+                    }
+                  })}
                 />
                 <svg className="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
                 </svg>
               </div>
+              {errors.mobile && (
+                <span className="field-error">{errors.mobile.message}</span>
+              )}
             </div>
           </div>
 
