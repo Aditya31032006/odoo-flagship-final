@@ -216,6 +216,49 @@ export const completeUserOnboardingRepo = async ({ user_id, register_type, compa
     }
 };
 
+export function enrichCustomerUserTier(user) {
+    if (!user) return user;
+    if (user.role === 'customer') {
+        const paidCount = Number(user.quarterly_paid_orders_count) || 0;
+        let tierName = 'Standard';
+        let tierBadge = 'Standard Customer';
+        let tierMaxDiscount = 0;
+        let ringColor = '#ffffff';
+        let ringClass = 'df-avatar--standard';
+
+        if (paidCount >= 5) {
+            tierName = 'Gold';
+            tierBadge = 'Gold Customer';
+            tierMaxDiscount = 15;
+            ringColor = '#eab308';
+            ringClass = 'df-avatar--gold';
+        } else if (paidCount >= 4) {
+            tierName = 'Silver';
+            tierBadge = 'Silver Customer';
+            tierMaxDiscount = 10;
+            ringColor = '#cbd5e1';
+            ringClass = 'df-avatar--silver';
+        } else if (paidCount >= 2) {
+            tierName = 'Bronze';
+            tierBadge = 'Bronze Customer';
+            tierMaxDiscount = 5;
+            ringColor = '#cd7f32';
+            ringClass = 'df-avatar--bronze';
+        }
+
+        return {
+            ...user,
+            tier_name: tierName,
+            tier_badge: tierBadge,
+            tier_max_discount: tierMaxDiscount,
+            ring_color: ringColor,
+            ring_class: ringClass,
+            quarterly_paid_orders_count: paidCount,
+        };
+    }
+    return user;
+}
+
 export const listActiveCompaniesRepo = async () => {
     const client = await pool.connect();
     try {
@@ -238,7 +281,7 @@ export const findUserRepo = async (email) => {
         await client.query("BEGIN");
         const result = await client.query(FIND_USER, [email]);
         await client.query("COMMIT");
-        return result.rows[0];
+        return enrichCustomerUserTier(result.rows[0]);
     } catch (error) {
         console.error("Error in findUserRepo:", error);
         await client.query("ROLLBACK");
@@ -255,7 +298,7 @@ export const findUserByIdentifierRepo = async (identifier) => {
         const cleanIdentifier = identifier.trim();
         const result = await client.query(FIND_USER_BY_IDENTIFIER, [cleanIdentifier]);
         await client.query("COMMIT");
-        return result.rows[0];
+        return enrichCustomerUserTier(result.rows[0]);
     } catch (error) {
         console.error("Error in findUserByIdentifierRepo:", error);
         await client.query("ROLLBACK");
@@ -271,7 +314,7 @@ export const findUserByIdRepo = async (id) => {
         await client.query("BEGIN");
         const result = await client.query(FIND_USER_BY_ID, [id]);
         await client.query("COMMIT");
-        return result.rows[0];
+        return enrichCustomerUserTier(result.rows[0]);
     } catch (error) {
         console.error("Error in findUserByIdRepo:", error);
         await client.query("ROLLBACK");
@@ -290,7 +333,7 @@ export const getUserFullProfileRepo = async (id) => {
         await client.query("BEGIN");
         const result = await client.query(GET_USER_FULL_PROFILE, [id]);
         await client.query("COMMIT");
-        return result.rows[0];
+        return enrichCustomerUserTier(result.rows[0]);
     } catch (error) {
         console.error("Error in getUserFullProfileRepo:", error);
         await client.query("ROLLBACK");

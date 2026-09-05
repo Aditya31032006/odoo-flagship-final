@@ -335,6 +335,16 @@ function NavbarComponent() {
                         🏢 {user.company_name}
                       </div>
                     )}
+                    {user.role === 'customer' && (
+                      <div style={{ marginTop: '6px' }}>
+                        <span className={`df-profile__badge df-profile__badge--tier ${user.ring_class || 'df-avatar--standard'}`} style={{ fontSize: '0.7rem', padding: '2px 8px' }}>
+                          {user.tier_name === 'Gold' && '🥇 Gold Member (15% max)'}
+                          {user.tier_name === 'Silver' && '🥈 Silver Member (10% max)'}
+                          {user.tier_name === 'Bronze' && '🥉 Bronze Member (5% max)'}
+                          {(!user.tier_name || user.tier_name === 'Standard') && '⚪ Standard Member (0% max)'}
+                        </span>
+                      </div>
+                    )}
                   </div>
 
                   <Link

@@ -254,7 +254,7 @@ export default function Profile() {
         {/* Top Identity Hero Card */}
         <div className="df-profile__hero-card">
           <div className="df-profile__hero-identity">
-            <div className="df-profile__avatar">
+            <div className={`df-profile__avatar ${activeProfile.role === 'customer' ? (activeProfile.ring_class || 'df-avatar--standard') : ''}`}>
               {getInitials(activeProfile.name)}
             </div>
             <div className="df-profile__hero-details">
@@ -287,6 +287,14 @@ export default function Profile() {
               <span className="df-profile__badge df-profile__badge--role">
                 🛡️ {formatRole(activeProfile.role)}
               </span>
+              {activeProfile.role === 'customer' && (
+                <span className={`df-profile__badge df-profile__badge--tier ${activeProfile.ring_class || 'df-avatar--standard'}`}>
+                  {activeProfile.tier_name === 'Gold' && `🥇 Gold Tier (15% max, ${activeProfile.quarterly_paid_orders_count || 9}+ orders)`}
+                  {activeProfile.tier_name === 'Silver' && `🥈 Silver Tier (10% max, ${activeProfile.quarterly_paid_orders_count || 6}+ orders)`}
+                  {activeProfile.tier_name === 'Bronze' && `🥉 Bronze Tier (5% max, ${activeProfile.quarterly_paid_orders_count || 3}+ orders)`}
+                  {(!activeProfile.tier_name || activeProfile.tier_name === 'Standard') && `⚪ Standard Member (0% max, ${activeProfile.quarterly_paid_orders_count || 0} orders)`}
+                </span>
+              )}
               {hasCompany && (
                 <span className="df-profile__badge df-profile__badge--company">
                   🏢 {activeProfile.company_name || 'Associated Organization'}
