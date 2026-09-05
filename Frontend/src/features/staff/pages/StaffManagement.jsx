@@ -30,7 +30,7 @@ function formatRoleLabel(role) {
 
 export default function StaffManagement() {
   const { user: currentUser } = useAuth();
-  const { staffList, loading, error, fetchStaff, createStaff, toggleStatus, deleteStaff } = useStaff();
+  const { staffList, loading, error, fetchStaff, createStaff, updateStaff, toggleStatus, deleteStaff } = useStaff();
 
   const [searchQuery, setSearchQuery] = useState('');
   const debouncedSearch = useDebounce(searchQuery, 300);
@@ -40,6 +40,9 @@ export default function StaffManagement() {
   const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [actionAlert, setActionAlert] = useState({ type: '', text: '', tempPassword: '' });
+
+  const [editingStaff, setEditingStaff] = useState(null);
+  const [isEditSubmitting, setIsEditSubmitting] = useState(false);
 
   const [deletingStaff, setDeletingStaff] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -54,6 +57,20 @@ export default function StaffManagement() {
     defaultValues: {
       name: '',
       email: '',
+      mobile: '',
+      role: 'sales_rep',
+    },
+  });
+
+  // React Hook Form for staff editing
+  const {
+    register: editRegister,
+    handleSubmit: handleEditSubmit,
+    reset: editReset,
+    formState: { errors: editErrors },
+  } = useForm({
+    defaultValues: {
+      name: '',
       mobile: '',
       role: 'sales_rep',
     },
@@ -115,6 +132,43 @@ export default function StaffManagement() {
       setActionAlert({
         type: 'error',
         text: res?.error || 'Failed to invite staff member.',
+      });
+    }
+  };
+
+  // Open edit staff & role modal
+  const handleOpenEditModal = (member) => {
+    setEditingStaff(member);
+    editReset({
+      name: member.name || '',
+      mobile: member.mobile || '',
+      role: member.role || 'sales_rep',
+    });
+  };
+
+  // Submit edit staff & role form
+  const onEditSubmit = async (data) => {
+    if (!editingStaff) return;
+    setIsEditSubmitting(true);
+    setActionAlert({ type: '', text: '', tempPassword: '' });
+
+    const res = await updateStaff(editingStaff.id, {
+      name: data.name,
+      mobile: data.mobile?.trim() || null,
+      role: data.role,
+    });
+    setIsEditSubmitting(false);
+
+    if (res?.success) {
+      setActionAlert({
+        type: 'success',
+        text: `Staff member ${data.name}'s role and details updated successfully!`,
+      });
+      setEditingStaff(null);
+    } else {
+      setActionAlert({
+        type: 'error',
+        text: res?.error || 'Failed to update staff member.',
       });
     }
   };
@@ -395,6 +449,17 @@ export default function StaffManagement() {
                         <div className="df-staff__action-buttons">
                           <button
                             type="button"
+                            className="btn-icon btn-icon--edit"
+                            onClick={() => handleOpenEditModal(member)}
+                            title="Edit Staff Member & Role"
+                          >
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                            </svg>
+                          </button>
+                          <button
+                            type="button"
                             disabled={isSelf}
                             className="btn-icon btn-icon--delete"
                             onClick={() => setDeletingStaff(member)}
@@ -561,6 +626,133 @@ export default function StaffManagement() {
                     </>
                   ) : (
                     <span>Invite Staff Member</span>
+                  )}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Staff & Role Modal */}
+      {editingStaff && (
+        <div className="df-staff__modal-backdrop" onClick={() => setEditingStaff(null)}>
+          <div className="df-staff__modal" onClick={(e) => e.stopPropagation()}>
+            <div className="df-staff__modal-header">
+              <h2>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                  <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                </svg>
+                Edit Staff Member & Role
+              </h2>
+              <button
+                type="button"
+                className="btn-close"
+                onClick={() => setEditingStaff(null)}
+              >
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <line x1="18" y1="6" x2="6" y2="18" />
+                  <line x1="6" y1="6" x2="18" y2="18" />
+                </svg>
+              </button>
+            </div>
+
+            <form onSubmit={handleEditSubmit(onEditSubmit)} noValidate>
+              <div className="df-staff__modal-body">
+                <div className="df-staff__modal-info-banner">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <circle cx="12" cy="12" r="10" />
+                    <line x1="12" y1="16" x2="12" y2="12" />
+                    <line x1="12" y1="8" x2="12.01" y2="8" />
+                  </svg>
+                  <span>
+                    Updating role or details for <strong>{editingStaff.email}</strong>. Changing the role updates their system access and workflow privileges instantly.
+                  </span>
+                </div>
+
+                {/* Full Name */}
+                <div className="df-staff__form-group">
+                  <label htmlFor="edit_staff_name">Full Name *</label>
+                  <div className="input-wrapper">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                      <circle cx="12" cy="7" r="4" />
+                    </svg>
+                    <input
+                      id="edit_staff_name"
+                      type="text"
+                      placeholder="e.g. Sarah Jenkins"
+                      {...editRegister('name', {
+                        required: 'Full name is required',
+                        minLength: { value: 2, message: 'Name must be at least 2 characters' },
+                      })}
+                    />
+                  </div>
+                  {editErrors.name && <span className="field-error">{editErrors.name.message}</span>}
+                </div>
+
+                {/* Role Selector */}
+                <div className="df-staff__form-group">
+                  <label htmlFor="edit_staff_role">Assigned Staff Role *</label>
+                  <div className="input-wrapper">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                    </svg>
+                    <select id="edit_staff_role" {...editRegister('role', { required: 'Role is required' })}>
+                      {STAFF_ROLES.map((role) => (
+                        <option key={role.value} value={role.value}>
+                          {role.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  {editErrors.role && <span className="field-error">{editErrors.role.message}</span>}
+                </div>
+
+                {/* Mobile Number */}
+                <div className="df-staff__form-group">
+                  <label htmlFor="edit_staff_mobile">Mobile Number (Optional)</label>
+                  <div className="input-wrapper">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
+                    </svg>
+                    <input
+                      id="edit_staff_mobile"
+                      type="tel"
+                      maxLength={10}
+                      placeholder="9876543210"
+                      {...editRegister('mobile', {
+                        validate: (val) => {
+                          if (!val || !val.trim()) return true;
+                          const digits = val.replace(/\D/g, '');
+                          if (digits.length !== 10) return 'Mobile must be 10 digits';
+                          if (!/^[6-9]\d{9}$/.test(digits)) return 'Must start with 6, 7, 8, or 9';
+                          return true;
+                        },
+                      })}
+                    />
+                  </div>
+                  {editErrors.mobile && <span className="field-error">{editErrors.mobile.message}</span>}
+                </div>
+              </div>
+
+              <div className="df-staff__modal-footer">
+                <button
+                  type="button"
+                  className="btn-cancel"
+                  onClick={() => setEditingStaff(null)}
+                >
+                  Cancel
+                </button>
+                <button type="submit" className="btn-submit" disabled={isEditSubmitting}>
+                  {isEditSubmitting ? (
+                    <>
+                      <span className="spinner" />
+                      <span>Saving Changes...</span>
+                    </>
+                  ) : (
+                    <span>Save Changes</span>
                   )}
                 </button>
               </div>

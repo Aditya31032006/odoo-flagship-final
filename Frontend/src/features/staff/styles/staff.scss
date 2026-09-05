@@ -411,6 +411,12 @@
         color: #ffffff;
       }
 
+      &--edit:hover {
+        background: rgba(56, 189, 248, 0.2);
+        border-color: rgba(56, 189, 248, 0.4);
+        color: #38bdf8;
+      }
+
       &--delete:hover {
         background: rgba(239, 68, 68, 0.2);
         border-color: rgba(239, 68, 68, 0.4);
