@@ -55,6 +55,29 @@
       font-weight: vars.$font-weight-semibold;
       color: #93c5fd;
 
+      &--danger {
+        background: rgba(239, 68, 68, 0.15);
+        border-color: rgba(239, 68, 68, 0.3);
+        color: #fca5a5;
+      }
+
+      &--success {
+        background: rgba(16, 185, 129, 0.15);
+        border-color: rgba(16, 185, 129, 0.3);
+        color: #86efac;
+      }
+
+      &--google {
+        background: rgba(66, 133, 244, 0.15);
+        border-color: rgba(66, 133, 244, 0.3);
+        color: #93c5fd;
+
+        svg {
+          width: 14px;
+          height: 14px;
+        }
+      }
+
       svg {
         width: 13px;
         height: 13px;
@@ -83,6 +106,7 @@
     }
 
     h1 {
+
       font-size: 1.45rem;
       font-weight: vars.$font-weight-bold;
       color: #ffffff;
@@ -142,6 +166,8 @@
         text-align: center;
 
         svg {
+          width: 15px;
+          height: 15px;
           flex-shrink: 0;
         }
 
@@ -200,46 +226,62 @@
     }
 
     .form-group {
-      display: flex;
-      flex-direction: column;
-      gap: 0.25rem;
+      margin-bottom: 0.875rem;
+
+      &--spaced {
+        margin-top: 0.5rem;
+      }
+
+      .df-auth-label-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      .df-auth-link-btn {
+        background: none;
+        border: none;
+        color: #38bdf8;
+        font-size: 0.775rem;
+        font-weight: 600;
+        cursor: pointer;
+        padding: 0;
+
+        &:hover {
+          text-decoration: underline;
+        }
+      }
 
       label {
-        font-size: 0.775rem;
+        display: block;
+        font-size: 0.75rem;
         font-weight: vars.$font-weight-medium;
-        color: #e2e8f0;
+        color: #cbd5e1;
+        margin-bottom: 0.35rem;
       }
 
       .input-wrapper {
         position: relative;
-        display: flex;
-        align-items: center;
         width: 100%;
-
-        .input-icon {
-          position: absolute;
-          left: 0.75rem;
-          width: 15px;
-          height: 15px;
-          color: #64748b;
-          pointer-events: none;
-          transition: color vars.$transition-fast;
-          z-index: 2;
-        }
 
         input, select, textarea {
           width: 100%;
-          height: 38px;
-          padding: 0 0.75rem 0 2.25rem;
-          font-size: 0.8125rem;
-          font-family: inherit;
-          color: #ffffff;
-          background: rgba(15, 23, 42, 0.65);
+          background: rgba(30, 41, 59, 0.7);
           border: 1px solid rgba(255, 255, 255, 0.12);
+          padding: 0.6rem 0.875rem 0.6rem 2.25rem;
           border-radius: vars.$border-radius-md;
+          color: #ffffff;
+          font-size: 0.875rem;
+          font-family: inherit;
           outline: none;
           transition: all vars.$transition-fast;
           box-sizing: border-box;
+
+          &[readonly], &.is-readonly {
+            background: rgba(255, 255, 255, 0.05);
+            color: #93c5fd;
+            cursor: default;
+          }
 
           &::placeholder {
             color: #64748b;

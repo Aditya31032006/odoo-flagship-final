@@ -1,0 +1,394 @@
+// ============================================================
+// DEALFLOW360 - SALES DASHBOARD SCSS
+// ============================================================
+
+.df-dashboard {
+  min-height: calc(100vh - 64px);
+  background-color: #0b0f19;
+  background-image: 
+    radial-gradient(at 0% 0%, rgba(56, 189, 248, 0.08) 0px, transparent 50%),
+    radial-gradient(at 100% 0%, rgba(99, 102, 241, 0.08) 0px, transparent 50%),
+    radial-gradient(at 50% 100%, rgba(15, 23, 42, 0.9) 0px, transparent 50%);
+  color: #f1f5f9;
+  padding: 2.25rem 2rem 4rem 2rem;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+
+  &__container {
+    max-width: 1280px;
+    margin: 0 auto;
+  }
+
+  // Header Section
+  &__header {
+    margin-bottom: 2.25rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    flex-wrap: wrap;
+    gap: 1rem;
+  }
+
+  &__title-group {
+    h1 {
+      font-size: 2rem;
+      font-weight: 700;
+      color: #ffffff;
+      letter-spacing: -0.025em;
+      margin: 0 0 0.4rem 0;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+
+      .badge-role {
+        font-size: 0.75rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        padding: 0.25rem 0.6rem;
+        border-radius: 9999px;
+        background: rgba(56, 189, 248, 0.15);
+        color: #38bdf8;
+        border: 1px solid rgba(56, 189, 248, 0.3);
+      }
+    }
+
+    p {
+      color: #94a3b8;
+      font-size: 1rem;
+      margin: 0;
+    }
+  }
+
+  &__refresh-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    background: rgba(30, 41, 59, 0.6);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: #cbd5e1;
+    border-radius: 8px;
+    font-size: 0.875rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+
+    &:hover {
+      background: rgba(51, 65, 85, 0.8);
+      color: #ffffff;
+      border-color: rgba(255, 255, 255, 0.2);
+    }
+
+    svg {
+      width: 16px;
+      height: 16px;
+      &.spinning {
+        animation: spin 1s linear infinite;
+      }
+    }
+  }
+
+  // Summary KPI Cards Grid
+  &__kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+  }
+
+  // Action Buttons Group
+  &__actions-row {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 2.5rem;
+    flex-wrap: wrap;
+  }
+
+  &__btn-primary {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
+    color: #ffffff;
+    padding: 0.75rem 1.4rem;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 0.9375rem;
+    border: 1px solid rgba(56, 189, 248, 0.3);
+    text-decoration: none;
+    cursor: pointer;
+    box-shadow: 0 4px 14px rgba(2, 132, 199, 0.3);
+    transition: all 0.2s ease;
+
+    &:hover {
+      background: linear-gradient(135deg, #0369a1 0%, #075985 100%);
+      transform: translateY(-1px);
+      box-shadow: 0 6px 20px rgba(2, 132, 199, 0.45);
+    }
+  }
+
+  &__btn-secondary {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: rgba(30, 41, 59, 0.8);
+    color: #e2e8f0;
+    padding: 0.75rem 1.4rem;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 0.9375rem;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    text-decoration: none;
+    cursor: pointer;
+    transition: all 0.2s ease;
+
+    &:hover {
+      background: rgba(51, 65, 85, 0.9);
+      color: #ffffff;
+      border-color: rgba(255, 255, 255, 0.25);
+      transform: translateY(-1px);
+    }
+  }
+
+  // Recent Activity Section
+  &__activity-card {
+    background: rgba(15, 23, 42, 0.75);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 14px;
+    padding: 1.75rem 2rem;
+    backdrop-filter: blur(12px);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+
+    h2 {
+      font-size: 1.25rem;
+      font-weight: 600;
+      color: #38bdf8;
+      margin: 0 0 1.25rem 0;
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+
+      svg {
+        width: 20px;
+        height: 20px;
+        color: #38bdf8;
+      }
+    }
+  }
+}
+
+// KPI Stats Card Sub-Component
+.df-kpi-card {
+  background: rgba(15, 23, 42, 0.75);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 14px;
+  padding: 1.5rem 1.75rem;
+  backdrop-filter: blur(12px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  text-decoration: none;
+  display: block;
+  position: relative;
+  overflow: hidden;
+
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: transparent;
+    transition: background 0.3s ease;
+  }
+
+  &:hover {
+    transform: translateY(-3px);
+    border-color: rgba(255, 255, 255, 0.2);
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.4);
+
+    &::before {
+      background: var(--kpi-accent, #38bdf8);
+    }
+  }
+
+  &--amber {
+    --kpi-accent: #f59e0b;
+    .df-kpi-card__count { color: #fbbf24; }
+    .df-kpi-card__icon-wrapper { background: rgba(245, 158, 11, 0.15); color: #fbbf24; }
+  }
+
+  &--blue {
+    --kpi-accent: #38bdf8;
+    .df-kpi-card__count { color: #38bdf8; }
+    .df-kpi-card__icon-wrapper { background: rgba(56, 189, 248, 0.15); color: #38bdf8; }
+  }
+
+  &--rose {
+    --kpi-accent: #f43f5e;
+    .df-kpi-card__count { color: #fb7185; }
+    .df-kpi-card__icon-wrapper { background: rgba(244, 63, 94, 0.15); color: #fb7185; }
+  }
+
+  &__top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.75rem;
+  }
+
+  &__title {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #e2e8f0;
+  }
+
+  &__icon-wrapper {
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    svg {
+      width: 18px;
+      height: 18px;
+    }
+  }
+
+  &__body {
+    display: flex;
+    align-items: baseline;
+    gap: 0.5rem;
+  }
+
+  &__count {
+    font-size: 2.25rem;
+    font-weight: 700;
+    line-height: 1;
+    letter-spacing: -0.03em;
+  }
+
+  &__subtitle {
+    font-size: 0.9375rem;
+    color: #94a3b8;
+    font-weight: 400;
+  }
+
+  &__footer {
+    margin-top: 1rem;
+    padding-top: 0.75rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.8125rem;
+    color: #64748b;
+
+    .view-link {
+      color: #38bdf8;
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+      gap: 0.25rem;
+
+      svg {
+        width: 12px;
+        height: 12px;
+      }
+    }
+  }
+}
+
+// Recent Activity Timeline Sub-Component
+.df-activity-feed {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+
+  &__empty {
+    padding: 2.5rem 1rem;
+    text-align: center;
+    color: #64748b;
+    font-size: 0.9375rem;
+  }
+
+  &__item {
+    display: flex;
+    align-items: flex-start;
+    gap: 1rem;
+    padding: 0.875rem 1rem;
+    background: rgba(30, 41, 59, 0.4);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 8px;
+    transition: background 0.2s ease;
+
+    &:hover {
+      background: rgba(30, 41, 59, 0.7);
+    }
+  }
+
+  &__bullet {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #38bdf8;
+    margin-top: 0.45rem;
+    flex-shrink: 0;
+    box-shadow: 0 0 8px rgba(56, 189, 248, 0.6);
+
+    &--approved { background: #10b981; box-shadow: 0 0 8px rgba(16, 185, 129, 0.6); }
+    &--rejected { background: #ef4444; box-shadow: 0 0 8px rgba(239, 68, 68, 0.6); }
+    &--submitted { background: #f59e0b; box-shadow: 0 0 8px rgba(245, 158, 11, 0.6); }
+  }
+
+  &__content {
+    flex: 1;
+    min-width: 0;
+  }
+
+  &__main {
+    color: #e2e8f0;
+    font-size: 0.9375rem;
+    line-height: 1.4;
+
+    strong {
+      color: #ffffff;
+      font-weight: 600;
+    }
+
+    .badge-quote {
+      color: #38bdf8;
+      font-weight: 500;
+      margin-left: 0.25rem;
+    }
+  }
+
+  &__meta {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-top: 0.25rem;
+    font-size: 0.75rem;
+    color: #64748b;
+  }
+
+  &__time {
+    color: #94a3b8;
+  }
+
+  &__reason {
+    font-style: italic;
+    color: #cbd5e1;
+  }
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}

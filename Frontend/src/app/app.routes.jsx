@@ -1,33 +1,27 @@
-import React from 'react';
 import { createBrowserRouter, Navigate } from 'react-router';
 import ProtectedRoute from '../features/auth/components/ProtectedRoute.jsx';
 import PublicRoute from '../features/auth/components/PublicRoute.jsx';
 import Login from '../features/auth/pages/Login.jsx';
 import Register from '../features/auth/pages/Register.jsx';
+import Dashboard from '../features/dashboard/pages/Dashboard.jsx';
+import QuotationsList from '../features/quotations/pages/QuotationsList.jsx';
+import QuotationDetail from '../features/quotations/pages/QuotationDetail.jsx';
+import ProductCatalog from '../features/products/pages/ProductCatalog.jsx';
+import ProductDetail from '../features/products/pages/ProductDetail.jsx';
 import Onboarding from '../features/auth/pages/Onboarding.jsx';
 import ForgotPassword from '../features/auth/pages/ForgotPassword.jsx';
+import './placeholder.scss';
 
 // Lightweight placeholder view component for quick verification
 const PagePlaceholder = ({ title, description }) => (
-  <div style={{
-    padding: '2.5rem 2rem',
-    maxWidth: '1200px',
-    margin: '0 auto',
-    color: '#0f172a',
-    fontFamily: 'system-ui, -apple-system, sans-serif'
-  }}>
-    <div style={{
-      background: '#ffffff',
-      padding: '2rem',
-      borderRadius: '12px',
-      border: '1px solid #e2e8f0',
-      boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)'
-    }}>
-      <h1 style={{ fontSize: '1.75rem', fontWeight: 700, marginBottom: '0.5rem', color: '#1e293b' }}>{title}</h1>
-      <p style={{ color: '#64748b', fontSize: '1rem', lineHeight: '1.5' }}>{description}</p>
+  <div className="df-placeholder-page">
+    <div className="df-placeholder-page__card">
+      <h1 className="df-placeholder-page__title">{title}</h1>
+      <p className="df-placeholder-page__description">{description}</p>
     </div>
   </div>
 );
+
 
 export const router = createBrowserRouter([
   // Protected Routes (Require Authentication, Includes Navbar Layout & Outlet)
@@ -40,21 +34,19 @@ export const router = createBrowserRouter([
       },
       {
         path: '/dashboard',
-        element: (
-          <PagePlaceholder
-            title="DealFlow360 Dashboard"
-            description="Sales Operations 360 overview, deal velocity, conversion rates, and real-time operational alerts."
-          />
-        ),
+        element: <Dashboard />,
       },
       {
         path: '/quotations',
-        element: (
-          <PagePlaceholder
-            title="Quotations Management"
-            description="Create and manage customer quotations with line-item pricing, tier discounts, and governance."
-          />
-        ),
+        element: <QuotationsList />,
+      },
+      {
+        path: '/quotations/new',
+        element: <QuotationDetail isNew={true} />,
+      },
+      {
+        path: '/quotations/:id',
+        element: <QuotationDetail />,
       },
       {
         path: '/approvals',
@@ -112,12 +104,15 @@ export const router = createBrowserRouter([
       },
       {
         path: '/products',
-        element: (
-          <PagePlaceholder
-            title="Product Catalog & SKUs"
-            description="Manage products, variants, price lists, customer tier pricing, and warehouse stocks."
-          />
-        ),
+        element: <ProductCatalog />,
+      },
+      {
+        path: '/products/new',
+        element: <ProductDetail isNew={true} />,
+      },
+      {
+        path: '/products/:id',
+        element: <ProductDetail />,
       },
     ],
   },

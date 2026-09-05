@@ -307,6 +307,100 @@
     }
   }
 
+  &__user-container {
+    position: relative;
+  }
+
+  &__dropdown-menu {
+    position: absolute;
+    top: 110%;
+    right: 0;
+    width: 220px;
+    background: #0f172a;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 10px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+    padding: 0.75rem;
+    z-index: 1100;
+    backdrop-filter: blur(12px);
+
+    &-header {
+      padding-bottom: 0.5rem;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      margin-bottom: 0.5rem;
+    }
+
+    &-name {
+      font-size: 0.875rem;
+      font-weight: 600;
+      color: #ffffff;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    &-email {
+      font-size: 0.75rem;
+      color: #94a3b8;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    &-company {
+      font-size: 0.7rem;
+      color: #38bdf8;
+      margin-top: 0.2rem;
+    }
+
+    &-logout {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.5rem 0.6rem;
+      background: rgba(239, 68, 68, 0.15);
+      border: 1px solid rgba(239, 68, 68, 0.3);
+      border-radius: 6px;
+      color: #fca5a5;
+      font-size: 0.8125rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s ease;
+
+      svg {
+        width: 14px;
+        height: 14px;
+        flex-shrink: 0;
+      }
+
+      &:hover {
+        background: rgba(239, 68, 68, 0.25);
+        color: #ffffff;
+      }
+    }
+  }
+
+  &__signin-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.35rem 0.75rem;
+    border-radius: 6px;
+    background: rgba(255, 255, 255, 0.15);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    color: #ffffff;
+    text-decoration: none;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    transition: all 0.2s ease;
+
+    &:hover {
+      background: rgba(255, 255, 255, 0.25);
+    }
+  }
+
+
   // Mobile Menu Toggle Button
   &__mobile-toggle {
     display: none;
