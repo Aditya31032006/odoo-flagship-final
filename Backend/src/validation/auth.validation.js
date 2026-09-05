@@ -74,27 +74,19 @@ export const completeOnboardingValidation = [
 ];
 
 export const loginValidation = [
-  body('email')
-    .optional({ values: 'falsy' })
-    .trim()
-    .isEmail()
-    .withMessage('Please provide a valid email address')
-    .normalizeEmail(),
-  body('mobile')
-    .optional({ values: 'falsy' })
-    .trim()
-    .matches(/^[6-9]\d{9}$/)
-    .withMessage('Mobile number must be exactly 10 digits starting with 6, 7, 8, or 9 (e.g. 9876543210)'),
   body('identifier')
     .optional({ values: 'falsy' })
     .trim(),
+  body('email')
+    .optional({ values: 'falsy' })
+    .trim(),
+  body('mobile')
+    .optional({ values: 'falsy' })
+    .trim(),
   body().custom((value, { req }) => {
-    const hasEmail = Boolean(req.body.email && req.body.email.trim());
-    const hasMobile = Boolean(req.body.mobile && req.body.mobile.trim());
-    const hasIdentifier = Boolean(req.body.identifier && req.body.identifier.trim());
-
-    if (!hasEmail && !hasMobile && !hasIdentifier) {
-      throw new Error('Email address or mobile number is required to sign in');
+    const identifier = (req.body.identifier || req.body.email || req.body.mobile || '').trim();
+    if (!identifier) {
+      throw new Error('Please enter your email address or mobile number');
     }
     return true;
   }),

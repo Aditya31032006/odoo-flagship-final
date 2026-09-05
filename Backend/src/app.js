@@ -39,7 +39,6 @@ app.use('/api/dashboard', dashboardRouter);
 app.use('/api/quotations', quotationRouter);
 app.use('/api/catalog', catalogRouter);
 app.use('/api/staff', staffRouter);
-app.use('/staff', staffRouter);
 app.use('/api/discount-rules', discountRulesRouter);
 app.use('/api/approvals', approvalRouter);
 app.use('/api/fulfillment', fulfillmentRouter);

@@ -2,7 +2,6 @@ import React, { lazy, Suspense } from 'react';
 import { createBrowserRouter, Navigate } from 'react-router';
 import ProtectedRoute from '../features/auth/components/ProtectedRoute.jsx';
 import PublicRoute from '../features/auth/components/PublicRoute.jsx';
-import './placeholder.scss';
 
 // Lazy-loaded page components for on-demand bundle downloading
 const Login = lazy(() => import('../features/auth/pages/Login.jsx'));
@@ -117,7 +116,7 @@ export const router = createBrowserRouter([
         children: [
           {
             path: '/fulfillment',
-            element: withSuspense(FulfillmentDetail),
+            element: withSuspense(FulfillmentList),
           },
           {
             path: '/fulfillment/:orderId',
