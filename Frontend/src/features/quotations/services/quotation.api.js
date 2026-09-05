@@ -28,19 +28,12 @@ apiClient.interceptors.response.use(
       error.response?.data?.message ||
       error.response?.data?.errors?.[0]?.msg ||
       error.message ||
-      'Failed to load quotations';
+      'Failed to execute quotation operation';
     return Promise.reject({ ...error, customMessage: message });
   }
 );
 
 export const quotationApi = {
-  /**
-   * Fetch quotations with optional view type, status, and search filters
-   * @param {Object} params
-   * @param {'kanban'|'list'} params.view
-   * @param {string} params.status
-   * @param {string} params.search
-   */
   getQuotations: async ({ view = 'kanban', status = '', search = '' } = {}) => {
     const queryParams = new URLSearchParams();
     if (view) queryParams.append('view', view);
@@ -51,20 +44,28 @@ export const quotationApi = {
     return response.data;
   },
 
-  /**
-   * Fetch pipeline summary counts and amounts
-   */
   getSummary: async () => {
     const response = await apiClient.get('/quotations/summary');
     return response.data;
   },
 
-  /**
-   * Fetch single quotation by ID
-   * @param {string|number} id
-   */
   getQuotationById: async (id) => {
     const response = await apiClient.get(`/quotations/${id}`);
+    return response.data?.data || null;
+  },
+
+  createQuotation: async (payload) => {
+    const response = await apiClient.post('/quotations', payload);
+    return response.data?.data;
+  },
+
+  updateQuotation: async (id, payload) => {
+    const response = await apiClient.put(`/quotations/${id}`, payload);
+    return response.data?.data;
+  },
+
+  submitForApproval: async (id, payload) => {
+    const response = await apiClient.post(`/quotations/${id}/submit-approval`, payload);
     return response.data;
   },
 };

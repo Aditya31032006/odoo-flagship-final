@@ -7,6 +7,7 @@ import './config/passport.js';
 import authRouter from './routes/auth.route.js';
 import dashboardRouter from './routes/dashboard.route.js';
 import quotationRouter from './routes/quotation.route.js';
+import catalogRouter from './routes/catalog.route.js';
 import handleError from './middleware/error.middleware.js';
 import config from './config/config.js';
 
@@ -27,6 +28,7 @@ app.use(morgan('dev'));
 app.use('/api/auth', authRouter);
 app.use('/api/dashboard', dashboardRouter);
 app.use('/api/quotations', quotationRouter);
+app.use('/api/catalog', catalogRouter);
 
 // Global Error Handler
 app.use(handleError);

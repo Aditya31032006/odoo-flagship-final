@@ -101,12 +101,12 @@ export const Dashboard = () => {
 
         {/* Action Buttons matching Wireframe #2 */}
         <section className="df-dashboard__actions-row" aria-label="Quick Actions">
-          <Link to="/quotations?action=new" className="df-dashboard__btn-primary">
+          <Link to="/quotations/new" className="df-dashboard__btn-primary">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ width: 18, height: 18 }}>
               <line x1="12" x2="12" y1="5" y2="19" />
               <line x1="5" x2="19" y1="12" y2="12" />
             </svg>
-            + New Quotation
+             New Quotation
           </Link>
 
           <Link to="/approvals" className="df-dashboard__btn-secondary">

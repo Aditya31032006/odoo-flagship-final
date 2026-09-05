@@ -75,38 +75,17 @@ export const RecentActivityFeed = ({ activities = [], isLoading = false }) => {
     );
   }
 
-  // If database currently has no audit items, show rich sample context matching image
-  const displayItems = activities.length > 0 ? activities : [
-    {
-      id: 'demo-1',
-      company_name: 'Acme Corp',
-      action: 'approved',
-      user_role: 'finance',
-      quotation_number: 'QT-2026-104',
-      created_at: new Date(Date.now() - 1000 * 60 * 15).toISOString(),
-    },
-    {
-      id: 'demo-2',
-      company_name: 'Beta Industries',
-      action: 'returned',
-      user_name: 'Sales Manager',
-      quotation_number: 'QT-2026-089',
-      created_at: new Date(Date.now() - 1000 * 60 * 65).toISOString(),
-    },
-    {
-      id: 'demo-3',
-      company_name: 'East Depot',
-      action: 'edited',
-      user_name: 'Operations',
-      quotation_number: 'QT-2026-042',
-      reason: 'Stock allocation updated for Order #2291',
-      created_at: new Date(Date.now() - 1000 * 60 * 180).toISOString(),
-    },
-  ];
+  if (!activities || activities.length === 0) {
+    return (
+      <div className="df-activity-feed__empty">
+        No recent quotation or approval activity logged in the system.
+      </div>
+    );
+  }
 
   return (
     <ul className="df-activity-feed">
-      {displayItems.map((item) => (
+      {activities.map((item) => (
         <li key={item.id} className="df-activity-feed__item">
           <span
             className={`df-activity-feed__bullet df-activity-feed__bullet--${item.action || 'default'}`}

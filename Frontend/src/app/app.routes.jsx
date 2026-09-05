@@ -5,6 +5,7 @@ import Login from '../features/auth/pages/Login.jsx';
 import Register from '../features/auth/pages/Register.jsx';
 import Dashboard from '../features/dashboard/pages/Dashboard.jsx';
 import QuotationsList from '../features/quotations/pages/QuotationsList.jsx';
+import QuotationDetail from '../features/quotations/pages/QuotationDetail.jsx';
 import Onboarding from '../features/auth/pages/Onboarding.jsx';
 
 // Lightweight placeholder view component for quick verification
@@ -45,6 +46,14 @@ export const router = createBrowserRouter([
       {
         path: '/quotations',
         element: <QuotationsList />,
+      },
+      {
+        path: '/quotations/new',
+        element: <QuotationDetail isNew={true} />,
+      },
+      {
+        path: '/quotations/:id',
+        element: <QuotationDetail />,
       },
       {
         path: '/approvals',
