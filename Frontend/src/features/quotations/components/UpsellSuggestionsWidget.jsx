@@ -1,6 +1,6 @@
-import React from 'react';
+import React, { memo } from 'react';
 
-export const UpsellSuggestionsWidget = ({
+export const UpsellSuggestionsWidget = memo(({
   suggestions = [],
   onAddSuggestion,
 }) => {
@@ -46,6 +46,6 @@ export const UpsellSuggestionsWidget = ({
       </div>
     </section>
   );
-};
+});
 
 export default UpsellSuggestionsWidget;

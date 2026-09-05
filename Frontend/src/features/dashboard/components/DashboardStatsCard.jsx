@@ -1,10 +1,10 @@
-import React from 'react';
+import React, { memo } from 'react';
 import { Link } from 'react-router';
 
 /**
  * Summary KPI Widget Card matching Sales Dashboard wireframe
  */
-export const DashboardStatsCard = ({
+export const DashboardStatsCard = memo(({
   title,
   count,
   subtitle,
@@ -35,6 +35,6 @@ export const DashboardStatsCard = ({
       </div>
     </Link>
   );
-};
+});
 
 export default DashboardStatsCard;

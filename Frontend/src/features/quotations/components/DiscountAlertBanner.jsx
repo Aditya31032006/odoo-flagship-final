@@ -1,6 +1,6 @@
-import React from 'react';
+import React, { memo } from 'react';
 
-export const DiscountAlertBanner = ({
+export const DiscountAlertBanner = memo(({
   hasExcess = false,
   blendedRiskScore = 0,
   riskLevel = 'low',
@@ -44,6 +44,6 @@ export const DiscountAlertBanner = ({
       </div>
     </div>
   );
-};
+});
 
 export default DiscountAlertBanner;

@@ -144,7 +144,7 @@ function formatRole(role) {
 
 const AUTH_ROUTES = ['/login', '/register', '/auth/login', '/auth/register', '/signup', '/forgot-password'];
 
-export default function Navbar() {
+function NavbarComponent() {
   const location = useLocation();
   const navigate = useNavigate();
   const { user, isAuthenticated, logout } = useAuth();
@@ -375,3 +375,6 @@ export default function Navbar() {
     </header>
   );
 }
+
+export default React.memo(NavbarComponent);
+

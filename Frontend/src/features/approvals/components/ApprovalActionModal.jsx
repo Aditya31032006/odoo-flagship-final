@@ -1,7 +1,7 @@
-import React from 'react';
+import React, { memo } from 'react';
 import { useForm } from 'react-hook-form';
 
-export const ApprovalActionModal = ({ isOpen, onClose, actionType, onConfirm, isSubmitting }) => {
+export const ApprovalActionModal = memo(({ isOpen, onClose, actionType, onConfirm, isSubmitting }) => {
   const {
     register,
     handleSubmit,
@@ -113,6 +113,6 @@ export const ApprovalActionModal = ({ isOpen, onClose, actionType, onConfirm, is
       </div>
     </div>
   );
-};
+});
 
 export default ApprovalActionModal;

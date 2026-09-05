@@ -7,7 +7,6 @@ function App() {
   const { fetchCurrentUser } = useAuth();
 
   useEffect(() => {
-    // Validate httpOnly session cookie with backend on app launch
     fetchCurrentUser();
   }, [fetchCurrentUser]);
 

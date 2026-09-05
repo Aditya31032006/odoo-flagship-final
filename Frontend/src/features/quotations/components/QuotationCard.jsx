@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { memo } from 'react';
 
 // Format currency in Indian standard or USD format
 function formatCurrency(amount) {
@@ -6,7 +6,7 @@ function formatCurrency(amount) {
   return `$${Number(amount).toLocaleString()}`;
 }
 
-export const QuotationCard = ({ quotation, onClick }) => {
+export const QuotationCard = memo(({ quotation, onClick }) => {
   const {
     quotation_number,
     company_name,
@@ -56,6 +56,6 @@ export const QuotationCard = ({ quotation, onClick }) => {
       </div>
     </div>
   );
-};
+});
 
 export default QuotationCard;
