@@ -195,15 +195,16 @@ export const addStaffInvitationJob = async ({ name, email, role, tempPassword })
  */
 export const addQuotationIssuedEmailJob = async (data) => {
   try {
-    return await emailQueue.add('send-quotation-issued', data);
-  } catch (err) {
-    console.warn('⚠️ BullMQ offline, attempting direct mail dispatch for quotation issued:', err.message);
     const html = generateQuotationIssuedEmail(data);
-    return await sendMail({
+    const result = await sendMail({
       toEmail: data.toEmail,
       subject: `📄 New Quotation Issued: ${data.quotationNumber}`,
       html,
     });
+    console.log(`📧 Direct quotation issued email dispatched to: ${data.toEmail}`);
+    return result;
+  } catch (err) {
+    console.error('⚠️ Failed to dispatch quotation issued email:', err.message);
   }
 };
 
@@ -212,15 +213,16 @@ export const addQuotationIssuedEmailJob = async (data) => {
  */
 export const addCounterOfferEmailJob = async (data) => {
   try {
-    return await emailQueue.add('send-counter-offer', data);
-  } catch (err) {
-    console.warn('⚠️ BullMQ offline, attempting direct mail dispatch for counter offer:', err.message);
     const html = generateCounterOfferEmail(data);
-    return await sendMail({
+    const result = await sendMail({
       toEmail: data.toEmail,
       subject: `💬 New Counter-Offer for Quotation: ${data.quotationNumber}`,
       html,
     });
+    console.log(`📧 Direct counter-offer email dispatched to: ${data.toEmail}`);
+    return result;
+  } catch (err) {
+    console.error('⚠️ Failed to dispatch counter offer email:', err.message);
   }
 };
 
@@ -229,15 +231,16 @@ export const addCounterOfferEmailJob = async (data) => {
  */
 export const addQuotationApprovedEmailJob = async (data) => {
   try {
-    return await emailQueue.add('send-quotation-approved', data);
-  } catch (err) {
-    console.warn('⚠️ BullMQ offline, attempting direct mail dispatch for quotation approved:', err.message);
     const html = generateQuotationApprovedEmail(data);
-    return await sendMail({
+    const result = await sendMail({
       toEmail: data.toEmail,
       subject: `✅ Quotation Approved: ${data.quotationNumber}`,
       html,
     });
+    console.log(`📧 Direct quotation approved email dispatched to: ${data.toEmail}`);
+    return result;
+  } catch (err) {
+    console.error('⚠️ Failed to dispatch quotation approved email:', err.message);
   }
 };
 

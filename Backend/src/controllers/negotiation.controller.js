@@ -8,17 +8,8 @@ import {
 } from '../repositories/negotiation.repository.js';
 import { getQuotationFullDetailRepo } from '../repositories/quotation.repository.js';
 import { addCounterOfferEmailJob, addQuotationApprovedEmailJob } from '../jobs/emailQueue.js';
+import { resolveUserCustomerId } from './quotation.controller.js';
 
-async function resolveUserCustomerId(user) {
-  if (user.customer_id) return user.customer_id;
-  if (user.role === 'customer' && user.email) {
-    const custRes = await pool.query('SELECT id FROM customers WHERE email = $1', [user.email]);
-    if (custRes.rows.length > 0) {
-      return custRes.rows[0].id;
-    }
-  }
-  return null;
-}
 
 /**
  * Get active negotiation and message thread for a quotation

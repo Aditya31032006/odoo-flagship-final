@@ -365,7 +365,7 @@ export const useQuotationForm = ({ quotationId = null } = {}) => {
         customer_id: customerId,
         tier_id: selectedCustomer?.tier_id || null,
         price_list_id: priceListId || null,
-        status: 'draft',
+        status: status && status !== 'draft' ? status : 'pending_approval',
         blended_risk_score: calculatedTotals.blendedRiskScore,
         risk_level: calculatedTotals.riskLevel,
         subtotal: calculatedTotals.subtotal,
@@ -383,10 +383,11 @@ export const useQuotationForm = ({ quotationId = null } = {}) => {
         result = await quotationApi.createQuotation(payload);
       }
 
-      setSuccessMessage('Quotation draft saved successfully!');
+      setSuccessMessage('Quotation saved and filed to customer successfully!');
+      setStatus('pending_approval');
       return result;
     } catch (err) {
-      setError(err.customMessage || 'Failed to save draft');
+      setError(err.customMessage || 'Failed to save quotation');
       return false;
     } finally {
       setIsSaving(false);

@@ -301,7 +301,7 @@ export const QuotationDetail = ({ isNew = false }) => {
                     onClick={handleSaveDraft}
                     disabled={isSaving}
                   >
-                    {isSaving ? 'Saving...' : 'Save Draft'}
+                    {isSaving ? 'Saving...' : 'Save Quotation'}
                   </button>
 
                   <button
@@ -310,7 +310,7 @@ export const QuotationDetail = ({ isNew = false }) => {
                     onClick={handleSubmitApproval}
                     disabled={isSaving}
                   >
-                    {isSaving ? 'Processing...' : 'File Pending Quotation'}
+                    {isSaving ? 'Filing...' : 'File & Send to Customer'}
                   </button>
                 </>
               )}

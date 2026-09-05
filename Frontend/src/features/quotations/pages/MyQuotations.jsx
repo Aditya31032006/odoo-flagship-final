@@ -1,6 +1,9 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { useSearchParams } from 'react-router';
 import useAuth from '../../auth/hook/useAuth.js';
 import quotationApi from '../services/quotation.api.js';
+import negotiationApi from '../services/negotiation.api.js';
+import { useDebounce } from '../../../shared/hooks/useDebounce.js';
 import NegotiationPanel from '../components/NegotiationPanel.jsx';
 import '../styles/myQuotations.scss';
 
@@ -10,22 +13,29 @@ function formatCurrency(amount) {
 
 export default function MyQuotations() {
   const { user } = useAuth();
+  const [searchParams] = useSearchParams();
+  const actionParam = searchParams.get('action');
+  const quoteIdParam = searchParams.get('quoteId');
+
   const [quotations, setQuotations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  const debouncedSearch = useDebounce(searchQuery, 300);
   const [selectedStatus, setSelectedStatus] = useState('all');
 
   // Selected quotation for detail & negotiation modal
   const [selectedQuote, setSelectedQuote] = useState(null);
   const [quoteDetail, setQuoteDetail] = useState(null);
   const [loadingDetail, setLoadingDetail] = useState(false);
+  const [actionAlert, setActionAlert] = useState(null);
 
   // Fetch company quotations
   const fetchCompanyQuotations = useCallback(async () => {
     setLoading(true);
     try {
-      const data = await quotationApi.getQuotations({ view: 'list' });
-      setQuotations(Array.isArray(data) ? data : []);
+      const res = await quotationApi.getQuotations({ view: 'list' });
+      const list = Array.isArray(res?.data) ? res.data : Array.isArray(res) ? res : [];
+      setQuotations(list);
     } catch (err) {
       console.error('Failed to load customer quotations:', err);
     } finally {
@@ -36,6 +46,55 @@ export default function MyQuotations() {
   useEffect(() => {
     fetchCompanyQuotations();
   }, [fetchCompanyQuotations]);
+
+  // Handle URL actions from email links (direct confirm or negotiate)
+  useEffect(() => {
+    let isMounted = true;
+
+    async function handleEmailLinkActions() {
+      if (!quoteIdParam) return;
+
+      if (actionParam === 'confirm') {
+        try {
+          setActionAlert({ type: 'info', message: 'Confirming your quotation...' });
+          const res = await negotiationApi.acceptQuotation(quoteIdParam);
+          if (!isMounted) return;
+          setActionAlert({
+            type: 'success',
+            message: res?.message || '✅ Quotation approved & confirmed successfully!',
+          });
+          await fetchCompanyQuotations();
+          const detail = await quotationApi.getQuotationById(quoteIdParam);
+          if (detail && isMounted) {
+            setSelectedQuote(detail);
+            setQuoteDetail(detail);
+          }
+        } catch (err) {
+          if (!isMounted) return;
+          setActionAlert({
+            type: 'error',
+            message: err.customMessage || 'Failed to confirm quotation.',
+          });
+        }
+      } else {
+        try {
+          const detail = await quotationApi.getQuotationById(quoteIdParam);
+          if (detail && isMounted) {
+            setSelectedQuote(detail);
+            setQuoteDetail(detail);
+          }
+        } catch (err) {
+          console.error('Failed to load quotation from link:', err);
+        }
+      }
+    }
+
+    handleEmailLinkActions();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [actionParam, quoteIdParam, fetchCompanyQuotations]);
 
   // Fetch full details when opening a quotation
   const openQuoteDetail = async (quote) => {
@@ -57,20 +116,23 @@ export default function MyQuotations() {
   };
 
   // Filter list
-  const filteredQuotations = quotations.filter((q) => {
-    const matchesSearch =
-      !searchQuery ||
-      q.quotation_number?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      q.sales_rep_name?.toLowerCase().includes(searchQuery.toLowerCase());
+  const filteredQuotations = useMemo(() => {
+    return quotations.filter((q) => {
+      const query = debouncedSearch.trim().toLowerCase();
+      const matchesSearch =
+        !query ||
+        q.quotation_number?.toLowerCase().includes(query) ||
+        q.sales_rep_name?.toLowerCase().includes(query);
 
-    const matchesStatus =
-      selectedStatus === 'all' || q.status === selectedStatus;
+      const matchesStatus =
+        selectedStatus === 'all' || q.status === selectedStatus;
 
-    return matchesSearch && matchesStatus;
-  });
+      return matchesSearch && matchesStatus;
+    });
+  }, [quotations, debouncedSearch, selectedStatus]);
 
   const totalValue = quotations.reduce((acc, q) => acc + Number(q.grand_total || 0), 0);
-  const activeCount = quotations.filter((q) => ['sent', 'negotiating', 'approved'].includes(q.status)).length;
+  const activeCount = quotations.filter((q) => ['pending_approval', 'approved', 'negotiating'].includes(q.status)).length;
 
   return (
     <div className="df-my-quotes">
@@ -100,6 +162,54 @@ export default function MyQuotations() {
         </div>
       </div>
 
+      {/* Action Notification Banner */}
+      {actionAlert && (
+        <div style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          padding: '1rem 1.25rem',
+          marginBottom: '1.5rem',
+          borderRadius: '10px',
+          background: actionAlert.type === 'success' 
+            ? 'rgba(16, 185, 129, 0.15)' 
+            : actionAlert.type === 'error' 
+            ? 'rgba(239, 68, 68, 0.15)' 
+            : 'rgba(56, 189, 248, 0.15)',
+          border: `1px solid ${
+            actionAlert.type === 'success' 
+              ? 'rgba(16, 185, 129, 0.4)' 
+              : actionAlert.type === 'error' 
+              ? 'rgba(239, 68, 68, 0.4)' 
+              : 'rgba(56, 189, 248, 0.4)'
+          }`,
+          color: actionAlert.type === 'success' 
+            ? '#34d399' 
+            : actionAlert.type === 'error' 
+            ? '#fca5a5' 
+            : '#38bdf8',
+          fontWeight: 600,
+          fontSize: '0.9375rem'
+        }}>
+          <span>{actionAlert.message}</span>
+          <button
+            type="button"
+            onClick={() => setActionAlert(null)}
+            style={{
+              background: 'transparent',
+              border: 'none',
+              color: 'currentColor',
+              cursor: 'pointer',
+              fontSize: '1rem',
+              fontWeight: 'bold',
+              padding: '0 0.5rem'
+            }}
+          >
+            ✕
+          </button>
+        </div>
+      )}
+
       {/* Search & Filter Controls */}
       <div className="df-my-quotes__controls">
         <div className="search-box">
@@ -116,14 +226,20 @@ export default function MyQuotations() {
         </div>
 
         <div className="status-filters">
-          {['all', 'sent', 'negotiating', 'confirmed'].map((st) => (
+          {[
+            { id: 'all', label: 'All Quotes' },
+            { id: 'pending_approval', label: 'Pending' },
+            { id: 'approved', label: 'Approved' },
+            { id: 'negotiating', label: 'Negotiating' },
+            { id: 'confirmed', label: 'Confirmed' },
+          ].map((st) => (
             <button
-              key={st}
+              key={st.id}
               type="button"
-              className={selectedStatus === st ? 'active' : ''}
-              onClick={() => setSelectedStatus(st)}
+              className={selectedStatus === st.id ? 'active' : ''}
+              onClick={() => setSelectedStatus(st.id)}
             >
-              {st === 'all' ? 'All Quotes' : st.charAt(0).toUpperCase() + st.slice(1)}
+              {st.label}
             </button>
           ))}
         </div>
