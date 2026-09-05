@@ -159,14 +159,42 @@ export const FulfillmentList = () => {
   return (
     <div className="df-fulfillment">
       <div className="df-fulfillment__container">
-        {/* Header matching Wireframe #7 */}
+        {/* Header matching Wireframe #7 with Top-Right Actions */}
         <div className="df-fulfillment__header">
-          <div className="df-fulfillment__title-row">
-            <h1 className="df-fulfillment__title">Fulfillment and Stock (List)</h1>
+          <div className="df-fulfillment__title-row" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem' }}>
+            <div>
+              <h1 className="df-fulfillment__title">Fulfillment and Stock (List)</h1>
+              <p className="df-fulfillment__subtitle">
+                Live stock per warehouse, plus every order that still needs fulfilling
+              </p>
+            </div>
+
+            <div className="df-fulfillment__header-right">
+              <PermissionGate allowedRoles={['admin', 'operations']}>
+                <button
+                  type="button"
+                  className="df-btn-primary df-fulfillment__add-btn"
+                  onClick={handleOpenAddStock}
+                >
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
+                    <line x1="12" y1="5" x2="12" y2="19" />
+                    <line x1="5" y1="12" x2="19" y2="12" />
+                  </svg>
+                  Add Warehouse Stock
+                </button>
+              </PermissionGate>
+
+              <PermissionGate allowedRoles={['admin', 'operations', 'sales_manager']}>
+                <button
+                  type="button"
+                  className="df-btn-secondary df-fulfillment__btn-secondary"
+                  onClick={handleOpenAddOrder}
+                >
+                  + New Order
+                </button>
+              </PermissionGate>
+            </div>
           </div>
-          <p className="df-fulfillment__subtitle">
-            Live stock per warehouse, plus every order that still needs fulfilling
-          </p>
         </div>
 
         {/* Alerts */}
@@ -222,7 +250,7 @@ export const FulfillmentList = () => {
                 </button>
               )}
             </div>
-            <PermissionGate allowedRoles={['admin', 'operations']}>
+            {/* <PermissionGate allowedRoles={['admin', 'operations']}>
               <button
                 type="button"
                 className="df-fulfillment__add-btn"
@@ -230,7 +258,7 @@ export const FulfillmentList = () => {
               >
                 + Add Warehouse Stock
               </button>
-            </PermissionGate>
+            </PermissionGate> */}
           </div>
         </div>
 
@@ -351,7 +379,7 @@ export const FulfillmentList = () => {
                 </button>
               )}
             </div>
-            <PermissionGate allowedRoles={['admin', 'operations', 'finance']}>
+            {/* <PermissionGate allowedRoles={['admin', 'operations', 'finance']}>
               <button
                 type="button"
                 className="df-fulfillment__add-btn"
@@ -359,7 +387,7 @@ export const FulfillmentList = () => {
               >
                 + Create Fulfillment Order
               </button>
-            </PermissionGate>
+            </PermissionGate> */}
           </div>
         </div>
 
@@ -440,37 +468,43 @@ export const FulfillmentList = () => {
       </div>
 
       {/* Warehouse Stock Modal */}
-      <WarehouseStockModal
-        isOpen={stockModal.isOpen}
-        onClose={() => setStockModal({ isOpen: false, initialData: null })}
-        initialData={stockModal.initialData}
-        warehouses={meta?.warehouses || []}
-        variants={meta?.variants || []}
-        onSave={handleSaveStock}
-        isSaving={isMutating}
-      />
+      {stockModal.isOpen && (
+        <WarehouseStockModal
+          isOpen={stockModal.isOpen}
+          onClose={() => setStockModal({ isOpen: false, initialData: null })}
+          initialData={stockModal.initialData}
+          warehouses={meta?.warehouses || []}
+          variants={meta?.variants || []}
+          onSave={handleSaveStock}
+          isSaving={isMutating}
+        />
+      )}
 
       {/* Order Modal */}
-      <OrderModal
-        isOpen={orderModal.isOpen}
-        onClose={() => setOrderModal({ isOpen: false, initialData: null })}
-        initialData={orderModal.initialData}
-        customers={meta?.customers || []}
-        variants={meta?.variants || []}
-        warehouses={meta?.warehouses || []}
-        onSave={handleSaveOrder}
-        isSaving={isMutating}
-      />
+      {orderModal.isOpen && (
+        <OrderModal
+          isOpen={orderModal.isOpen}
+          onClose={() => setOrderModal({ isOpen: false, initialData: null })}
+          initialData={orderModal.initialData}
+          customers={meta?.customers || []}
+          variants={meta?.variants || []}
+          warehouses={meta?.warehouses || []}
+          onSave={handleSaveOrder}
+          isSaving={isMutating}
+        />
+      )}
 
       {/* Delete Confirmation Modal */}
-      <DeleteConfirmModal
-        isOpen={deleteModal.isOpen}
-        onClose={() => setDeleteModal({ isOpen: false, type: null, id: null, title: '', message: '' })}
-        title={deleteModal.title}
-        message={deleteModal.message}
-        onConfirm={handleConfirmDelete}
-        isDeleting={isMutating}
-      />
+      {deleteModal.isOpen && (
+        <DeleteConfirmModal
+          isOpen={deleteModal.isOpen}
+          onClose={() => setDeleteModal({ isOpen: false, type: null, id: null, title: '', message: '' })}
+          title={deleteModal.title}
+          message={deleteModal.message}
+          onConfirm={handleConfirmDelete}
+          isDeleting={isMutating}
+        />
+      )}
     </div>
   );
 };

@@ -269,13 +269,15 @@ export const ApprovalDetail = () => {
       </div>
 
       {/* Modal using React Hook Form */}
-      <ApprovalActionModal
-        isOpen={modalState.isOpen}
-        onClose={handleCloseModal}
-        actionType={modalState.actionType}
-        onConfirm={handleConfirmDecision}
-        isSubmitting={isSubmittingDecision}
-      />
+      {modalState.isOpen && (
+        <ApprovalActionModal
+          isOpen={modalState.isOpen}
+          onClose={handleCloseModal}
+          actionType={modalState.actionType}
+          onConfirm={handleConfirmDecision}
+          isSubmitting={isSubmittingDecision}
+        />
+      )}
     </div>
   );
 };

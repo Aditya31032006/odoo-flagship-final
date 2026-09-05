@@ -244,7 +244,7 @@ const DealHealthDashboard = () => {
             <div className="df-deal-health__header-actions">
               <button
                 type="button"
-                className="df-deal-health__btn-scan"
+                className="df-btn-primary df-deal-health__btn-scan"
                 onClick={handleTriggerScan}
                 disabled={isScanning}
               >
@@ -253,7 +253,7 @@ const DealHealthDashboard = () => {
               <PermissionGate allowedRoles={['admin', 'sales_manager']}>
                 <button
                   type="button"
-                  className="df-deal-health__btn-config"
+                  className="df-btn-secondary df-deal-health__btn-config"
                   onClick={() => setIsConfigModalOpen(true)}
                 >
                   ⚙ Configure Thresholds
@@ -396,13 +396,15 @@ const DealHealthDashboard = () => {
       </div>
 
       {/* Thresholds Config Modal */}
-      <ConfigureThresholdsModal
-        isOpen={isConfigModalOpen}
-        onClose={() => setIsConfigModalOpen(false)}
-        currentConfig={config}
-        onSave={handleConfigSubmit}
-        isSaving={isSavingConfig}
-      />
+      {isConfigModalOpen && (
+        <ConfigureThresholdsModal
+          isOpen={isConfigModalOpen}
+          onClose={() => setIsConfigModalOpen(false)}
+          currentConfig={config}
+          onSave={handleConfigSubmit}
+          isSaving={isSavingConfig}
+        />
+      )}
     </div>
   );
 };

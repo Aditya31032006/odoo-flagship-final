@@ -7,7 +7,7 @@ import { useToast } from '../../../shared/context/ToastContext.jsx';
 export const useProducts = ({ id = null, isEditingExisting = false, autoFetch = true } = {}) => {
   const dispatch = useDispatch();
   const { toast, confirm } = useToast();
-  const { summary, productsList, isLoading: isCatalogLoading, error: catalogError } = useSelector(
+  const { summary, productsList, isLoading: isCatalogLoading, isInitialized, error: catalogError } = useSelector(
     (state) => state.products
   );
 
@@ -22,17 +22,19 @@ export const useProducts = ({ id = null, isEditingExisting = false, autoFetch = 
   const [formError, setFormError] = useState(null);
   const [successMsg, setSuccessMsg] = useState(null);
 
-  // 1. Catalog loading
-  const loadCatalog = useCallback(() => {
-    dispatch(fetchProductSummary());
-    dispatch(fetchAllProducts());
-  }, [dispatch]);
+  // 1. Catalog loading (cached via Redux store)
+  const loadCatalog = useCallback((force = false) => {
+    if (force || !isInitialized) {
+      dispatch(fetchProductSummary());
+      dispatch(fetchAllProducts());
+    }
+  }, [dispatch, isInitialized]);
 
   useEffect(() => {
-    if (autoFetch && !id) {
+    if (autoFetch && !id && !isInitialized) {
       loadCatalog();
     }
-  }, [autoFetch, id, loadCatalog]);
+  }, [autoFetch, id, isInitialized, loadCatalog]);
 
   // 2. Product Detail loading
   const loadProductData = useCallback(

@@ -498,21 +498,25 @@ export const InvoiceDetail = () => {
       </div>
 
       {/* Invoice Print & PDF Export Modal */}
-      <InvoicePrintModal
-        isOpen={isPrintPreviewOpen}
-        onClose={() => setIsPrintPreviewOpen(false)}
-        invoice={invoice}
-        items={items}
-      />
+      {isPrintPreviewOpen && (
+        <InvoicePrintModal
+          isOpen={isPrintPreviewOpen}
+          onClose={() => setIsPrintPreviewOpen(false)}
+          invoice={invoice}
+          items={items}
+        />
+      )}
 
       {/* Modal: Record Payment */}
-      <RecordPaymentModal
-        isOpen={isPaymentModalOpen}
-        onClose={() => setIsPaymentModalOpen(false)}
-        balanceDue={balanceDue}
-        onRecordPayment={handlePaymentSubmit}
-        isSubmitting={isSubmittingPayment}
-      />
+      {isPaymentModalOpen && (
+        <RecordPaymentModal
+          isOpen={isPaymentModalOpen}
+          onClose={() => setIsPaymentModalOpen(false)}
+          balanceDue={balanceDue}
+          onRecordPayment={handlePaymentSubmit}
+          isSubmitting={isSubmittingPayment}
+        />
+      )}
     </div>
   );
 };

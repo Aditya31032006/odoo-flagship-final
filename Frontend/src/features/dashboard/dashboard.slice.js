@@ -40,6 +40,7 @@ const initialState = {
   activities: [],
   isLoadingStats: false,
   isLoadingActivity: false,
+  isInitialized: false,
   statsError: null,
   activityError: null,
   lastUpdated: null,
@@ -63,6 +64,7 @@ const dashboardSlice = createSlice({
       })
       .addCase(fetchDashboardStats.fulfilled, (state, action) => {
         state.isLoadingStats = false;
+        state.isInitialized = true;
         state.stats = action.payload;
         state.lastUpdated = new Date().toISOString();
       })

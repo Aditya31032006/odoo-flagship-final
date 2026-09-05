@@ -1,7 +1,8 @@
 import React, { useState, useMemo } from 'react';
-import { useNavigate } from 'react-router';
+import { Link, useNavigate } from 'react-router';
 import useApprovals from '../hooks/useApprovals.js';
 import { useDebounce } from '../../../shared/hooks/useDebounce.js';
+import PermissionGate from '../../../shared/components/PermissionGate.jsx';
 import '../styles/approvals.scss';
 
 export const ApprovalsList = () => {
@@ -37,14 +38,34 @@ export const ApprovalsList = () => {
   return (
     <div className="df-approvals">
       <div className="df-approvals__container">
-        {/* Header */}
+        {/* Header with Top Right Redirect Buttons */}
         <div className="df-approvals__header">
-          <div className="df-approvals__title-row">
-            <h1 className="df-approvals__title">Approvals (List)</h1>
+          <div className="df-approvals__title-row" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem' }}>
+            <div>
+              <h1 className="df-approvals__title">Approvals (List)</h1>
+              <p className="df-approvals__subtitle">
+                Every quotation that needs manager's or finance's going through discount approval
+              </p>
+            </div>
+
+            <div className="df-approvals__header-right">
+              <PermissionGate allowedRoles={['admin', 'sales_manager']}>
+                <Link
+                  to="/discount-rules"
+                  className="df-btn-secondary df-approvals__btn-secondary"
+                >
+                  ⚙ Discount Rules
+                </Link>
+              </PermissionGate>
+
+              <Link
+                to="/quotations"
+                className="df-btn-primary df-approvals__btn-primary"
+              >
+                View Quotations →
+              </Link>
+            </div>
           </div>
-          <p className="df-approvals__subtitle">
-            Every quotation that needs manager's or finance's going through discount approval
-          </p>
         </div>
 
         {/* Error notification if any */}

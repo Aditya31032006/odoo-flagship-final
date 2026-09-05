@@ -6,6 +6,7 @@ import productsReducer from '../features/products/products.slice.js';
 import discountRulesReducer from '../features/discountRules/discountRules.slice.js';
 import approvalsReducer from '../features/approvals/approvals.slice.js';
 import fulfillmentReducer from '../features/fulfillment/fulfillment.slice.js';
+import staffReducer from '../features/staff/staff.slice.js';
 
 export const store = configureStore({
   reducer: {
@@ -16,6 +17,7 @@ export const store = configureStore({
     discountRules: discountRulesReducer,
     approvals: approvalsReducer,
     fulfillment: fulfillmentReducer,
+    staff: staffReducer,
   },
 });
 

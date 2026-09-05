@@ -4,15 +4,26 @@
 
 .df-subscriptions {
   width: 100%;
-  min-height: calc(100vh - 64px);
+  min-height: calc(100vh - 54px);
   background-color: #0b0f19;
+  background-image: 
+    radial-gradient(at 0% 0%, rgba(56, 189, 248, 0.08) 0px, transparent 50%),
+    radial-gradient(at 100% 0%, rgba(99, 102, 241, 0.08) 0px, transparent 50%),
+    radial-gradient(at 50% 100%, rgba(15, 23, 42, 0.9) 0px, transparent 50%);
   color: #f8fafc;
-  padding: 2.5rem;
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  padding: 2rem 2rem 3.5rem 2rem;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  box-sizing: border-box;
+
+  @media (max-width: 768px) {
+    padding: 1.25rem 1rem 2.5rem 1rem;
+  }
 
   &__container {
-    max-width: 1320px;
+    max-width: 1380px;
     margin: 0 auto;
+    width: 100%;
+    box-sizing: border-box;
   }
 
   // Header
@@ -22,7 +33,7 @@
 
   &__title-row {
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     justify-content: space-between;
     gap: 1rem;
     flex-wrap: wrap;
@@ -30,16 +41,18 @@
   }
 
   &__title {
-    font-size: 2rem;
+    font-size: 1.875rem;
     font-weight: 700;
     color: #ffffff;
-    letter-spacing: -0.02em;
-    margin: 0;
+    letter-spacing: -0.025em;
+    line-height: 1.25;
+    margin: 0 0 0.35rem 0;
   }
 
   &__subtitle {
     font-size: 0.9375rem;
     color: #94a3b8;
+    line-height: 1.5;
     margin: 0;
   }
 

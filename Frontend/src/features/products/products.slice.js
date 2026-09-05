@@ -34,6 +34,7 @@ const initialState = {
   productsList: [],
   categories: [],
   isLoading: false,
+  isInitialized: false,
   error: null,
 };
 
@@ -52,6 +53,7 @@ const productsSlice = createSlice({
       })
       .addCase(fetchAllProducts.fulfilled, (state, action) => {
         state.isLoading = false;
+        state.isInitialized = true;
         state.productsList = action.payload;
       })
       .addCase(fetchAllProducts.rejected, (state, action) => {

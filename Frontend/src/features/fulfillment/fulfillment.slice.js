@@ -190,6 +190,7 @@ const initialState = {
   isLoadingDetail: false,
   isMutating: false,
   isSavingSplit: false,
+  isInitialized: false,
   error: null,
   successMsg: null,
 };
@@ -215,6 +216,7 @@ export const fulfillmentSlice = createSlice({
       })
       .addCase(fetchFulfillmentList.fulfilled, (state, action) => {
         state.isLoadingList = false;
+        state.isInitialized = true;
         state.stock = action.payload?.stock || [];
         state.orders = action.payload?.orders || [];
       })

@@ -30,6 +30,7 @@ const initialState = {
   categoryCeilings: [],
   approvalRules: [],
   isLoading: false,
+  isInitialized: false,
   isSaving: false,
   error: null,
   successMsg: null,
@@ -62,6 +63,7 @@ export const discountRulesSlice = createSlice({
       })
       .addCase(fetchDiscountConfig.fulfilled, (state, action) => {
         state.isLoading = false;
+        state.isInitialized = true;
         state.customerTiers = action.payload?.customer_tiers || [];
         state.categoryCeilings = action.payload?.category_ceilings || [];
         state.approvalRules = action.payload?.approval_rules || [];

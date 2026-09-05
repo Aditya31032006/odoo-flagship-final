@@ -16,20 +16,23 @@ export const useDiscountRules = (autoFetch = true) => {
     categoryCeilings,
     approvalRules,
     isLoading,
+    isInitialized,
     isSaving,
     error,
     successMsg,
   } = useSelector((state) => state.discountRules);
 
-  const loadConfig = useCallback(() => {
-    dispatch(fetchDiscountConfig());
-  }, [dispatch]);
+  const loadConfig = useCallback((force = false) => {
+    if (force || !isInitialized) {
+      dispatch(fetchDiscountConfig());
+    }
+  }, [dispatch, isInitialized]);
 
   useEffect(() => {
-    if (autoFetch) {
+    if (autoFetch && !isInitialized) {
       loadConfig();
     }
-  }, [autoFetch, loadConfig]);
+  }, [autoFetch, isInitialized, loadConfig]);
 
   const updateTierDiscount = (index, value) => {
     const updated = [...customerTiers];

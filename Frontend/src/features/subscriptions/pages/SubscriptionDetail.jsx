@@ -499,23 +499,27 @@ export const SubscriptionDetail = () => {
       </div>
 
       {/* Modal: Modify Subscription */}
-      <ModifySubscriptionModal
-        isOpen={isModifyModalOpen}
-        onClose={() => setIsModifyModalOpen(false)}
-        subscription={subscription}
-        availablePlans={availablePlans}
-        onSave={handleModifySubmit}
-        isSubmitting={isSubmittingModify}
-      />
+      {isModifyModalOpen && (
+        <ModifySubscriptionModal
+          isOpen={isModifyModalOpen}
+          onClose={() => setIsModifyModalOpen(false)}
+          subscription={subscription}
+          availablePlans={availablePlans}
+          onSave={handleModifySubmit}
+          isSubmitting={isSubmittingModify}
+        />
+      )}
 
       {/* Modal: Cancel Subscription */}
-      <CancelSubscriptionModal
-        isOpen={isCancelModalOpen}
-        onClose={() => setIsCancelModalOpen(false)}
-        subscription={subscription}
-        onConfirm={handleCancelSubmit}
-        isSubmitting={isSubmittingCancel}
-      />
+      {isCancelModalOpen && (
+        <CancelSubscriptionModal
+          isOpen={isCancelModalOpen}
+          onClose={() => setIsCancelModalOpen(false)}
+          subscription={subscription}
+          onConfirm={handleCancelSubmit}
+          isSubmitting={isSubmittingCancel}
+        />
+      )}
     </div>
   );
 };
