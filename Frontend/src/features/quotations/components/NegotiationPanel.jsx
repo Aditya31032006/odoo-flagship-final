@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, memo } from 'react';
 import { useForm } from 'react-hook-form';
 import useAuth from '../../auth/hook/useAuth.js';
+import useRazorpay from '../../payments/hook/useRazorpay.js';
 import negotiationApi from '../services/negotiation.api.js';
 import quotationApi from '../services/quotation.api.js';
 import { useToast } from '../../../shared/context/ToastContext.jsx';
@@ -14,6 +15,7 @@ export const NegotiationPanel = memo(({
 }) => {
   const { user } = useAuth();
   const { toast, confirm } = useToast();
+  const { initiatePayment: initiateRazorpayPayment, isProcessing: isPayingWithRazorpay } = useRazorpay();
   const isCustomer = user?.role === 'customer';
 
   const [negotiation, setNegotiation] = useState(null);
@@ -150,26 +152,14 @@ export const NegotiationPanel = memo(({
     }
   };
 
-  // Pay quotation when in shipment stage
+  // Pay quotation when in shipment stage via Razorpay Gateway
   const handlePayQuotation = async () => {
-    const ok = await confirm({
-      title: 'Proceed to Payment',
-      message: `Proceed to payment of ₹${Number(quotation?.grand_total || 0).toLocaleString('en-IN')} for this order?`,
-      confirmText: 'Pay Now',
-      type: 'info',
+    initiateRazorpayPayment({
+      quotationId,
+      onSuccess: () => {
+        if (onQuotationUpdated) onQuotationUpdated();
+      },
     });
-    if (!ok) return;
-
-    setSubmitting(true);
-    try {
-      await quotationApi.payQuotation(quotationId);
-      if (onQuotationUpdated) onQuotationUpdated();
-      toast.success('Payment successful! Order moved to payment stage.');
-    } catch (err) {
-      toast.error(err.customMessage || 'Failed to complete payment');
-    } finally {
-      setSubmitting(false);
-    }
   };
 
   const isConfirmed = quotation?.status === 'confirmed' || negotiation?.status === 'accepted';
@@ -252,9 +242,9 @@ export const NegotiationPanel = memo(({
                     transition: 'all 0.2s ease',
                   }}
                   onClick={handlePayQuotation}
-                  disabled={submitting}
+                  disabled={submitting || isPayingWithRazorpay}
                 >
-                  💳 Pay Now (₹{Number(quotation?.grand_total || 0).toLocaleString('en-IN')})
+                  {isPayingWithRazorpay ? '⌛ Processing Payment...' : `💳 Pay Now (₹${Number(quotation?.grand_total || 0).toLocaleString('en-IN')})`}
                 </button>
               )}
             </div>

@@ -2,6 +2,7 @@ import React from 'react';
 import { useParams, useNavigate } from 'react-router';
 import useQuotationForm from '../hook/useQuotationForm.js';
 import useAuth from '../../auth/hook/useAuth.js';
+import useRazorpay from '../../payments/hook/useRazorpay.js';
 import QuotationLineItemsTable from '../components/QuotationLineItemsTable.jsx';
 import DiscountAlertBanner from '../components/DiscountAlertBanner.jsx';
 import UpsellSuggestionsWidget from '../components/UpsellSuggestionsWidget.jsx';
@@ -21,6 +22,7 @@ export const QuotationDetail = ({ isNew = false }) => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { toast, confirm } = useToast();
+  const { initiatePayment: initiateRazorpayPayment, isProcessing: isPayingWithRazorpay } = useRazorpay();
   const isCustomer = user?.role === 'customer';
   const isReviewer = ['admin', 'sales_manager', 'finance'].includes(user?.role);
   const [isActingApproval, setIsActingApproval] = React.useState(false);
@@ -351,27 +353,19 @@ export const QuotationDetail = ({ isNew = false }) => {
                     cursor: 'pointer',
                     boxShadow: '0 4px 14px rgba(16, 185, 129, 0.4)',
                   }}
-                  onClick={async () => {
-                    const confirmed = await confirm({
-                      title: 'Confirm Payment',
-                      message: `Confirm payment of ${formatCurrency(calculatedTotals.grandTotal)} for quotation ${quotationNumber}?`,
-                      confirmText: 'Pay Now',
-                      type: 'info',
-                    });
-                    if (confirmed) {
-                      try {
-                        await quotationApi.payQuotation(id);
-                        toast.success('Payment recorded successfully!');
+                  disabled={isPayingWithRazorpay}
+                  onClick={() => {
+                    initiateRazorpayPayment({
+                      quotationId: id,
+                      onSuccess: () => {
                         setTimeout(() => {
                           window.location.reload();
                         }, 800);
-                      } catch (err) {
-                        toast.error(err.customMessage || 'Payment failed');
-                      }
-                    }
+                      },
+                    });
                   }}
                 >
-                  💳 Pay Now ({formatCurrency(calculatedTotals.grandTotal)})
+                  {isPayingWithRazorpay ? '⌛ Processing Payment...' : `💳 Pay Now (${formatCurrency(calculatedTotals.grandTotal)})`}
                 </button>
               ) : null}
             </div>
