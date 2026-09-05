@@ -33,7 +33,7 @@ const NAV_ITEMS = [
   {
     name: 'Approvals',
     path: '/approvals',
-    badge: '3', // Dynamic pending approval badge
+    
     icon: (
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="nav-icon">
         <path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z" />
@@ -101,6 +101,18 @@ const NAV_ITEMS = [
         <path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z" />
         <path d="m3.3 7 8.7 5 8.7-5" />
         <path d="M12 22V12" />
+      </svg>
+    ),
+  },
+  {
+    name: 'Discount Rules',
+    path: '/discount-rules',
+    icon: (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="nav-icon">
+        <circle cx="12" cy="12" r="10" />
+        <path d="m15 9-6 6" />
+        <path d="M9 9h.01" />
+        <path d="M15 15h.01" />
       </svg>
     ),
   },

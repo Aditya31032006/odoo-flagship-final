@@ -1,0 +1,79 @@
+@use '../../../shared/styles/variables' as vars;
+@use '../../../shared/styles/mixins' as mixins;
+
+// Auth-specific mixin for eliminating scrollbars cleanly
+@mixin no-scrollbar {
+  scrollbar-width: none; // Firefox
+  -ms-overflow-style: none; // IE/Edge
+  &::-webkit-scrollbar {
+    display: none; // Chrome/Safari/Brave
+    width: 0;
+    height: 0;
+  }
+}
+
+// Glassmorphic card surface with glowing ambient border
+@mixin auth-glass-card($max-width: 460px) {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-width: $max-width;
+  background: rgba(15, 23, 42, 0.88);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: vars.$border-radius-lg;
+  box-shadow: 0 16px 36px -10px rgba(0, 0, 0, 0.65), 0 0 0 1px rgba(255, 255, 255, 0.06);
+  padding: 1.5rem 1.75rem;
+  color: #ffffff;
+  box-sizing: border-box;
+}
+
+// Ambient decorative background glowing orb
+@mixin ambient-orb($size, $top: null, $bottom: null, $left: null, $right: null, $color: rgba(37, 99, 235, 0.18)) {
+  content: '';
+  position: absolute;
+  top: $top;
+  bottom: $bottom;
+  left: $left;
+  right: $right;
+  width: $size;
+  height: $size;
+  border-radius: vars.$border-radius-full;
+  background: $color;
+  filter: blur(90px);
+  pointer-events: none;
+  z-index: 0;
+}
+
+// Gradient Primary Action Button
+@mixin auth-gradient-btn($height: 40px) {
+  @include mixins.flex-center;
+  gap: 0.5rem;
+  width: 100%;
+  height: $height;
+  font-size: 0.825rem;
+  font-weight: vars.$font-weight-semibold;
+  color: #ffffff;
+  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: vars.$border-radius-md;
+  cursor: pointer;
+  box-shadow: 0 3px 10px rgba(37, 99, 235, 0.3);
+  transition: all vars.$transition-fast;
+
+  &:hover:not(:disabled) {
+    background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+    transform: translateY(-1px);
+    box-shadow: 0 5px 14px rgba(37, 99, 235, 0.4);
+  }
+
+  &:active:not(:disabled) {
+    transform: translateY(0);
+  }
+
+  &:disabled {
+    opacity: 0.65;
+    cursor: not-allowed;
+  }
+}

@@ -1,7 +1,8 @@
 @use '../../../shared/styles/variables' as vars;
 @use '../../../shared/styles/mixins' as mixins;
+@use './auth-mixins' as auth-mix;
 
-// DealFlow360 Enterprise Authentication Styles
+// DealFlow360 Enterprise Authentication System
 .df-auth-container {
   min-height: 100vh;
   height: 100vh;
@@ -10,67 +11,37 @@
   background: radial-gradient(circle at 10% 20%, rgba(37, 99, 235, 0.12) 0%, transparent 40%),
               radial-gradient(circle at 90% 80%, rgba(6, 182, 212, 0.1) 0%, transparent 40%),
               linear-gradient(135deg, #0b1120 0%, #0f172a 50%, #1e293b 100%);
-  padding: 0.75rem 1rem;
+  padding: 1rem;
   position: relative;
   overflow-x: hidden;
   overflow-y: auto;
   font-family: vars.$font-family-base;
   box-sizing: border-box;
+  @include auth-mix.no-scrollbar;
 
-  // Hide scrollbars completely across all browsers
-  scrollbar-width: none; // Firefox
-  -ms-overflow-style: none; // IE/Edge
-  &::-webkit-scrollbar {
-    display: none; // Chrome/Safari/Brave
-    width: 0;
-    height: 0;
-  }
-
-  // Background ambient glowing spheres
-  &::before, &::after {
-    content: '';
-    position: absolute;
-    border-radius: vars.$border-radius-full;
-    filter: blur(90px);
-    pointer-events: none;
-    z-index: 0;
-  }
-
+  // Background ambient glowing spheres via mixin
   &::before {
-    top: -10%;
-    left: 20%;
-    width: 340px;
-    height: 340px;
-    background: rgba(37, 99, 235, 0.18);
+    @include auth-mix.ambient-orb(340px, -10%, null, 20%, null, rgba(37, 99, 235, 0.18));
   }
 
   &::after {
-    bottom: -10%;
-    right: 20%;
-    width: 360px;
-    height: 360px;
-    background: rgba(14, 165, 233, 0.15);
+    @include auth-mix.ambient-orb(360px, null, -10%, null, 20%, rgba(14, 165, 233, 0.15));
   }
 }
 
 .df-auth-card {
-  position: relative;
-  z-index: 1;
-  width: 100%;
-  max-width: 460px;
-  background: rgba(15, 23, 42, 0.88);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: vars.$border-radius-lg;
-  box-shadow: 0 16px 36px -10px rgba(0, 0, 0, 0.65), 0 0 0 1px rgba(255, 255, 255, 0.06);
-  padding: 1.5rem 1.75rem;
-  color: #ffffff;
+  @include auth-mix.auth-glass-card(460px);
   animation: authCardFadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-  box-sizing: border-box;
 
   &--wide {
-    max-width: 600px;
+    max-width: 580px;
+  }
+
+  // Safety rule so SVGs never blow up if a class is missed
+  svg {
+    display: inline-block;
+    vertical-align: middle;
+    flex-shrink: 0;
   }
 
   // Header Section
@@ -91,38 +62,43 @@
       font-weight: vars.$font-weight-semibold;
       color: #93c5fd;
 
-      &--danger {
-        background: rgba(239, 68, 68, 0.15);
-        border-color: rgba(239, 68, 68, 0.3);
-        color: #fca5a5;
-      }
-
-      &--success {
-        background: rgba(16, 185, 129, 0.15);
-        border-color: rgba(16, 185, 129, 0.3);
-        color: #86efac;
+      svg {
+        width: 14px;
+        height: 14px;
+        max-width: 14px;
+        max-height: 14px;
+        color: #38bdf8;
+        flex-shrink: 0;
       }
 
       &--google {
         background: rgba(66, 133, 244, 0.15);
         border-color: rgba(66, 133, 244, 0.3);
         color: #93c5fd;
+      }
+
+      &--recovery {
+        background: rgba(239, 68, 68, 0.15);
+        border-color: rgba(239, 68, 68, 0.3);
+        color: #fca5a5;
 
         svg {
-          width: 14px;
-          height: 14px;
+          color: #ef4444;
         }
       }
 
-      svg {
-        width: 13px;
-        height: 13px;
-        color: #38bdf8;
+      &--success {
+        background: rgba(16, 185, 129, 0.15);
+        border-color: rgba(16, 185, 129, 0.3);
+        color: #86efac;
+
+        svg {
+          color: #10b981;
+        }
       }
     }
 
     h1 {
-
       font-size: 1.45rem;
       font-weight: vars.$font-weight-bold;
       color: #ffffff;
@@ -136,6 +112,11 @@
       color: #94a3b8;
       line-height: 1.35;
       margin: 0;
+
+      strong {
+        color: #e2e8f0;
+        font-weight: vars.$font-weight-semibold;
+      }
     }
   }
 
@@ -179,6 +160,8 @@
         svg {
           width: 15px;
           height: 15px;
+          max-width: 15px;
+          max-height: 15px;
           flex-shrink: 0;
         }
 
@@ -199,7 +182,7 @@
     }
   }
 
-  // Sub-section container (e.g., Company details / Parent Company selection)
+  // Sub-section container
   &__sub-section {
     padding: 0.75rem 0.875rem;
     background: rgba(255, 255, 255, 0.03);
@@ -237,61 +220,89 @@
     }
 
     .form-group {
-      margin-bottom: 0.875rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
 
       &--spaced {
-        margin-top: 0.5rem;
+        margin-top: 0.25rem;
       }
 
-      .df-auth-label-row {
+      .form-label-row {
         display: flex;
         justify-content: space-between;
         align-items: center;
       }
 
-      .df-auth-link-btn {
-        background: none;
-        border: none;
+      .forgot-password-link {
         color: #38bdf8;
         font-size: 0.775rem;
         font-weight: 600;
-        cursor: pointer;
-        padding: 0;
+        text-decoration: none;
+        transition: color vars.$transition-fast;
 
         &:hover {
+          color: #7dd3fc;
           text-decoration: underline;
         }
       }
 
       label {
-        display: block;
-        font-size: 0.75rem;
+        font-size: 0.775rem;
         font-weight: vars.$font-weight-medium;
-        color: #cbd5e1;
-        margin-bottom: 0.35rem;
+        color: #e2e8f0;
       }
 
       .input-wrapper {
         position: relative;
+        display: flex;
+        align-items: center;
         width: 100%;
+
+        .input-icon {
+          position: absolute;
+          left: 0.75rem;
+          width: 16px;
+          height: 16px;
+          max-width: 16px;
+          max-height: 16px;
+          color: #64748b;
+          pointer-events: none;
+          transition: color vars.$transition-fast;
+          z-index: 2;
+          flex-shrink: 0;
+        }
 
         input, select, textarea {
           width: 100%;
-          background: rgba(30, 41, 59, 0.7);
-          border: 1px solid rgba(255, 255, 255, 0.12);
-          padding: 0.6rem 0.875rem 0.6rem 2.25rem;
-          border-radius: vars.$border-radius-md;
-          color: #ffffff;
-          font-size: 0.875rem;
+          height: 38px;
+          padding: 0 0.75rem 0 2.25rem;
+          font-size: 0.8125rem;
           font-family: inherit;
+          color: #ffffff;
+          background: rgba(15, 23, 42, 0.65);
+          border: 1px solid rgba(255, 255, 255, 0.12);
+          border-radius: vars.$border-radius-md;
           outline: none;
           transition: all vars.$transition-fast;
           box-sizing: border-box;
 
-          &[readonly], &.is-readonly {
+          &.input-uppercase {
+            text-transform: uppercase;
+          }
+
+          &.input-readonly, &[readonly] {
             background: rgba(255, 255, 255, 0.05);
             color: #93c5fd;
             cursor: default;
+          }
+
+          &.input-otp {
+            letter-spacing: 6px;
+            text-align: center;
+            font-weight: 700;
+            font-size: 1.15rem;
+            padding: 0 0.75rem;
           }
 
           &::placeholder {
@@ -324,6 +335,7 @@
           cursor: pointer;
           display: flex;
           align-items: center;
+          justify-content: center;
           padding: 0;
           z-index: 2;
 
@@ -334,6 +346,9 @@
           svg {
             width: 15px;
             height: 15px;
+            max-width: 15px;
+            max-height: 15px;
+            flex-shrink: 0;
           }
         }
       }
@@ -342,6 +357,15 @@
         font-size: 0.7rem;
         color: #94a3b8;
         margin-top: 0.15rem;
+      }
+
+      .field-error {
+        font-size: 0.725rem;
+        color: #f87171;
+        margin-top: 0.2rem;
+        display: flex;
+        align-items: center;
+        gap: 0.25rem;
       }
     }
   }
@@ -357,16 +381,21 @@
     margin-bottom: 0.75rem;
     animation: alertShake 0.3s ease-in-out;
 
+    svg {
+      width: 15px;
+      height: 15px;
+      max-width: 15px;
+      max-height: 15px;
+      flex-shrink: 0;
+    }
+
     &--error {
       background: rgba(239, 68, 68, 0.12);
       border: 1px solid rgba(239, 68, 68, 0.3);
       color: #fca5a5;
 
       svg {
-        width: 15px;
-        height: 15px;
         color: #ef4444;
-        flex-shrink: 0;
       }
     }
 
@@ -376,45 +405,14 @@
       color: #86efac;
 
       svg {
-        width: 15px;
-        height: 15px;
         color: #10b981;
-        flex-shrink: 0;
       }
     }
   }
 
-  // Submit Button
+  // Submit Button via mixin
   &__submit-btn {
-    @include mixins.flex-center;
-    gap: 0.5rem;
-    width: 100%;
-    height: 40px;
-    margin-top: 0.25rem;
-    font-size: 0.825rem;
-    font-weight: vars.$font-weight-semibold;
-    color: #ffffff;
-    background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
-    border: 1px solid rgba(255, 255, 255, 0.15);
-    border-radius: vars.$border-radius-md;
-    cursor: pointer;
-    box-shadow: 0 3px 10px rgba(37, 99, 235, 0.3);
-    transition: all vars.$transition-fast;
-
-    &:hover:not(:disabled) {
-      background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
-      transform: translateY(-1px);
-      box-shadow: 0 5px 14px rgba(37, 99, 235, 0.4);
-    }
-
-    &:active:not(:disabled) {
-      transform: translateY(0);
-    }
-
-    &:disabled {
-      opacity: 0.65;
-      cursor: not-allowed;
-    }
+    @include auth-mix.auth-gradient-btn(40px);
 
     .spinner {
       width: 15px;
@@ -467,6 +465,8 @@
     svg {
       width: 16px;
       height: 16px;
+      max-width: 16px;
+      max-height: 16px;
       flex-shrink: 0;
     }
 
@@ -483,6 +483,11 @@
     margin-top: 0.875rem;
     font-size: 0.8125rem;
     color: #94a3b8;
+
+    .footer-dot {
+      margin: 0 0.5rem;
+      color: #64748b;
+    }
 
     a {
       color: #38bdf8;
@@ -536,34 +541,3 @@
 @keyframes spin {
   to { transform: rotate(360deg); }
 }
-
-.df-auth-loading {
-  min-height: 100vh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: #0b0f19;
-  color: #38bdf8;
-  font-family: vars.$font-family-base;
-
-  &__content {
-    text-align: center;
-  }
-
-  &__spinner {
-    width: 36px;
-    height: 36px;
-    border: 3px solid rgba(56, 189, 248, 0.2);
-    border-top-color: #38bdf8;
-    border-radius: 50%;
-    animation: spin 0.8s linear infinite;
-    margin: 0 auto 1rem;
-  }
-
-  &__text {
-    color: #94a3b8;
-    font-size: 0.875rem;
-  }
-}
-
-

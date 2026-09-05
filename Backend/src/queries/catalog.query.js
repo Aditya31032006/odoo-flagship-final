@@ -149,6 +149,7 @@ export const GET_ALL_PRODUCTS_WITH_VARIANTS_COUNT = `
     ) AS sample_variant_name
   FROM products p
   JOIN product_categories pc ON p.category_id = pc.id
+  WHERE p.is_active = TRUE
   ORDER BY p.name ASC
 `;
 

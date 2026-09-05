@@ -1,57 +1,62 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams, Link } from 'react-router';
+import { useForm } from 'react-hook-form';
 import useAuth from '../hook/useAuth.js';
 import '../styles/auth.scss';
 
 export default function Onboarding() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { register, getCompanies, loading, error, isAuthenticated, resetError } = useAuth();
+  const { register: registerAuth, getCompanies, loading, error, isAuthenticated, resetError } = useAuth();
 
   const googleName = searchParams.get('name') || '';
   const googleEmail = searchParams.get('email') || '';
 
-  // 2 Registration Modes: 'company' | 'employee'
-  const [registerType, setRegisterType] = useState('company');
   const [companiesList, setCompaniesList] = useState([]);
   const [localError, setLocalError] = useState('');
-
-  const [formData, setFormData] = useState({
-    name: googleName,
-    email: googleEmail,
-    password: '',
-    mobile: '',
-    // Company Mode fields:
-    company_name: '',
-    gst_number: '',
-    billing_address: '',
-    // Employee Mode fields:
-    company_id: '',
-  });
-
   const [showPassword, setShowPassword] = useState(false);
 
-  useEffect(() => {
-    if (googleName || googleEmail) {
-      setFormData((prev) => ({
-        ...prev,
-        name: googleName || prev.name,
-        email: googleEmail || prev.email,
-      }));
+  // React Hook Form
+  const {
+    register,
+    handleSubmit,
+    watch,
+    setValue,
+    getValues,
+    clearErrors,
+    formState: { errors }
+  } = useForm({
+    defaultValues: {
+      register_type: 'company',
+      name: googleName,
+      email: googleEmail,
+      password: '',
+      mobile: '',
+      company_name: '',
+      gst_number: '',
+      billing_address: '',
+      company_id: '',
     }
-  }, [googleName, googleEmail]);
+  });
+
+  const registerType = watch('register_type');
+
+  useEffect(() => {
+    if (googleName) setValue('name', googleName);
+    if (googleEmail) setValue('email', googleEmail);
+  }, [googleName, googleEmail, setValue]);
 
   // Load companies for employee selection
   useEffect(() => {
     async function loadCompanies() {
       const list = await getCompanies();
       setCompaniesList(list);
-      if (list.length > 0 && !formData.company_id) {
-        setFormData((prev) => ({ ...prev, company_id: list[0].id.toString() }));
+      if (list.length > 0 && !getValues('company_id')) {
+        setValue('company_id', list[0].id.toString());
       }
     }
     loadCompanies();
-  }, [getCompanies]);
+  }, [getCompanies, getValues, setValue]);
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -66,59 +71,51 @@ export default function Onboarding() {
     };
   }, [resetError, registerType]);
 
-  const handleChange = (e) => {
-    if (error) resetError();
-    if (localError) setLocalError('');
-    setFormData((prev) => ({
-      ...prev,
-      [e.target.name]: e.target.value,
-    }));
-  };
-
   const handleTypeSwitch = (type) => {
-    setRegisterType(type);
+    setValue('register_type', type);
+    clearErrors();
     if (error) resetError();
     if (localError) setLocalError('');
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (!formData.name || !formData.email) return;
+  const onSubmit = async (data) => {
+    if (error) resetError();
+    if (localError) setLocalError('');
 
     // Use user-provided password or auto-generate a secure random one for OAuth account
-    const securePassword = formData.password || `GoogleAuth@${Math.random().toString(36).slice(-8)}!`;
+    const securePassword = data.password || `GoogleAuth@${Math.random().toString(36).slice(-8)}!`;
 
     let payload = {
-      register_type: registerType,
-      name: formData.name,
-      email: formData.email,
+      register_type: data.register_type,
+      name: data.name || googleName,
+      email: data.email || googleEmail,
       password: securePassword,
-      mobile: formData.mobile || undefined,
+      mobile: data.mobile || undefined,
     };
 
-    if (registerType === 'company') {
-      if (!formData.company_name.trim()) {
+    if (data.register_type === 'company') {
+      if (!data.company_name?.trim()) {
         setLocalError('Company Name is required.');
         return;
       }
       payload = {
         ...payload,
-        company_name: formData.company_name,
-        gst_number: formData.gst_number || undefined,
-        billing_address: formData.billing_address || undefined,
+        company_name: data.company_name,
+        gst_number: data.gst_number || undefined,
+        billing_address: data.billing_address || undefined,
       };
     } else {
-      if (!formData.company_id) {
+      if (!data.company_id) {
         setLocalError('Company ID is mandatory.');
         return;
       }
       payload = {
         ...payload,
-        company_id: Number(formData.company_id),
+        company_id: Number(data.company_id),
       };
     }
 
-    const result = await register(payload);
+    const result = await registerAuth(payload);
     if (result.success) {
       navigate('/', { replace: true });
     }
@@ -202,7 +199,7 @@ export default function Onboarding() {
         )}
 
         {/* Form */}
-        <form className="df-auth-card__form" onSubmit={handleSubmit}>
+        <form className="df-auth-card__form" onSubmit={handleSubmit(onSubmit)} noValidate>
           {/* OPTION 1: Company Fields */}
           {registerType === 'company' && (
             <div className="df-auth-card__sub-section">
@@ -216,17 +213,24 @@ export default function Onboarding() {
                     <input
                       id="company_name"
                       type="text"
-                      name="company_name"
-                      required
                       placeholder="Acme Industrial Corp."
-                      value={formData.company_name}
-                      onChange={handleChange}
+                      {...register('company_name', {
+                        validate: (value) => {
+                          if (registerType === 'company' && (!value || !value.trim())) {
+                            return 'Company name is required';
+                          }
+                          return true;
+                        }
+                      })}
                     />
                     <svg className="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                       <rect x="2" y="7" width="20" height="14" rx="2" ry="2" />
                       <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" />
                     </svg>
                   </div>
+                  {errors.company_name && (
+                    <span className="field-error">{errors.company_name.message}</span>
+                  )}
                 </div>
 
                 <div className="form-group">
@@ -235,16 +239,29 @@ export default function Onboarding() {
                     <input
                       id="gst_number"
                       type="text"
-                      name="gst_number"
+                      maxLength={15}
                       placeholder="27AABCU9603R1ZM"
-                      value={formData.gst_number}
-                      onChange={handleChange}
+                      className="input-uppercase"
+                      {...register('gst_number', {
+                        validate: (value) => {
+                          if (!value || !value.trim()) return true;
+                          const formatted = value.trim().toUpperCase();
+                          const gstRegex = /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/;
+                          if (!gstRegex.test(formatted)) {
+                            return 'Invalid GST format (15 characters, e.g. 27AABCU9603R1ZM)';
+                          }
+                          return true;
+                        }
+                      })}
                     />
                     <svg className="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                       <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
                       <polyline points="14 2 14 8 20 8" />
                     </svg>
                   </div>
+                  {errors.gst_number && (
+                    <span className="field-error">{errors.gst_number.message}</span>
+                  )}
                 </div>
               </div>
 
@@ -254,10 +271,8 @@ export default function Onboarding() {
                   <input
                     id="billing_address"
                     type="text"
-                    name="billing_address"
                     placeholder="Floor 4, Cyber City, Bangalore"
-                    value={formData.billing_address}
-                    onChange={handleChange}
+                    {...register('billing_address')}
                   />
                   <svg className="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                     <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
@@ -280,10 +295,14 @@ export default function Onboarding() {
                   <div className="input-wrapper">
                     <select
                       id="company_id"
-                      name="company_id"
-                      required
-                      value={formData.company_id}
-                      onChange={handleChange}
+                      {...register('company_id', {
+                        validate: (value) => {
+                          if (registerType === 'employee' && !value) {
+                            return 'Company selection is required';
+                          }
+                          return true;
+                        }
+                      })}
                     >
                       {companiesList.map((comp) => (
                         <option key={comp.id} value={comp.id}>
@@ -301,17 +320,24 @@ export default function Onboarding() {
                     <input
                       id="company_id"
                       type="number"
-                      name="company_id"
-                      required
                       placeholder="Enter Company ID (e.g. 1)"
-                      value={formData.company_id}
-                      onChange={handleChange}
+                      {...register('company_id', {
+                        validate: (value) => {
+                          if (registerType === 'employee' && !value) {
+                            return 'Company ID is required';
+                          }
+                          return true;
+                        }
+                      })}
                     />
                     <svg className="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                       <rect x="2" y="7" width="20" height="14" rx="2" ry="2" />
                       <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" />
                     </svg>
                   </div>
+                )}
+                {errors.company_id && (
+                  <span className="field-error">{errors.company_id.message}</span>
                 )}
               </div>
             </div>
@@ -325,11 +351,9 @@ export default function Onboarding() {
                 <input
                   id="name"
                   type="text"
-                  name="name"
-                  required
                   readOnly
-                  value={formData.name}
-                  onChange={handleChange}
+                  className="input-readonly"
+                  {...register('name')}
                 />
                 <svg className="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
@@ -344,11 +368,9 @@ export default function Onboarding() {
                 <input
                   id="email"
                   type="email"
-                  name="email"
-                  required
                   readOnly
-                  value={formData.email}
-                  onChange={handleChange}
+                  className="input-readonly"
+                  {...register('email')}
                 />
                 <svg className="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
@@ -360,20 +382,34 @@ export default function Onboarding() {
 
           <div className="form-row">
             <div className="form-group">
-              <label htmlFor="mobile">Mobile Number (Optional)</label>
+              <label htmlFor="mobile">Mobile Number (10 Digits, Optional)</label>
               <div className="input-wrapper">
                 <input
                   id="mobile"
                   type="tel"
-                  name="mobile"
-                  placeholder="+91 98765 43210"
-                  value={formData.mobile}
-                  onChange={handleChange}
+                  maxLength={10}
+                  placeholder="9876543210"
+                  {...register('mobile', {
+                    validate: (value) => {
+                      if (!value || !value.trim()) return true;
+                      const digits = value.replace(/\D/g, '');
+                      if (digits.length !== 10) {
+                        return 'Mobile number must not exceed or be less than 10 digits';
+                      }
+                      if (!/^[6-9]\d{9}$/.test(digits)) {
+                        return 'Mobile number must start with 6, 7, 8, or 9';
+                      }
+                      return true;
+                    }
+                  })}
                 />
                 <svg className="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
                 </svg>
               </div>
+              {errors.mobile && (
+                <span className="field-error">{errors.mobile.message}</span>
+              )}
             </div>
 
             <div className="form-group">
@@ -382,10 +418,8 @@ export default function Onboarding() {
                 <input
                   id="password"
                   type={showPassword ? 'text' : 'password'}
-                  name="password"
                   placeholder="Optional for password sign in"
-                  value={formData.password}
-                  onChange={handleChange}
+                  {...register('password')}
                 />
                 <button
                   type="button"
@@ -428,3 +462,4 @@ export default function Onboarding() {
     </div>
   );
 }
+

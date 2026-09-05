@@ -226,7 +226,7 @@ CREATE TABLE customer_users (
 
     FOREIGN KEY (user_id)
         REFERENCES users(id)
-        ON DELETE RESTRICT
+        ON DELETE CASCADE
 );
 
 
@@ -282,7 +282,7 @@ CREATE TABLE products (
 
     FOREIGN KEY (category_id)
         REFERENCES product_categories(id)
-        ON DELETE RESTRICT,
+        ON DELETE CASCADE,
 
     CHECK (base_price >= 0),
 
@@ -381,7 +381,7 @@ CREATE TABLE product_variant_value_map (
 
     FOREIGN KEY (variant_value_id)
         REFERENCES product_variant_values(id)
-        ON DELETE RESTRICT
+        ON DELETE CASCADE
 );
 
 
@@ -422,11 +422,11 @@ CREATE TABLE customer_tier_assignments (
 
     FOREIGN KEY (customer_id)
         REFERENCES customers(id)
-        ON DELETE RESTRICT,
+        ON DELETE CASCADE,
 
     FOREIGN KEY (tier_id)
         REFERENCES customer_tiers(id)
-        ON DELETE RESTRICT,
+        ON DELETE CASCADE,
 
     FOREIGN KEY (assigned_by_user_id)
         REFERENCES users(id)
@@ -503,7 +503,7 @@ CREATE TABLE price_list_items (
 
     FOREIGN KEY (product_variant_id)
         REFERENCES product_variants(id)
-        ON DELETE RESTRICT,
+        ON DELETE CASCADE,
 
     UNIQUE (price_list_id, product_variant_id),
 
@@ -586,11 +586,11 @@ CREATE TABLE quotations (
 
     FOREIGN KEY (customer_id)
         REFERENCES customers(id)
-        ON DELETE RESTRICT,
+        ON DELETE CASCADE,
 
     FOREIGN KEY (sales_rep_id)
         REFERENCES users(id)
-        ON DELETE RESTRICT,
+        ON DELETE CASCADE,
 
     FOREIGN KEY (tier_id)
         REFERENCES customer_tiers(id)
@@ -660,7 +660,7 @@ CREATE TABLE quotation_items (
 
     FOREIGN KEY (product_variant_id)
         REFERENCES product_variants(id)
-        ON DELETE RESTRICT,
+        ON DELETE CASCADE,
 
     UNIQUE (quotation_id, line_number),
 
@@ -712,7 +712,7 @@ CREATE TABLE approval_requests (
 
     FOREIGN KEY (requested_by_user_id)
         REFERENCES users(id)
-        ON DELETE RESTRICT
+        ON DELETE CASCADE
 );
 
 
@@ -775,7 +775,7 @@ CREATE TABLE quotation_audit_logs (
 
     FOREIGN KEY (user_id)
         REFERENCES users(id)
-        ON DELETE RESTRICT
+        ON DELETE CASCADE
 );
 
 
@@ -806,7 +806,7 @@ CREATE TABLE upsell_rules (
 
     FOREIGN KEY (suggested_product_id)
         REFERENCES products(id)
-        ON DELETE RESTRICT,
+        ON DELETE CASCADE,
 
     CHECK (source_product_id <> suggested_product_id),
 
@@ -848,11 +848,11 @@ CREATE TABLE quotation_upsell_suggestions (
 
     FOREIGN KEY (source_quotation_item_id)
         REFERENCES quotation_items(id)
-        ON DELETE SET NULL,
+        ON DELETE CASCADE,
 
     FOREIGN KEY (suggested_product_id)
         REFERENCES products(id)
-        ON DELETE RESTRICT,
+        ON DELETE CASCADE,
 
     FOREIGN KEY (rule_id)
         REFERENCES upsell_rules(id)
@@ -914,7 +914,7 @@ CREATE TABLE warehouse_stock (
 
     FOREIGN KEY (product_variant_id)
         REFERENCES product_variants(id)
-        ON DELETE RESTRICT,
+        ON DELETE CASCADE,
 
     UNIQUE (warehouse_id, product_variant_id),
 
@@ -954,11 +954,11 @@ CREATE TABLE orders (
 
     FOREIGN KEY (quotation_id)
         REFERENCES quotations(id)
-        ON DELETE RESTRICT,
+        ON DELETE CASCADE,
 
     FOREIGN KEY (customer_id)
         REFERENCES customers(id)
-        ON DELETE RESTRICT
+        ON DELETE CASCADE
 );
 
 
@@ -1005,7 +1005,7 @@ CREATE TABLE order_items (
 
     FOREIGN KEY (product_variant_id)
         REFERENCES product_variants(id)
-        ON DELETE RESTRICT,
+        ON DELETE CASCADE,
 
     CHECK (quantity > 0),
 
@@ -1054,7 +1054,7 @@ CREATE TABLE fulfillment_splits (
 
     FOREIGN KEY (warehouse_id)
         REFERENCES warehouses(id)
-        ON DELETE RESTRICT,
+        ON DELETE CASCADE,
 
     CHECK (quantity > 0),
 
@@ -1097,7 +1097,41 @@ CREATE TABLE backorders (
 
 
 -- ============================================================
--- 30. SUBSCRIPTIONS
+-- 30. SUBSCRIPTION PLANS
+-- Defined before subscriptions for proper dependency ordering
+-- ============================================================
+
+CREATE TABLE subscription_plans (
+    id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+
+    product_id BIGINT NOT NULL,
+
+    name VARCHAR(255) NOT NULL,
+
+    billing_cycle subscription_cycle_enum NOT NULL,
+
+    price NUMERIC(15,2) NOT NULL,
+
+    allow_proration BOOLEAN NOT NULL DEFAULT FALSE,
+
+    allow_cancellation BOOLEAN NOT NULL DEFAULT TRUE,
+
+    allow_partial_refund BOOLEAN NOT NULL DEFAULT FALSE,
+
+    is_active BOOLEAN NOT NULL DEFAULT TRUE,
+
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    FOREIGN KEY (product_id)
+        REFERENCES products(id)
+        ON DELETE CASCADE,
+
+    CHECK (price >= 0)
+);
+
+
+-- ============================================================
+-- 31. SUBSCRIPTIONS
 -- ============================================================
 
 CREATE TABLE subscriptions (
@@ -1127,15 +1161,15 @@ CREATE TABLE subscriptions (
 
     FOREIGN KEY (order_item_id)
         REFERENCES order_items(id)
-        ON DELETE RESTRICT,
+        ON DELETE CASCADE,
 
     FOREIGN KEY (customer_id)
         REFERENCES customers(id)
-        ON DELETE RESTRICT,
+        ON DELETE CASCADE,
 
     FOREIGN KEY (subscription_plan_id)
         REFERENCES subscription_plans(id)
-        ON DELETE RESTRICT,
+        ON DELETE CASCADE,
 
     CHECK (quantity > 0),
 
@@ -1145,39 +1179,6 @@ CREATE TABLE subscriptions (
         end_date IS NULL
         OR end_date >= start_date
     )
-);
-
-
--- ============================================================
--- 31. SUBSCRIPTION PLANS
--- ============================================================
-
-CREATE TABLE subscription_plans (
-    id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-
-    product_id BIGINT NOT NULL,
-
-    name VARCHAR(255) NOT NULL,
-
-    billing_cycle subscription_cycle_enum NOT NULL,
-
-    price NUMERIC(15,2) NOT NULL,
-
-    allow_proration BOOLEAN NOT NULL DEFAULT FALSE,
-
-    allow_cancellation BOOLEAN NOT NULL DEFAULT TRUE,
-
-    allow_partial_refund BOOLEAN NOT NULL DEFAULT FALSE,
-
-    is_active BOOLEAN NOT NULL DEFAULT TRUE,
-
-    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-
-    FOREIGN KEY (product_id)
-        REFERENCES products(id)
-        ON DELETE RESTRICT,
-
-    CHECK (price >= 0)
 );
 
 
@@ -1247,7 +1248,7 @@ CREATE TABLE quotation_negotiations (
 
     FOREIGN KEY (created_by_user_id)
         REFERENCES users(id)
-        ON DELETE RESTRICT,
+        ON DELETE CASCADE,
 
     CHECK (
         counter_discount_percentage IS NULL
@@ -1286,7 +1287,7 @@ CREATE TABLE negotiation_messages (
 
     FOREIGN KEY (sender_user_id)
         REFERENCES users(id)
-        ON DELETE RESTRICT
+        ON DELETE CASCADE
 );
 
 
@@ -1382,11 +1383,11 @@ CREATE TABLE invoices (
 
     FOREIGN KEY (order_id)
         REFERENCES orders(id)
-        ON DELETE RESTRICT,
+        ON DELETE CASCADE,
 
     FOREIGN KEY (customer_id)
         REFERENCES customers(id)
-        ON DELETE RESTRICT,
+        ON DELETE CASCADE,
 
     CHECK (subtotal >= 0),
 
@@ -1478,11 +1479,11 @@ CREATE TABLE payments (
 
     FOREIGN KEY (invoice_id)
         REFERENCES invoices(id)
-        ON DELETE RESTRICT,
+        ON DELETE CASCADE,
 
     FOREIGN KEY (customer_id)
         REFERENCES customers(id)
-        ON DELETE RESTRICT,
+        ON DELETE CASCADE,
 
     CHECK (amount > 0)
 );

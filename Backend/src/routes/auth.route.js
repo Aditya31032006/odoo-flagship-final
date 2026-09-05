@@ -3,7 +3,8 @@ import {
     registerValidation,
     loginValidation,
     forgotPasswordValidation,
-    resetPasswordValidation
+    resetPasswordValidation,
+    completeOnboardingValidation
 } from "../validation/auth.validation.js";
 import passport from 'passport';
 import {
@@ -27,7 +28,7 @@ authRouter.post('/login', loginValidation, loginController);
 authRouter.get('/logout', authMiddleware, logoutController);
 authRouter.get('/me', authMiddleware, getMeController);
 authRouter.get('/companies', getCompaniesController);
-authRouter.post('/complete-onboarding', authMiddleware, completeOnboardingController);
+authRouter.post('/complete-onboarding', authMiddleware, completeOnboardingValidation, completeOnboardingController);
 authRouter.post('/forgot-password', forgotPasswordValidation, forgotPasswordController);
 authRouter.post('/reset-password', resetPasswordValidation, resetPasswordController);
 

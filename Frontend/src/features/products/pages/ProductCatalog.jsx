@@ -1,4 +1,3 @@
-import React from 'react';
 import { Link, useNavigate } from 'react-router';
 import useProducts from '../hook/useProducts.js';
 import '../styles/products.scss';
@@ -32,13 +31,12 @@ export const ProductCatalog = () => {
              New Product
           </Link>
 
-          <button
-            type="button"
+          <Link
+            to="/discount-rules"
             className="df-products__btn-secondary"
-            onClick={() => alert('Price list management panel')}
           >
-            Manage Price fields
-          </button>
+            Discount Tiers & Rules
+          </Link>
         </div>
 
         {/* 3 Summary Cards matching Wireframe #16 */}
