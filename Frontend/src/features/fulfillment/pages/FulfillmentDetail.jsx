@@ -32,7 +32,10 @@ export const FulfillmentDetail = () => {
   const warehouses = currentDetail?.warehouses || [];
 
   const mainItem = items[0] || {};
-  const totalRequired = mainItem.quantity || 24;
+  const totalRequired = items.reduce((sum, i) => sum + (parseInt(i.quantity, 10) || 0), 0) || (mainItem.quantity || 1);
+  const totalAllocated = splits.reduce((sum, s) => sum + (parseInt(s.qty_fulfilled, 10) || 0), 0);
+  const hasPendingBackorders = backorders.some((b) => b.status === 'pending') || totalAllocated < totalRequired;
+  const shortageQty = Math.max(0, totalRequired - totalAllocated);
 
   const onConfirmOverride = async (allocatedSplits, remainingNeeded) => {
     try {
@@ -215,12 +218,35 @@ export const FulfillmentDetail = () => {
           </table>
         </div>
 
-        {/* Restock Prompt Banner matching Wireframe #8 */}
-        <div className="df-fulfillment__banner df-fulfillment__banner--prompt">
-          <span>
-            "Consolidate Remaining Backorder" prompt appears automatically once East Depot restocks.
-          </span>
-        </div>
+        {/* Restock & Backorder Alert Banner */}
+        {hasPendingBackorders ? (
+          <div
+            className="df-fulfillment__banner df-fulfillment__banner--danger"
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.85rem',
+              background: 'rgba(239, 68, 68, 0.12)',
+              border: '1px solid rgba(239, 68, 68, 0.4)',
+              borderRadius: '8px',
+              padding: '0.9rem 1.25rem',
+              color: '#fca5a5',
+              fontSize: '0.9375rem',
+              fontWeight: 500,
+            }}
+          >
+            <span style={{ fontSize: '1.35rem', flexShrink: 0 }}>⚠️</span>
+            <div>
+              <strong style={{ color: '#ef4444' }}>Pending Backorder — Stock Required:</strong> Cannot accept split yet. {shortageQty > 0 ? `${shortageQty} unit(s) are missing` : 'Backorders are pending'} due to zero or insufficient warehouse stock. Please add stock to a warehouse in the Inventory section before proceeding.
+            </div>
+          </div>
+        ) : (
+          <div className="df-fulfillment__banner df-fulfillment__banner--prompt">
+            <span>
+              ✅ All {totalRequired} units successfully allocated from active warehouse inventory. Ready to accept suggested split.
+            </span>
+          </div>
+        )}
 
         {/* Backorders Table if any exist */}
         {backorders.length > 0 && (
@@ -278,7 +304,21 @@ export const FulfillmentDetail = () => {
             type="button"
             className="df-fulfillment__action-btn df-fulfillment__action-btn--accept"
             onClick={handleAcceptSplit}
-            disabled={isSavingSplit}
+            disabled={isSavingSplit || hasPendingBackorders}
+            style={
+              hasPendingBackorders
+                ? {
+                    opacity: 0.45,
+                    cursor: 'not-allowed',
+                    filter: 'grayscale(0.6)',
+                  }
+                : {}
+            }
+            title={
+              hasPendingBackorders
+                ? `Cannot accept split: ${shortageQty > 0 ? `${shortageQty} units missing.` : 'Pending backorder exists.'} Please add warehouse stock first.`
+                : 'Accept suggested warehouse splits and move order to shipment'
+            }
           >
             {isSavingSplit ? 'Processing...' : 'Accept Suggested Split'}
           </button>

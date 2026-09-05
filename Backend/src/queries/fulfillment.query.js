@@ -47,7 +47,7 @@ export const GET_ORDERS_AWAITING_FULFILLMENT = `
       'Main Warehouse'
     ) AS warehouses_display,
     (
-      SELECT oi.quantity FROM order_items oi WHERE oi.order_id = o.id LIMIT 1
+      SELECT COALESCE(SUM(oi.quantity), 0)::INT FROM order_items oi WHERE oi.order_id = o.id
     ) AS total_quantity,
     (
       SELECT oi.product_name_snapshot FROM order_items oi WHERE oi.order_id = o.id LIMIT 1

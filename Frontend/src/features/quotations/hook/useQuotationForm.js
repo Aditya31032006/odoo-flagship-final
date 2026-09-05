@@ -200,9 +200,10 @@ export const useQuotationForm = ({ quotationId = null } = {}) => {
 
   // Add a new product variant line
   const addProductLine = useCallback(
-    (variant) => {
+    (variant, quantity = 1) => {
       const customPrice = priceListMap[priceListId]?.[variant.product_variant_id];
       const initialPrice = customPrice != null ? customPrice : Number(variant.default_selling_price || variant.base_price);
+      const effectiveQty = Math.max(1, Number(quantity) || 1);
 
       const newLine = calculateLineItem(
         {
@@ -219,7 +220,7 @@ export const useQuotationForm = ({ quotationId = null } = {}) => {
           category_max_discount: variant.category_max_discount,
           unit_price: initialPrice,
           list_price: initialPrice,
-          quantity: 1,
+          quantity: effectiveQty,
           discount_percentage: 0,
           tax_percentage: Number(variant.tax_percentage || 0),
           is_upsell: Boolean(variant.is_upsell),

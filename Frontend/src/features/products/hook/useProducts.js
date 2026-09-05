@@ -218,6 +218,8 @@ export const useProducts = ({ id = null, isEditingExisting = false, autoFetch = 
         category_id: formData.category_id,
         base_price: Number(formData.base_price) || 0,
         unit: formData.is_subscription ? 'Recurring' : (formData.unit || 'Each'),
+        is_subscription: Boolean(formData.is_subscription),
+        recurring_cycle: (formData.recurring_cycle || 'monthly').toLowerCase(),
         description: formData.description || '',
         tax_percentage: Number(formData.tax_percentage) || 0,
         variants: variants.map((v) => {

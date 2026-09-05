@@ -135,6 +135,8 @@ export const createProductController = async (req, res, next) => {
       tax_percentage = 0,
       is_active = true,
       variants = [],
+      is_subscription,
+      recurring_cycle,
     } = req.body;
 
     if (!name || !name.trim()) {
@@ -151,6 +153,8 @@ export const createProductController = async (req, res, next) => {
       tax_percentage: Number(tax_percentage) || 0,
       is_active,
       variants,
+      is_subscription,
+      recurring_cycle,
     });
 
     return res.status(STATUS_CODES.CREATED).json({ success: true, data: newProduct });
@@ -171,6 +175,8 @@ export const updateProductController = async (req, res, next) => {
       tax_percentage = 0,
       is_active = true,
       variants = [],
+      is_subscription,
+      recurring_cycle,
     } = req.body;
 
     if (!name || !name.trim()) {
@@ -186,6 +192,8 @@ export const updateProductController = async (req, res, next) => {
       tax_percentage: Number(tax_percentage) || 0,
       is_active,
       variants,
+      is_subscription,
+      recurring_cycle,
     });
 
     if (!updated) {
