@@ -202,7 +202,7 @@ export default function Login() {
               </div>
 
               <div className="form-group">
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div className="df-auth-label-row">
                   <label htmlFor="password">Password</label>
                   <button
                     type="button"
@@ -210,20 +210,13 @@ export default function Login() {
                       setResetData((prev) => ({ ...prev, email: formData.email }));
                       setViewMode('forgot_password_step1');
                     }}
-                    style={{
-                      background: 'none',
-                      border: 'none',
-                      color: '#38bdf8',
-                      fontSize: '0.775rem',
-                      fontWeight: 600,
-                      cursor: 'pointer',
-                      padding: 0,
-                    }}
+                    className="df-auth-link-btn"
                   >
                     Forgot password?
                   </button>
                 </div>
                 <div className="input-wrapper">
+
                   <input
                     id="password"
                     type={showPassword ? 'text' : 'password'}
@@ -310,7 +303,7 @@ export default function Login() {
         {viewMode === 'forgot_password_step1' && (
           <>
             <div className="df-auth-card__header">
-              <div className="brand-badge" style={{ background: 'rgba(239, 68, 68, 0.15)', borderColor: 'rgba(239, 68, 68, 0.3)', color: '#fca5a5' }}>
+              <div className="brand-badge brand-badge--danger">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
                   <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
                   <path d="M7 11V7a5 5 0 0 1 10 0v4" />
@@ -359,19 +352,12 @@ export default function Login() {
               </button>
             </form>
 
-            <div className="df-auth-card__footer" style={{ marginTop: '1.25rem' }}>
+            <div className="df-auth-card__footer">
               Remember your password?
               <button
                 type="button"
                 onClick={() => setViewMode('login')}
-                style={{
-                  background: 'none',
-                  border: 'none',
-                  color: '#38bdf8',
-                  fontWeight: 600,
-                  cursor: 'pointer',
-                  marginLeft: '0.25rem',
-                }}
+                className="df-auth-link-btn"
               >
                 Back to Sign In
               </button>
@@ -383,7 +369,7 @@ export default function Login() {
         {viewMode === 'forgot_password_step2' && (
           <>
             <div className="df-auth-card__header">
-              <div className="brand-badge" style={{ background: 'rgba(16, 185, 129, 0.15)', borderColor: 'rgba(16, 185, 129, 0.3)', color: '#86efac' }}>
+              <div className="brand-badge brand-badge--success">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
                   <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
                 </svg>
@@ -410,7 +396,7 @@ export default function Login() {
                     required
                     maxLength={6}
                     placeholder="123456"
-                    style={{ letterSpacing: '4px', textAlign: 'center', fontWeight: 700, fontSize: '1.1rem' }}
+                    className="df-auth-otp-input"
                     value={resetData.otp}
                     onChange={handleResetChange}
                   />
@@ -466,33 +452,20 @@ export default function Login() {
               </button>
             </form>
 
-            <div className="df-auth-card__footer" style={{ marginTop: '1.25rem' }}>
+            <div className="df-auth-card__footer">
               Didn't receive code?
               <button
                 type="button"
                 onClick={handleRequestOtp}
-                style={{
-                  background: 'none',
-                  border: 'none',
-                  color: '#38bdf8',
-                  fontWeight: 600,
-                  cursor: 'pointer',
-                  marginLeft: '0.25rem',
-                }}
+                className="df-auth-link-btn"
               >
                 Resend OTP
               </button>
-              <span style={{ margin: '0 0.5rem', color: '#64748b' }}>•</span>
+              <span className="df-auth-dot">•</span>
               <button
                 type="button"
                 onClick={() => setViewMode('login')}
-                style={{
-                  background: 'none',
-                  border: 'none',
-                  color: '#94a3b8',
-                  fontWeight: 500,
-                  cursor: 'pointer',
-                }}
+                className="df-auth-link-btn"
               >
                 Back to Sign In
               </button>

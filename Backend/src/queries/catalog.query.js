@@ -2,9 +2,6 @@
 // DEALFLOW360 - CATALOG & LOOKUP QUERIES
 // ============================================================
 
-/**
- * Fetch all active customers along with their current assigned tier & max discount
- */
 export const GET_ACTIVE_CUSTOMERS_WITH_TIER = `
   SELECT 
     c.id,
@@ -26,9 +23,6 @@ export const GET_ACTIVE_CUSTOMERS_WITH_TIER = `
   ORDER BY c.company_name ASC
 `;
 
-/**
- * Fetch active price lists, optionally filtered by tier
- */
 export const GET_ACTIVE_PRICE_LISTS = `
   SELECT 
     pl.id,
@@ -43,10 +37,6 @@ export const GET_ACTIVE_PRICE_LISTS = `
   ORDER BY pl.name ASC
 `;
 
-/**
- * Fetch all sellable product variants (SKUs) with product details,
- * category discount ceilings, and price list items
- */
 export const GET_SELLABLE_PRODUCT_VARIANTS = `
   SELECT 
     pv.id AS product_variant_id,
@@ -70,9 +60,6 @@ export const GET_SELLABLE_PRODUCT_VARIANTS = `
   ORDER BY p.name ASC, pv.variant_name ASC
 `;
 
-/**
- * Fetch price list items for a specific price list
- */
 export const GET_PRICE_LIST_ITEMS_BY_PRICE_LIST = `
   SELECT 
     product_variant_id,
@@ -81,9 +68,6 @@ export const GET_PRICE_LIST_ITEMS_BY_PRICE_LIST = `
   WHERE price_list_id = $1
 `;
 
-/**
- * Fetch upsell & cross-sell suggestions for a list of product IDs
- */
 export const GET_UPSELL_RULES_FOR_PRODUCTS = `
   SELECT 
     ur.id AS rule_id,
@@ -114,9 +98,6 @@ export const GET_UPSELL_RULES_FOR_PRODUCTS = `
   ORDER BY ur.priority DESC, ur.is_promoted DESC
 `;
 
-/**
- * Fetch active approval rules
- */
 export const GET_ACTIVE_APPROVAL_RULES = `
   SELECT 
     id,
@@ -129,3 +110,109 @@ export const GET_ACTIVE_APPROVAL_RULES = `
   WHERE is_active = TRUE
   ORDER BY min_risk_score ASC
 `;
+
+// ============================================================
+// PRODUCT CATALOG DASHBOARD & CRUD QUERIES
+// ============================================================
+
+export const GET_PRODUCT_CATALOG_SUMMARY = `
+  SELECT 
+    (SELECT COUNT(*)::INT FROM products WHERE is_active = TRUE) AS active_products_count,
+    (SELECT COUNT(*)::INT FROM products WHERE is_active = FALSE) AS archived_products_count,
+    (SELECT COUNT(*)::INT FROM price_lists WHERE is_active = TRUE) AS pricelists_count,
+    (SELECT COUNT(DISTINCT currency)::INT FROM price_lists WHERE is_active = TRUE) AS currencies_count,
+    (SELECT COUNT(*)::INT FROM product_variants WHERE is_active = TRUE) AS total_variants_count
+`;
+
+export const GET_ALL_PRODUCTS_WITH_VARIANTS_COUNT = `
+  SELECT 
+    p.id,
+    p.name,
+    p.description,
+    p.category_id,
+    pc.name AS category_name,
+    p.base_price,
+    p.unit,
+    p.tax_percentage,
+    p.is_active,
+    p.created_at,
+    (
+      SELECT COUNT(*)::INT 
+      FROM product_variants pv 
+      WHERE pv.product_id = p.id AND pv.is_active = TRUE
+    ) AS variants_count,
+    (
+      SELECT pv.variant_name 
+      FROM product_variants pv 
+      WHERE pv.product_id = p.id AND pv.is_active = TRUE 
+      LIMIT 1
+    ) AS sample_variant_name
+  FROM products p
+  JOIN product_categories pc ON p.category_id = pc.id
+  ORDER BY p.name ASC
+`;
+
+export const GET_PRODUCT_CATEGORIES = `
+  SELECT id, name, parent_category_id
+  FROM product_categories
+  ORDER BY name ASC
+`;
+
+export const GET_PRODUCT_BY_ID_FULL = `
+  SELECT 
+    p.id,
+    p.name,
+    p.category_id,
+    pc.name AS category_name,
+    p.description,
+    p.unit,
+    p.base_price,
+    p.tax_percentage,
+    p.is_active,
+    p.created_at,
+    p.updated_at
+  FROM products p
+  JOIN product_categories pc ON p.category_id = pc.id
+  WHERE p.id = $1
+`;
+
+export const GET_PRODUCT_VARIANTS_BY_PRODUCT_ID = `
+  SELECT 
+    pv.id AS variant_id,
+    pv.product_id,
+    pv.sku,
+    pv.variant_name,
+    pv.selling_price,
+    pv.is_active
+  FROM product_variants pv
+  WHERE pv.product_id = $1
+  ORDER BY pv.sku ASC
+`;
+
+export const UPDATE_PRODUCT_BY_ID = `
+  UPDATE products
+  SET 
+    name = $1,
+    category_id = $2,
+    description = $3,
+    unit = $4,
+    base_price = $5,
+    tax_percentage = $6,
+    is_active = $7,
+    updated_at = NOW()
+  WHERE id = $8
+  RETURNING *;
+`;
+
+export const DELETE_PRODUCT_BY_ID = `
+  DELETE FROM products
+  WHERE id = $1
+  RETURNING id;
+`;
+
+export const DELETE_PRODUCT_VARIANT_BY_ID = `
+  DELETE FROM product_variants
+  WHERE id = $1
+  RETURNING id;
+`;
+

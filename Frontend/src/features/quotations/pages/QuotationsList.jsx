@@ -43,9 +43,9 @@ export const QuotationsList = () => {
             <p>Every quotation in the system, one row per quotation, click a row to open it</p>
           </div>
 
-          <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+          <div className="df-quotations__header-actions">
             <Link to="/quotations/new" className="df-quotations__btn-primary">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: 16, height: 16 }}>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="df-quotations__btn-icon">
                 <line x1="12" x2="12" y1="5" y2="19" />
                 <line x1="5" x2="19" y1="12" y2="12" />
               </svg>
@@ -102,28 +102,28 @@ export const QuotationsList = () => {
           </div>
         </div>
 
-        {/* View Mode: Kanban vs Table */}
+        {/* View Switch: Kanban or Table */}
         {viewMode === 'kanban' ? (
           <QuotationKanban
             kanbanData={kanbanData}
             summary={summary || {}}
-            onSelectQuotation={(quote) => setSelectedQuote(quote)}
+            onSelectQuote={setSelectedQuote}
           />
         ) : (
           <QuotationTable
             quotations={allQuotations}
-            onSelectQuotation={(quote) => setSelectedQuote(quote)}
+            onSelectQuote={setSelectedQuote}
           />
         )}
 
-        {/* Detail Modal */}
+        {/* Detail Modal Popover */}
         {selectedQuote && (
           <div className="df-modal-backdrop" onClick={() => setSelectedQuote(null)}>
             <div className="df-quote-modal" onClick={(e) => e.stopPropagation()}>
               <div className="df-quote-modal__header">
                 <div>
                   <h2>{selectedQuote.company_name}</h2>
-                  <span style={{ fontSize: '0.8125rem', color: '#38bdf8', fontWeight: 600 }}>
+                  <span className="df-quote-modal__quote-num">
                     {selectedQuote.quotation_number}
                   </span>
                 </div>
@@ -168,7 +168,7 @@ export const QuotationsList = () => {
                     <span>{formatCurrency(selectedQuote.subtotal || selectedQuote.grand_total)}</span>
                   </div>
                   {Number(selectedQuote.discount_total) > 0 && (
-                    <div className="total-row" style={{ color: '#f87171' }}>
+                    <div className="total-row total-row--discount">
                       <span>Discount</span>
                       <span>-{formatCurrency(selectedQuote.discount_total)}</span>
                     </div>
@@ -194,7 +194,7 @@ export const QuotationsList = () => {
                   Close
                 </button>
                 <Link
-                  to={`/quotations/${selectedQuote.id || 1}`}
+                  to={`/quotations/${selectedQuote.id}`}
                   className="df-quotations__btn-primary"
                 >
                   Open Full Detail View →

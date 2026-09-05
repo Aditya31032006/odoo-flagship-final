@@ -30,15 +30,7 @@ export const QuotationKanban = ({
           <div key={col.id} className="df-kanban-column">
             <div className="df-kanban-column__header">
               <h3>
-                <span
-                  style={{
-                    width: 8,
-                    height: 8,
-                    borderRadius: '50%',
-                    background: col.color,
-                    display: 'inline-block',
-                  }}
-                />
+                <span className={`df-kanban-column__dot df-kanban-column__dot--${col.id}`} />
                 {col.label}
                 <span className="df-kanban-column__badge">{cards.length}</span>
               </h3>

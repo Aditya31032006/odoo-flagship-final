@@ -8,16 +8,9 @@ export const DiscountAlertBanner = ({
 }) => {
   return (
     <div
-      className="df-quotation-detail__alert-banner"
-      style={{
-        background: hasExcess ? 'rgba(245, 158, 11, 0.08)' : 'rgba(16, 185, 129, 0.08)',
-        borderColor: hasExcess ? 'rgba(245, 158, 11, 0.35)' : 'rgba(16, 185, 129, 0.35)',
-      }}
+      className={`df-quotation-detail__alert-banner df-quotation-detail__alert-banner--${hasExcess ? 'excess' : 'valid'}`}
     >
-      <div
-        className="banner-text"
-        style={{ color: hasExcess ? '#fbbf24' : '#34d399' }}
-      >
+      <div className="banner-text">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           {hasExcess ? (
             <>
@@ -46,13 +39,7 @@ export const DiscountAlertBanner = ({
         </span>
       </div>
 
-      <div
-        className="banner-risk-badge"
-        style={{
-          background: hasExcess ? 'rgba(245, 158, 11, 0.2)' : 'rgba(16, 185, 129, 0.2)',
-          color: hasExcess ? '#fde68a' : '#a7f3d0',
-        }}
-      >
+      <div className="banner-risk-badge">
         Risk Score: {blendedRiskScore} pts ({riskLevel} risk)
       </div>
     </div>

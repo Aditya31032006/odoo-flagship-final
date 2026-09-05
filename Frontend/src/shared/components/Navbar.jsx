@@ -225,7 +225,7 @@ export default function Navbar() {
 
           {/* User Profile / Auth State */}
           {isAuthenticated && user ? (
-            <div className="df-navbar__user-container" ref={dropdownRef} style={{ position: 'relative' }}>
+            <div className="df-navbar__user-container" ref={dropdownRef}>
               <div
                 className="df-navbar__user"
                 onClick={() => setProfileDropdownOpen((prev) => !prev)}
@@ -233,35 +233,23 @@ export default function Navbar() {
               >
                 <div className="df-navbar__user-avatar">{getInitials(user.name)}</div>
                 <span className="df-navbar__user-role">{formatRole(user.role)}</span>
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: 12, height: 12, opacity: 0.8 }}>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="df-navbar__chevron">
                   <polyline points="6 9 12 15 18 9" />
                 </svg>
               </div>
 
               {/* Profile Dropdown */}
               {profileDropdownOpen && (
-                <div style={{
-                  position: 'absolute',
-                  top: '110%',
-                  right: 0,
-                  width: '220px',
-                  background: '#0f172a',
-                  border: '1px solid rgba(255, 255, 255, 0.15)',
-                  borderRadius: '10px',
-                  boxShadow: '0 10px 25px rgba(0,0,0,0.5)',
-                  padding: '0.75rem',
-                  zIndex: 1100,
-                  backdropFilter: 'blur(12px)'
-                }}>
-                  <div style={{ paddingBottom: '0.5rem', borderBottom: '1px solid rgba(255, 255, 255, 0.1)', marginBottom: '0.5rem' }}>
-                    <div style={{ fontSize: '0.875rem', fontWeight: 600, color: '#ffffff', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                <div className="df-navbar__dropdown-menu">
+                  <div className="df-navbar__dropdown-menu-header">
+                    <div className="df-navbar__dropdown-menu-name">
                       {user.name}
                     </div>
-                    <div style={{ fontSize: '0.75rem', color: '#94a3b8', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    <div className="df-navbar__dropdown-menu-email">
                       {user.email}
                     </div>
                     {user.company_name && (
-                      <div style={{ fontSize: '0.7rem', color: '#38bdf8', marginTop: '0.2rem' }}>
+                      <div className="df-navbar__dropdown-menu-company">
                         🏢 {user.company_name}
                       </div>
                     )}
@@ -269,23 +257,9 @@ export default function Navbar() {
 
                   <button
                     onClick={handleLogout}
-                    style={{
-                      width: '100%',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '0.5rem',
-                      padding: '0.5rem 0.6rem',
-                      background: 'rgba(239, 68, 68, 0.15)',
-                      border: '1px solid rgba(239, 68, 68, 0.3)',
-                      borderRadius: '6px',
-                      color: '#fca5a5',
-                      fontSize: '0.8125rem',
-                      fontWeight: 500,
-                      cursor: 'pointer',
-                      transition: 'all 0.2s ease'
-                    }}
+                    className="df-navbar__dropdown-menu-logout"
                   >
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: 14, height: 14 }}>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                       <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
                       <polyline points="16 17 21 12 16 7" />
                       <line x1="21" y1="12" x2="9" y2="12" />
@@ -298,49 +272,37 @@ export default function Navbar() {
           ) : (
             <Link
               to="/login"
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '0.35rem',
-                padding: '0.35rem 0.75rem',
-                borderRadius: '6px',
-                background: 'rgba(255, 255, 255, 0.15)',
-                border: '1px solid rgba(255, 255, 255, 0.3)',
-                color: '#ffffff',
-                textDecoration: 'none',
-                fontSize: '0.8125rem',
-                fontWeight: 600,
-                transition: 'all 0.2s ease'
-              }}
+              className="df-navbar__signin-btn"
             >
               Sign In
             </Link>
           )}
 
+
           {/* Mobile Menu Toggle Button */}
-          <button
+          {/* <button
             className="df-navbar__mobile-toggle"
             onClick={toggleMobileMenu}
             aria-label="Toggle Navigation Menu"
             aria-expanded={mobileMenuOpen}
           >
             {mobileMenuOpen ? (
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ width: 18, height: 18 }}>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <line x1="18" x2="6" y1="6" y2="18" />
                 <line x1="6" x2="18" y1="6" y2="18" />
               </svg>
             ) : (
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ width: 18, height: 18 }}>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <line x1="4" x2="20" y1="12" y2="12" />
                 <line x1="4" x2="20" y1="6" y2="6" />
                 <line x1="4" x2="20" y1="18" y2="18" />
               </svg>
             )}
-          </button>
+          </button> */}
         </div>
 
         {/* Mobile Navigation Drawer */}
-        <div className={`df-navbar__mobile-drawer ${mobileMenuOpen ? 'is-open' : ''}`}>
+        {/* <div className={`df-navbar__mobile-drawer ${mobileMenuOpen ? 'is-open' : ''}`}>
           <ul className="df-navbar__mobile-list">
             {NAV_ITEMS.map((item) => (
               <li key={item.path}>
@@ -359,7 +321,7 @@ export default function Navbar() {
               </li>
             ))}
           </ul>
-        </div>
+        </div> */}
       </nav>
     </header>
   );

@@ -205,6 +205,20 @@
     }
   }
 
+  &__dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    display: inline-block;
+
+    &--draft { background: #94a3b8; }
+    &--pending_approval { background: #f59e0b; }
+    &--approved { background: #38bdf8; }
+    &--negotiating { background: #c084fc; }
+    &--confirmed { background: #34d399; }
+  }
+
+
   &__badge {
     font-size: 0.75rem;
     font-weight: 700;
@@ -568,4 +582,44 @@
     justify-content: flex-end;
     gap: 0.75rem;
   }
+
+  &__quote-num {
+    font-size: 0.8125rem;
+    color: #38bdf8;
+    font-weight: 600;
+  }
 }
+
+.df-quotations {
+  &__header-actions {
+    display: flex;
+    gap: 0.75rem;
+    align-items: center;
+  }
+
+  &__btn-icon {
+    width: 16px;
+    height: 16px;
+  }
+
+  &__empty-table {
+    padding: 3rem;
+    text-align: center;
+    color: #64748b;
+  }
+}
+
+.amount-highlight {
+  color: #38bdf8;
+  font-weight: 700;
+}
+
+.total-row--discount {
+  color: #f87171 !important;
+}
+
+.card-icon {
+  width: 12px;
+  height: 12px;
+}
+

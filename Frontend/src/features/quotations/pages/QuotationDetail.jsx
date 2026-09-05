@@ -68,8 +68,8 @@ export const QuotationDetail = ({ isNew = false }) => {
 
   if (isLoading) {
     return (
-      <div className="df-quotation-detail" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '60vh' }}>
-        <div style={{ color: '#94a3b8', fontSize: '1.1rem' }}>Loading quotation details...</div>
+      <div className="df-quotation-detail">
+        <div className="df-quotation-detail__loading-state">Loading quotation details...</div>
       </div>
     );
   }
@@ -98,7 +98,7 @@ export const QuotationDetail = ({ isNew = false }) => {
                 <span className="customer-tag">({selectedCustomer.company_name})</span>
               )}
               {status && (
-                <span className={`status-pill status-pill--${status}`} style={{ fontSize: '0.8rem', marginLeft: '0.5rem' }}>
+                <span className={`status-pill status-pill--${status}`}>
                   {status.replace('_', ' ')}
                 </span>
               )}
@@ -109,35 +109,14 @@ export const QuotationDetail = ({ isNew = false }) => {
 
         {/* Notifications & Error Alerts */}
         {error && (
-          <div
-            style={{
-              padding: '1rem',
-              marginBottom: '1.5rem',
-              borderRadius: '8px',
-              background: 'rgba(239, 68, 68, 0.15)',
-              border: '1px solid rgba(239, 68, 68, 0.3)',
-              color: '#fca5a5',
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-            }}
-          >
+          <div className="df-quotation-detail__error-alert">
             <span>{error}</span>
-            <button onClick={clearError} style={{ background: 'none', border: 'none', color: '#fca5a5', cursor: 'pointer' }}>✕</button>
+            <button onClick={clearError} className="df-quotation-detail__alert-close-btn">✕</button>
           </div>
         )}
 
         {successMessage && (
-          <div
-            style={{
-              padding: '1rem',
-              marginBottom: '1.5rem',
-              borderRadius: '8px',
-              background: 'rgba(16, 185, 129, 0.15)',
-              border: '1px solid rgba(16, 185, 129, 0.3)',
-              color: '#6ee7b7',
-            }}
-          >
+          <div className="df-quotation-detail__success-alert">
             ✓ {successMessage}
           </div>
         )}
@@ -215,7 +194,7 @@ export const QuotationDetail = ({ isNew = false }) => {
           <div className="totals-summary">
             <div className="total-group">
               <span className="label">Subtotal</span>
-              <span className="val" style={{ color: '#cbd5e1', fontSize: '1.25rem' }}>
+              <span className="val df-quotation-detail__total-val--subtotal">
                 {formatCurrency(calculatedTotals.subtotal)}
               </span>
             </div>
@@ -223,7 +202,7 @@ export const QuotationDetail = ({ isNew = false }) => {
             {calculatedTotals.discountTotal > 0 && (
               <div className="total-group">
                 <span className="label">Discount</span>
-                <span className="val" style={{ color: '#f87171', fontSize: '1.25rem' }}>
+                <span className="val df-quotation-detail__total-val--discount">
                   -{formatCurrency(calculatedTotals.discountTotal)}
                 </span>
               </div>
@@ -232,7 +211,7 @@ export const QuotationDetail = ({ isNew = false }) => {
             {calculatedTotals.taxTotal > 0 && (
               <div className="total-group">
                 <span className="label">Tax / GST</span>
-                <span className="val" style={{ color: '#94a3b8', fontSize: '1.25rem' }}>
+                <span className="val df-quotation-detail__total-val--tax">
                   +{formatCurrency(calculatedTotals.taxTotal)}
                 </span>
               </div>
@@ -243,6 +222,7 @@ export const QuotationDetail = ({ isNew = false }) => {
               <span className="val">{formatCurrency(calculatedTotals.grandTotal)}</span>
             </div>
           </div>
+
 
           <div className="buttons-group">
             <button

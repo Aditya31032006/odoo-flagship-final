@@ -2,7 +2,7 @@ import app from './src/app.js';
 import connectDB from './src/config/database.js';
 import config from './src/config/config.js';
 import { initEmailWorker } from './src/jobs/emailQueue.js';
-import { seedDefaultAdmin } from './src/utils/seedAdmin.util.js';
+
 
 const PORT = config.PORT || 3000;
 
@@ -11,8 +11,9 @@ async function startServer() {
     await connectDB();
     console.log('Database connection established successfully.');
 
-    // Seed default administrator if not present
-    await seedDefaultAdmin();
+ 
+   
+
 
     initEmailWorker();
 

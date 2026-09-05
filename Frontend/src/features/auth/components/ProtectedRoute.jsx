@@ -14,30 +14,15 @@ export default function ProtectedRoute() {
 
   if (loading) {
     return (
-      <div style={{
-        minHeight: '100vh',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        background: '#0f172a',
-        color: '#38bdf8',
-        fontFamily: 'system-ui, -apple-system, sans-serif'
-      }}>
-        <div style={{ textAlign: 'center' }}>
-          <div style={{
-            width: '36px',
-            height: '36px',
-            border: '3px solid rgba(56, 189, 248, 0.2)',
-            borderTopColor: '#38bdf8',
-            borderRadius: '50%',
-            animation: 'spin 0.8s linear infinite',
-            margin: '0 auto 1rem'
-          }} />
-          <p style={{ color: '#94a3b8', fontSize: '0.875rem' }}>Verifying DealFlow360 session...</p>
+      <div className="df-auth-loading">
+        <div className="df-auth-loading__content">
+          <div className="df-auth-loading__spinner" />
+          <p className="df-auth-loading__text">Verifying DealFlow360 session...</p>
         </div>
       </div>
     );
   }
+
 
   if (!isAuthenticated) {
     // Redirect unauthenticated visitors to login, preserving intended destination

@@ -17,7 +17,7 @@ function formatDate(dateString) {
 export const QuotationTable = ({ quotations = [], onSelectQuotation }) => {
   if (!quotations || quotations.length === 0) {
     return (
-      <div style={{ padding: '3rem', textAlign: 'center', color: '#64748b' }}>
+      <div className="df-quotations__empty-table">
         No quotations found matching the criteria.
       </div>
     );
@@ -55,8 +55,9 @@ export const QuotationTable = ({ quotations = [], onSelectQuotation }) => {
               <td>{q.sales_rep_name || 'Unassigned'}</td>
               <td>{q.tier_name || 'Standard'}</td>
               <td>
-                <strong style={{ color: '#38bdf8' }}>{formatCurrency(q.grand_total)}</strong>
+                <span className="amount-highlight">{formatCurrency(q.grand_total)}</span>
               </td>
+
               <td>
                 <span className={`risk-pill risk-pill--${q.risk_level || 'low'}`}>
                   {q.risk_level || 'low'}

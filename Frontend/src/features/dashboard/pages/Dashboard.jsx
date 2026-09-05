@@ -102,7 +102,7 @@ export const Dashboard = () => {
         {/* Action Buttons matching Wireframe #2 */}
         <section className="df-dashboard__actions-row" aria-label="Quick Actions">
           <Link to="/quotations/new" className="df-dashboard__btn-primary">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ width: 18, height: 18 }}>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
               <line x1="12" x2="12" y1="5" y2="19" />
               <line x1="5" x2="19" y1="12" y2="12" />
             </svg>
@@ -110,7 +110,7 @@ export const Dashboard = () => {
           </Link>
 
           <Link to="/approvals" className="df-dashboard__btn-secondary">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ width: 18, height: 18 }}>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M9 11l3 3L22 4" />
               <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
             </svg>

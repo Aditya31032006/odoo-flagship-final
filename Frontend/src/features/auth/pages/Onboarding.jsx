@@ -131,8 +131,8 @@ export default function Onboarding() {
       <div className="df-auth-card df-auth-card--wide">
         {/* Header */}
         <div className="df-auth-card__header">
-          <div className="brand-badge" style={{ background: 'rgba(66, 133, 244, 0.15)', borderColor: 'rgba(66, 133, 244, 0.3)', color: '#93c5fd' }}>
-            <svg viewBox="0 0 24 24" style={{ width: 14, height: 14 }}>
+          <div className="brand-badge brand-badge--google">
+            <svg viewBox="0 0 24 24">
               <path
                 fill="#4285F4"
                 d="M23.5 12.3c0-.8-.1-1.7-.2-2.3H12v4.6h6.5c-.3 1.5-1.1 2.8-2.4 3.7l3.7 2.9c2.2-2 3.7-5 3.7-8.9z"
@@ -167,7 +167,7 @@ export default function Onboarding() {
               className={`role-chip ${registerType === 'company' ? 'active' : ''}`}
               onClick={() => handleTypeSwitch('company')}
             >
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: 15, height: 15 }}>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <rect x="2" y="7" width="20" height="14" rx="2" ry="2" />
                 <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" />
               </svg>
@@ -178,7 +178,7 @@ export default function Onboarding() {
               className={`role-chip ${registerType === 'employee' ? 'active' : ''}`}
               onClick={() => handleTypeSwitch('employee')}
             >
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: 15, height: 15 }}>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
                 <circle cx="9" cy="7" r="4" />
                 <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
@@ -248,7 +248,7 @@ export default function Onboarding() {
                 </div>
               </div>
 
-              <div className="form-group" style={{ marginTop: '0.5rem' }}>
+              <div className="form-group form-group--spaced">
                 <label htmlFor="billing_address">Billing Address (Optional)</label>
                 <div className="input-wrapper">
                   <input
@@ -328,7 +328,6 @@ export default function Onboarding() {
                   name="name"
                   required
                   readOnly
-                  style={{ background: 'rgba(255, 255, 255, 0.05)', color: '#93c5fd' }}
                   value={formData.name}
                   onChange={handleChange}
                 />
@@ -348,7 +347,6 @@ export default function Onboarding() {
                   name="email"
                   required
                   readOnly
-                  style={{ background: 'rgba(255, 255, 255, 0.05)', color: '#93c5fd' }}
                   value={formData.email}
                   onChange={handleChange}
                 />

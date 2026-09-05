@@ -1,35 +1,58 @@
-import React from 'react';
+import React, { useState } from 'react';
 
-function formatCurrency(val) {
-  return `$${Number(val || 0).toLocaleString()}`;
+function formatCurrency(amount) {
+  if (amount == null) return '$0';
+  return `$${Number(amount).toLocaleString()}`;
 }
 
 export const QuotationLineItemsTable = ({
   lineItems = [],
   products = [],
-  tierMaxDiscount = 15,
+  tierMaxDiscount = 0,
   onUpdateLine,
   onRemoveLine,
   onAddLine,
 }) => {
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [selectedVariantId, setSelectedVariantId] = useState('');
+  const [selectedQty, setSelectedQty] = useState(1);
+
+  const handleOpenAddModal = () => {
+    if (products.length > 0) {
+      setSelectedVariantId(products[0].product_variant_id);
+      setSelectedQty(1);
+      setIsAddModalOpen(true);
+    }
+  };
+
+  const handleConfirmAdd = () => {
+    const variant = products.find((p) => String(p.product_variant_id) === String(selectedVariantId));
+    if (variant) {
+      onAddLine(variant, selectedQty);
+    }
+    setIsAddModalOpen(false);
+  };
+
+  const chosenPreview = products.find((p) => String(p.product_variant_id) === String(selectedVariantId));
+
   return (
     <div className="df-quotation-detail__table-wrapper">
       <table className="df-quotation-detail__items-table">
         <thead>
           <tr>
-            <th style={{ width: '32%' }}>Product / Sellable Variant</th>
-            <th style={{ width: '10%' }}>Qty</th>
-            <th style={{ width: '14%' }}>Price</th>
-            <th style={{ width: '12%' }}>Discount</th>
-            <th style={{ width: '10%' }}>Limit</th>
-            <th style={{ width: '14%' }}>Status</th>
-            <th style={{ width: '8%', textAlign: 'center' }}>Action</th>
+            <th className="col-product">Product / Sellable Variant</th>
+            <th className="col-qty">Qty</th>
+            <th className="col-price">Price</th>
+            <th className="col-discount">Discount</th>
+            <th className="col-limit">Limit</th>
+            <th className="col-status">Status</th>
+            <th className="col-action">Action</th>
           </tr>
         </thead>
         <tbody>
           {lineItems.length === 0 ? (
             <tr>
-              <td colSpan="7" style={{ textAlign: 'center', padding: '2.5rem', color: '#64748b' }}>
+              <td colSpan="7" className="df-products__empty-cell">
                 No products added yet. Click "+ Add Product Line" below or pick an upsell suggestion.
               </td>
             </tr>
@@ -43,7 +66,6 @@ export const QuotationLineItemsTable = ({
                   {/* Product Variant Selector */}
                   <td>
                     <select
-                      style={{ width: '100%' }}
                       value={item.product_variant_id || ''}
                       onChange={(e) => onUpdateLine(index, 'product_variant_id', e.target.value)}
                     >
@@ -52,12 +74,12 @@ export const QuotationLineItemsTable = ({
                       </option>
                       {products.map((p) => (
                         <option key={p.product_variant_id} value={p.product_variant_id}>
-                          {p.product_name} {p.variant_name ? `(${p.variant_name})` : ''} — SKU: {p.sku}
+                          {p.product_name} {p.variant_name ? `(${p.variant_name})` : ''} — SKU: {p.sku} (${Number(p.default_selling_price || p.base_price).toLocaleString()})
                         </option>
                       ))}
                     </select>
                     {item.is_upsell && (
-                      <span style={{ fontSize: '0.7rem', color: '#38bdf8', marginTop: '0.2rem', display: 'block' }}>
+                      <span className="sku-hint">
                         ✦ Added from Upsell Recommendation
                       </span>
                     )}
@@ -68,7 +90,7 @@ export const QuotationLineItemsTable = ({
                     <input
                       type="number"
                       min="1"
-                      style={{ width: '70px', textAlign: 'center' }}
+                      className="input-qty"
                       value={item.quantity || 1}
                       onChange={(e) => onUpdateLine(index, 'quantity', e.target.value)}
                     />
@@ -77,20 +99,20 @@ export const QuotationLineItemsTable = ({
                   {/* Unit Price */}
                   <td>
                     <strong>{formatCurrency(item.unit_price)}</strong>
-                    <span style={{ fontSize: '0.75rem', color: '#94a3b8', display: 'block' }}>
+                    <span className="limit-hint">
                       List: {formatCurrency(item.list_price)}
                     </span>
                   </td>
 
                   {/* Discount % */}
                   <td>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                    <div className="discount-wrapper">
                       <input
                         type="number"
                         min="0"
                         max="100"
                         step="1"
-                        style={{ width: '65px', textAlign: 'center' }}
+                        className="input-discount"
                         value={item.discount_percentage ?? 0}
                         onChange={(e) => onUpdateLine(index, 'discount_percentage', e.target.value)}
                       />
@@ -100,7 +122,7 @@ export const QuotationLineItemsTable = ({
 
                   {/* Limit % */}
                   <td>
-                    <span style={{ color: '#cbd5e1', fontWeight: 600 }}>
+                    <span className="price-highlight">
                       {item.allowed_discount_percentage != null ? `${item.allowed_discount_percentage}%` : '—'}
                     </span>
                   </td>
@@ -117,18 +139,11 @@ export const QuotationLineItemsTable = ({
                   </td>
 
                   {/* Remove Action */}
-                  <td style={{ textAlign: 'center' }}>
+                  <td className="cell-centered">
                     <button
                       type="button"
                       onClick={() => onRemoveLine(index)}
-                      style={{
-                        background: 'none',
-                        border: 'none',
-                        color: '#f87171',
-                        cursor: 'pointer',
-                        padding: '0.3rem 0.5rem',
-                        borderRadius: '4px',
-                      }}
+                      className="delete-item-btn"
                       title="Remove product line"
                     >
                       ✕
@@ -145,10 +160,86 @@ export const QuotationLineItemsTable = ({
         <button
           type="button"
           className="df-quotation-detail__add-line-btn"
-          onClick={() => onAddLine(products[0])}
+          onClick={handleOpenAddModal}
         >
           + Add Product Line
         </button>
+      )}
+
+      {/* Add Product Modal Drawer */}
+      {isAddModalOpen && (
+        <div className="df-modal-backdrop" onClick={() => setIsAddModalOpen(false)}>
+          <div className="df-quote-modal df-quotation-detail__add-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="df-quote-modal__header">
+              <h2>Add Product to Quotation</h2>
+              <button type="button" onClick={() => setIsAddModalOpen(false)}>✕</button>
+            </div>
+
+            <div className="df-quote-modal__body">
+              <div className="df-quotation-detail__modal-field">
+                <label>
+                  Choose Product & Variant
+                </label>
+                <select
+                  value={selectedVariantId}
+                  onChange={(e) => setSelectedVariantId(e.target.value)}
+                >
+                  {products.map((p) => (
+                    <option key={p.product_variant_id} value={p.product_variant_id}>
+                      {p.product_name} {p.variant_name ? `(${p.variant_name})` : ''} — ${Number(p.default_selling_price || p.base_price).toLocaleString()} (SKU: {p.sku})
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="df-quotation-detail__modal-field">
+                <label>
+                  Quantity
+                </label>
+                <input
+                  type="number"
+                  min="1"
+                  value={selectedQty}
+                  onChange={(e) => setSelectedQty(Math.max(1, parseInt(e.target.value, 10) || 1))}
+                />
+              </div>
+
+              {chosenPreview && (
+                <div className="df-quotation-detail__modal-summary">
+                  <div>
+                    <div className="summary-label">Category / Max Discount Limit</div>
+                    <div className="summary-limit">
+                      {chosenPreview.category_name} ({chosenPreview.category_max_discount}% ceiling)
+                    </div>
+                  </div>
+                  <div className="summary-price-col">
+                    <div className="summary-label">Estimated Line Price</div>
+                    <div className="summary-price-val">
+                      {formatCurrency(Number(chosenPreview.default_selling_price || chosenPreview.base_price) * selectedQty)}
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="df-quote-modal__footer">
+              <button
+                type="button"
+                className="df-quotations__toggle-view-btn"
+                onClick={() => setIsAddModalOpen(false)}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="df-quotations__btn-primary"
+                onClick={handleConfirmAdd}
+              >
+                Add to Quotation
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

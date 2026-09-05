@@ -1,0 +1,434 @@
+// ============================================================
+// DEALFLOW360 - PRODUCT DETAIL & PRICELIST SCSS (Wireframe #17)
+// ============================================================
+
+.df-product-detail {
+  min-height: calc(100vh - 64px);
+  background-color: #0b0f19;
+  background-image: 
+    radial-gradient(at 0% 0%, rgba(56, 189, 248, 0.08) 0px, transparent 50%),
+    radial-gradient(at 100% 0%, rgba(99, 102, 241, 0.08) 0px, transparent 50%),
+    radial-gradient(at 50% 100%, rgba(15, 23, 42, 0.9) 0px, transparent 50%);
+  color: #f1f5f9;
+  padding: 2rem 2rem 4rem 2rem;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+
+  &__container {
+    max-width: 1200px;
+    margin: 0 auto;
+
+    &--centered {
+      text-align: center;
+      padding: 4rem 1rem;
+    }
+  }
+
+  &__loading {
+    text-align: center;
+    padding: 4rem;
+    color: #94a3b8;
+    font-size: 1.1rem;
+  }
+
+  &__not-found-card {
+    background: rgba(15, 23, 42, 0.75);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 14px;
+    padding: 3rem 2rem;
+    max-width: 600px;
+    margin: 0 auto;
+    backdrop-filter: blur(12px);
+  }
+
+  &__not-found-title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #ffffff;
+    margin-bottom: 1rem;
+  }
+
+  &__not-found-text {
+    color: #94a3b8;
+    margin-bottom: 2rem;
+    font-size: 0.9375rem;
+  }
+
+  &__not-found-actions {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+  }
+
+  &__back-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    color: #94a3b8;
+    text-decoration: none;
+    font-size: 0.875rem;
+    margin-bottom: 1rem;
+    transition: color 0.2s ease;
+
+    &:hover {
+      color: #38bdf8;
+    }
+
+    svg {
+      width: 16px;
+      height: 16px;
+    }
+  }
+
+  &__header-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+
+    h1 {
+      font-size: 2rem;
+      font-weight: 700;
+      color: #ffffff;
+      margin: 0;
+    }
+  }
+
+  &__status-badge {
+    background: rgba(56, 189, 248, 0.15);
+    color: #38bdf8;
+    border: 1px solid rgba(56, 189, 248, 0.3);
+    padding: 0.35rem 0.85rem;
+    border-radius: 9999px;
+    font-size: 0.8125rem;
+    font-weight: 600;
+  }
+
+  &__alert-error {
+    padding: 1rem;
+    background: rgba(239, 68, 68, 0.15);
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    color: #fca5a5;
+    border-radius: 8px;
+    margin-bottom: 1.5rem;
+    font-size: 0.875rem;
+  }
+
+  &__alert-success {
+    padding: 1rem;
+    background: rgba(16, 185, 129, 0.15);
+    border: 1px solid rgba(16, 185, 129, 0.3);
+    color: #6ee7b7;
+    border-radius: 8px;
+    margin-bottom: 1.5rem;
+    font-size: 0.875rem;
+  }
+
+  // Card Panel
+  &__panel {
+    background: rgba(15, 23, 42, 0.75);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 14px;
+    padding: 1.75rem 2rem;
+    margin-bottom: 2rem;
+    backdrop-filter: blur(12px);
+
+    h3 {
+      font-size: 0.875rem;
+      font-weight: 700;
+      color: #94a3b8;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin: 0;
+    }
+  }
+
+  &__panel-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.25rem;
+  }
+
+  &__add-sub-btn {
+    background: rgba(56, 189, 248, 0.12);
+    border: 1px solid rgba(56, 189, 248, 0.3);
+    color: #38bdf8;
+    padding: 0.45rem 0.9rem;
+    border-radius: 8px;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+
+    &:hover {
+      background: rgba(56, 189, 248, 0.22);
+      border-color: #38bdf8;
+    }
+  }
+
+  // 2-Column Grid for General Info
+  &__grid-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.75rem;
+
+    @media (max-width: 768px) {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  &__field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.45rem;
+    margin-bottom: 1.25rem;
+
+    label {
+      font-size: 0.875rem;
+      font-weight: 600;
+      color: #cbd5e1;
+    }
+
+    input, select, textarea {
+      background: rgba(30, 41, 59, 0.7);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      padding: 0.65rem 0.9rem;
+      border-radius: 8px;
+      color: #ffffff;
+      font-size: 0.9375rem;
+      outline: none;
+      transition: all 0.2s ease;
+
+      &:focus {
+        border-color: #38bdf8;
+        box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.25);
+      }
+    }
+  }
+
+  &__hint-text {
+    font-size: 0.75rem;
+    color: #94a3b8;
+    margin-top: 0.3rem;
+  }
+
+  // Toggle button group (Yes / No)
+  &__toggle-group {
+    display: inline-flex;
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    overflow: hidden;
+    width: fit-content;
+
+    button {
+      background: rgba(30, 41, 59, 0.7);
+      border: none;
+      color: #94a3b8;
+      padding: 0.5rem 1.25rem;
+      font-size: 0.875rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+
+      &.active {
+        background: #0284c7;
+        color: #ffffff;
+      }
+    }
+  }
+
+  // Sub-tables for Variants and Pricelists matching screenshot
+  &__subtable {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 0.75rem;
+    font-size: 0.9375rem;
+
+    thead {
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      th {
+        padding: 0.85rem 1rem;
+        color: #94a3b8;
+        font-weight: 600;
+        text-align: left;
+        font-size: 0.875rem;
+
+        &.col-attribute { width: 25%; }
+        &.col-values { width: 38%; }
+        &.col-extra { width: 22%; }
+        &.col-tier { width: 25%; }
+        &.col-currency { width: 25%; }
+        &.col-rule { width: 35%; }
+        &.col-actions { width: 15%; text-align: right; }
+      }
+    }
+
+    tbody {
+      tr {
+        border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+        transition: background 0.15s ease;
+
+        &:hover {
+          background: rgba(255, 255, 255, 0.02);
+        }
+
+        &.df-row-editing {
+          background: rgba(56, 189, 248, 0.05);
+        }
+      }
+
+      td {
+        padding: 1rem 1rem;
+        color: #cbd5e1;
+        vertical-align: middle;
+
+        &.cell-actions {
+          text-align: right;
+        }
+      }
+    }
+  }
+
+  &__empty-table {
+    text-align: center;
+    padding: 2rem;
+    color: #64748b;
+  }
+
+  // Text formatting in table rows matching screenshot
+  .df-variant-attribute-title,
+  .df-pricelist-tier-title {
+    font-weight: 700;
+    color: #ffffff;
+    font-size: 0.9375rem;
+  }
+
+  .df-variant-values-text,
+  .df-pricelist-currency-text,
+  .df-pricelist-rule-text {
+    color: #cbd5e1;
+    font-size: 0.9375rem;
+  }
+
+  .df-variant-extra-price {
+    color: #38bdf8;
+    font-weight: 600;
+    font-size: 0.9375rem;
+  }
+
+  // Table inputs and selects when in edit mode
+  .df-table-input,
+  .df-table-select {
+    width: 100%;
+    background: rgba(15, 23, 42, 0.9);
+    border: 1px solid rgba(56, 189, 248, 0.4);
+    padding: 0.45rem 0.75rem;
+    border-radius: 6px;
+    color: #ffffff;
+    font-size: 0.875rem;
+    outline: none;
+
+    &:focus {
+      border-color: #38bdf8;
+      box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.2);
+    }
+
+    &--extra {
+      color: #38bdf8;
+    }
+  }
+
+  // Action Button Groups
+  .df-action-btn-group {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .df-action-btn {
+    background: rgba(30, 41, 59, 0.6);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: #cbd5e1;
+    padding: 0.35rem 0.65rem;
+    border-radius: 6px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+
+    &--edit {
+      &:hover {
+        background: rgba(56, 189, 248, 0.2);
+        color: #38bdf8;
+        border-color: rgba(56, 189, 248, 0.4);
+      }
+    }
+
+    &--delete {
+      color: #f87171;
+      &:hover {
+        background: rgba(239, 68, 68, 0.2);
+        border-color: rgba(239, 68, 68, 0.4);
+      }
+    }
+
+    &--save {
+      background: rgba(16, 185, 129, 0.2);
+      color: #34d399;
+      border-color: rgba(16, 185, 129, 0.4);
+
+      &:hover {
+        background: rgba(16, 185, 129, 0.3);
+      }
+    }
+
+    &--cancel {
+      color: #94a3b8;
+      &:hover {
+        background: rgba(255, 255, 255, 0.1);
+      }
+    }
+  }
+
+  // Notice Banner matching Wireframe #17
+  &__notice-banner {
+    background: rgba(245, 158, 11, 0.08);
+    border: 1px solid rgba(245, 158, 11, 0.35);
+    border-radius: 10px;
+    padding: 1.25rem;
+    color: #fbbf24;
+    font-size: 0.875rem;
+    line-height: 1.5;
+    margin-bottom: 2rem;
+  }
+
+  &__actions {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 1rem;
+  }
+
+  &__delete-btn {
+    margin-right: auto;
+    background: rgba(239, 68, 68, 0.15);
+    border: 1px solid rgba(239, 68, 68, 0.35);
+    color: #f87171;
+    padding: 0.65rem 1.25rem;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 0.875rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+
+    &:hover:not(:disabled) {
+      background: rgba(239, 68, 68, 0.25);
+      border-color: #ef4444;
+    }
+
+    &:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+  }
+}
