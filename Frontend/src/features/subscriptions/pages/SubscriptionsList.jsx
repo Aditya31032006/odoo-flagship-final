@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router';
 import { useSelector } from 'react-redux';
 import { useForm } from 'react-hook-form';
 import { subscriptionApi } from '../services/subscription.api.js';
+import PermissionGate from '../../../shared/components/PermissionGate.jsx';
 import '../styles/subscriptions.scss';
 
 const formatCycle = (cycle) => {
@@ -111,6 +112,16 @@ const SubscriptionsList = () => {
         <div className="df-subscriptions__header">
           <div className="df-subscriptions__title-row">
             <h1 className="df-subscriptions__title">Subscriptions (List)</h1>
+            <PermissionGate allowedRoles={['admin', 'finance']}>
+              <button
+                type="button"
+                className="df-subscriptions__status-card df-subscriptions__status-card--active"
+                style={{ fontSize: '0.875rem', padding: '0.5rem 1rem', cursor: 'pointer' }}
+                onClick={() => setIsPlanModalOpen(true)}
+              >
+                + New Master Plan
+              </button>
+            </PermissionGate>
           </div>
           <p className="df-subscriptions__subtitle">
             Every recurring plan across every customer, regardless of which order it came from

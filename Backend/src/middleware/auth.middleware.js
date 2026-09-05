@@ -1,6 +1,7 @@
 import { verifyToken } from '../utils/cookie.util.js';
 import { STATUS_CODES } from '../constants/statusCodes.js';
 import { MESSAGES } from '../constants/messages.js';
+import { ROLES, hasPermission } from '../constants/roles.js';
 
 /**
  * Authentication middleware that verifies JWT from cookies or Authorization Bearer header.
@@ -39,12 +40,29 @@ export const authMiddleware = (req, res, next) => {
 
 /**
  * Role-based authorization middleware
+ * Accepts list or array of roles (e.g. authorizeRoles('admin', 'sales_manager') or authorizeRoles(['admin', 'sales_manager']))
  */
 export const authorizeRoles = (...allowedRoles) => {
+  const flattenedRoles = allowedRoles.flat();
   return (req, res, next) => {
-    if (!req.user || !allowedRoles.includes(req.user.role)) {
+    if (!req.user || (!flattenedRoles.includes(req.user.role) && req.user.role !== ROLES.ADMIN)) {
       return res.status(STATUS_CODES.FORBIDDEN).json({
-        message: 'Access forbidden: You do not have the required role permissions.'
+        message: 'Access forbidden: You do not have the required role permissions for this operation.',
+      });
+    }
+    next();
+  };
+};
+
+/**
+ * Capability-based authorization middleware
+ * Checks if req.user.role has permission for permissionKey in PERMISSIONS
+ */
+export const requirePermission = (permissionKey) => {
+  return (req, res, next) => {
+    if (!req.user || !hasPermission(req.user.role, permissionKey)) {
+      return res.status(STATUS_CODES.FORBIDDEN).json({
+        message: `Access forbidden: Insufficient permissions for capability '${permissionKey}'.`,
       });
     }
     next();

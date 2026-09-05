@@ -8,6 +8,7 @@ const NAV_ITEMS = [
   {
     name: 'Dashboard',
     path: '/dashboard',
+    allowedRoles: ['admin', 'sales_rep', 'sales_manager', 'finance', 'operations'],
     icon: (
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="nav-icon">
         <rect width="7" height="9" x="3" y="3" rx="1" />
@@ -20,6 +21,7 @@ const NAV_ITEMS = [
   {
     name: 'Quotations',
     path: '/quotations',
+    allowedRoles: ['admin', 'sales_rep', 'sales_manager', 'finance', 'operations'],
     icon: (
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="nav-icon">
         <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
@@ -33,7 +35,7 @@ const NAV_ITEMS = [
   {
     name: 'Approvals',
     path: '/approvals',
-    
+    allowedRoles: ['admin', 'sales_manager', 'finance'],
     icon: (
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="nav-icon">
         <path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z" />
@@ -44,6 +46,7 @@ const NAV_ITEMS = [
   {
     name: 'Fulfillment',
     path: '/fulfillment',
+    allowedRoles: ['admin', 'operations', 'finance', 'sales_manager'],
     icon: (
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="nav-icon">
         <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
@@ -55,6 +58,7 @@ const NAV_ITEMS = [
   {
     name: 'Subscriptions',
     path: '/subscriptions',
+    allowedRoles: ['admin', 'finance', 'sales_manager', 'sales_rep'],
     icon: (
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="nav-icon">
         <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67" />
@@ -64,6 +68,7 @@ const NAV_ITEMS = [
   {
     name: 'Invoices',
     path: '/invoices',
+    allowedRoles: ['admin', 'finance', 'sales_manager', 'sales_rep'],
     icon: (
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="nav-icon">
         <line x1="12" x2="12" y1="2" y2="22" />
@@ -75,6 +80,7 @@ const NAV_ITEMS = [
     name: 'Deal Health',
     path: '/deal-health',
     hasPulse: true,
+    allowedRoles: ['admin', 'sales_manager', 'finance', 'sales_rep'],
     icon: (
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="nav-icon">
         <path d="M22 12h-4l-3 9L9 3l-3 9H2" />
@@ -84,6 +90,7 @@ const NAV_ITEMS = [
   {
     name: 'Reports',
     path: '/reports',
+    allowedRoles: ['admin', 'sales_manager', 'finance', 'operations', 'sales_rep'],
     icon: (
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="nav-icon">
         <line x1="18" x2="18" y1="20" y2="10" />
@@ -95,6 +102,7 @@ const NAV_ITEMS = [
   {
     name: 'Product',
     path: '/products',
+    allowedRoles: ['admin', 'sales_manager', 'operations', 'sales_rep'],
     icon: (
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="nav-icon">
         <path d="m7.5 4.27 9 5.15" />
@@ -105,9 +113,22 @@ const NAV_ITEMS = [
     ),
   },
   {
+    name: 'Discount Rules',
+    path: '/discount-rules',
+    allowedRoles: ['admin', 'sales_manager'],
+    icon: (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="nav-icon">
+        <circle cx="12" cy="12" r="10" />
+        <line x1="9" y1="15" x2="15" y2="9" />
+        <circle cx="9.5" cy="9.5" r=".5" fill="currentColor" />
+        <circle cx="14.5" cy="14.5" r=".5" fill="currentColor" />
+      </svg>
+    ),
+  },
+  {
     name: 'Manage Staff',
     path: '/staff',
-    adminOnly: true,
+    allowedRoles: ['admin'],
     icon: (
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="nav-icon">
         <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
@@ -195,7 +216,10 @@ function NavbarComponent() {
           ),
         },
       ]
-    : NAV_ITEMS.filter((item) => !item.adminOnly || user?.role === 'admin');
+    : NAV_ITEMS.filter((item) => {
+        if (!item.allowedRoles) return true;
+        return user?.role === 'admin' || item.allowedRoles.includes(user?.role);
+      });
 
   if (isAuthRoute) {
     return null;

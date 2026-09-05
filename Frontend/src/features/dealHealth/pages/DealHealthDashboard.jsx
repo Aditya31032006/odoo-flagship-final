@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router';
 import { useSelector } from 'react-redux';
 import { useForm } from 'react-hook-form';
 import { dealHealthApi } from '../services/dealHealth.api.js';
+import PermissionGate from '../../../shared/components/PermissionGate.jsx';
 import '../styles/dealHealth.scss';
 
 const formatDate = (dateStr) => {
@@ -247,13 +248,15 @@ const DealHealthDashboard = () => {
               >
                 {isScanning ? 'Scanning...' : '⚡ Scan Health'}
               </button>
-              <button
-                type="button"
-                className="df-deal-health__btn-config"
-                onClick={() => setIsConfigModalOpen(true)}
-              >
-                ⚙ Configure Thresholds
-              </button>
+              <PermissionGate allowedRoles={['admin', 'sales_manager']}>
+                <button
+                  type="button"
+                  className="df-deal-health__btn-config"
+                  onClick={() => setIsConfigModalOpen(true)}
+                >
+                  ⚙ Configure Thresholds
+                </button>
+              </PermissionGate>
             </div>
           </div>
         </div>

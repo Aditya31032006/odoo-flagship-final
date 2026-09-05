@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router';
 import useFulfillment from '../hooks/useFulfillment.js';
 import ManualOverrideModal from '../components/ManualOverrideModal.jsx';
+import PermissionGate from '../../../shared/components/PermissionGate.jsx';
 import '../styles/fulfillment.scss';
 
 function formatCurrency(amount) {
@@ -299,39 +300,41 @@ export const FulfillmentDetail = () => {
         )}
 
         {/* Actions Bar matching Wireframe #8 */}
-        <div className="df-fulfillment__actions-bar">
-          <button
-            type="button"
-            className="df-fulfillment__action-btn df-fulfillment__action-btn--accept"
-            onClick={handleAcceptSplit}
-            disabled={isSavingSplit || hasPendingBackorders}
-            style={
-              hasPendingBackorders
-                ? {
-                    opacity: 0.45,
-                    cursor: 'not-allowed',
-                    filter: 'grayscale(0.6)',
-                  }
-                : {}
-            }
-            title={
-              hasPendingBackorders
-                ? `Cannot accept split: ${shortageQty > 0 ? `${shortageQty} units missing.` : 'Pending backorder exists.'} Please add warehouse stock first.`
-                : 'Accept suggested warehouse splits and move order to shipment'
-            }
-          >
-            {isSavingSplit ? 'Processing...' : 'Accept Suggested Split'}
-          </button>
+        <PermissionGate allowedRoles={['admin', 'operations', 'finance']}>
+          <div className="df-fulfillment__actions-bar">
+            <button
+              type="button"
+              className="df-fulfillment__action-btn df-fulfillment__action-btn--accept"
+              onClick={handleAcceptSplit}
+              disabled={isSavingSplit || hasPendingBackorders}
+              style={
+                hasPendingBackorders
+                  ? {
+                      opacity: 0.45,
+                      cursor: 'not-allowed',
+                      filter: 'grayscale(0.6)',
+                    }
+                  : {}
+              }
+              title={
+                hasPendingBackorders
+                  ? `Cannot accept split: ${shortageQty > 0 ? `${shortageQty} units missing.` : 'Pending backorder exists.'} Please add warehouse stock first.`
+                  : 'Accept suggested warehouse splits and move order to shipment'
+              }
+            >
+              {isSavingSplit ? 'Processing...' : 'Accept Suggested Split'}
+            </button>
 
-          <button
-            type="button"
-            className="df-fulfillment__action-btn df-fulfillment__action-btn--override"
-            onClick={() => setIsOverrideModalOpen(true)}
-            disabled={isSavingSplit}
-          >
-            Manual Override
-          </button>
-        </div>
+            <button
+              type="button"
+              className="df-fulfillment__action-btn df-fulfillment__action-btn--override"
+              onClick={() => setIsOverrideModalOpen(true)}
+              disabled={isSavingSplit}
+            >
+              Manual Override
+            </button>
+          </div>
+        </PermissionGate>
       </div>
 
       {/* Manual Override Modal */}

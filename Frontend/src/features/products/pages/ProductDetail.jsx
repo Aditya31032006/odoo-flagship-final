@@ -2,6 +2,7 @@ import React, { useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router';
 import { useForm } from 'react-hook-form';
 import useProducts from '../hook/useProducts.js';
+import PermissionGate from '../../../shared/components/PermissionGate.jsx';
 import '../styles/productDetail.scss';
 
 export const ProductDetail = ({ isNew = false }) => {
@@ -594,27 +595,32 @@ export const ProductDetail = ({ isNew = false }) => {
 
           {/* Action buttons */}
           <div className="df-product-detail__actions">
-            {isEditingExisting && (
-              <button
-                type="button"
-                onClick={onDeleteClick}
-                className="df-product-detail__delete-btn"
-                disabled={isDeleting}
-              >
-                {isDeleting ? 'Deleting...' : 'Delete Product'}
-              </button>
-            )}
+            <PermissionGate allowedRoles={['admin', 'sales_manager', 'operations']}>
+              {isEditingExisting && (
+                <button
+                  type="button"
+                  onClick={onDeleteClick}
+                  className="df-product-detail__delete-btn"
+                  disabled={isDeleting}
+                >
+                  {isDeleting ? 'Deleting...' : 'Delete Product'}
+                </button>
+              )}
+            </PermissionGate>
 
             <Link to="/products" className="df-products__btn-secondary">
               Cancel
             </Link>
-            <button
-              type="submit"
-              className="df-products__btn-primary"
-              disabled={isSaving}
-            >
-              {isSaving ? 'Saving Product...' : isEditingExisting ? 'Update Product' : 'Save Product'}
-            </button>
+
+            <PermissionGate allowedRoles={['admin', 'sales_manager', 'operations']}>
+              <button
+                type="submit"
+                className="df-products__btn-primary"
+                disabled={isSaving}
+              >
+                {isSaving ? 'Saving Product...' : isEditingExisting ? 'Update Product' : 'Save Product'}
+              </button>
+            </PermissionGate>
           </div>
         </form>
       </div>

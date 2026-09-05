@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router';
 import useApprovals from '../hooks/useApprovals.js';
 import ApprovalActionModal from '../components/ApprovalActionModal.jsx';
+import PermissionGate from '../../../shared/components/PermissionGate.jsx';
 import '../styles/approvals.scss';
 
 export const ApprovalDetail = () => {
@@ -242,32 +243,34 @@ export const ApprovalDetail = () => {
         </div>
 
         {/* Decision Action Buttons */}
-        <div className="df-approvals__actions-bar">
-          <button
-            type="button"
-            className="df-approvals__action-btn df-approvals__action-btn--approve"
-            onClick={() => handleOpenModal('approve')}
-            disabled={isSubmittingDecision}
-          >
-            Approve
-          </button>
-          <button
-            type="button"
-            className="df-approvals__action-btn df-approvals__action-btn--return"
-            onClick={() => handleOpenModal('return_revision')}
-            disabled={isSubmittingDecision}
-          >
-            Return for Revision
-          </button>
-          <button
-            type="button"
-            className="df-approvals__action-btn df-approvals__action-btn--reject"
-            onClick={() => handleOpenModal('reject')}
-            disabled={isSubmittingDecision}
-          >
-            Reject
-          </button>
-        </div>
+        <PermissionGate allowedRoles={['admin', 'sales_manager', 'finance']}>
+          <div className="df-approvals__actions-bar">
+            <button
+              type="button"
+              className="df-approvals__action-btn df-approvals__action-btn--approve"
+              onClick={() => handleOpenModal('approve')}
+              disabled={isSubmittingDecision}
+            >
+              Approve
+            </button>
+            <button
+              type="button"
+              className="df-approvals__action-btn df-approvals__action-btn--return"
+              onClick={() => handleOpenModal('return_revision')}
+              disabled={isSubmittingDecision}
+            >
+              Return for Revision
+            </button>
+            <button
+              type="button"
+              className="df-approvals__action-btn df-approvals__action-btn--reject"
+              onClick={() => handleOpenModal('reject')}
+              disabled={isSubmittingDecision}
+            >
+              Reject
+            </button>
+          </div>
+        </PermissionGate>
       </div>
 
       {/* Modal using React Hook Form */}

@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router';
 import { useForm } from 'react-hook-form';
 import { subscriptionApi } from '../services/subscription.api.js';
+import PermissionGate from '../../../shared/components/PermissionGate.jsx';
 import '../styles/subscriptions.scss';
 
 const formatCycle = (cycle) => {
@@ -493,26 +494,28 @@ const SubscriptionDetail = () => {
         )}
 
         {/* Action Buttons matching Wireframe #10 */}
-        <div className="df-subscriptions__actions-row">
-          <button
-            type="button"
-            className="df-subscriptions__btn-modify"
-            onClick={() => setIsModifyModalOpen(true)}
-            disabled={isCancelled}
-            title={isCancelled ? 'Cancelled subscriptions cannot be modified' : ''}
-          >
-            Modify Subscription
-          </button>
-          <button
-            type="button"
-            className="df-subscriptions__btn-cancel"
-            onClick={() => setIsCancelModalOpen(true)}
-            disabled={isCancelled}
-            title={isCancelled ? 'Subscription is already cancelled' : ''}
-          >
-            Cancel Subscription
-          </button>
-        </div>
+        <PermissionGate allowedRoles={['admin', 'finance']}>
+          <div className="df-subscriptions__actions-row">
+            <button
+              type="button"
+              className="df-subscriptions__btn-modify"
+              onClick={() => setIsModifyModalOpen(true)}
+              disabled={isCancelled}
+              title={isCancelled ? 'Cancelled subscriptions cannot be modified' : ''}
+            >
+              Modify Subscription
+            </button>
+            <button
+              type="button"
+              className="df-subscriptions__btn-cancel"
+              onClick={() => setIsCancelModalOpen(true)}
+              disabled={isCancelled}
+              title={isCancelled ? 'Subscription is already cancelled' : ''}
+            >
+              Cancel Subscription
+            </button>
+          </div>
+        </PermissionGate>
       </div>
 
       {/* Modal: Modify Subscription */}

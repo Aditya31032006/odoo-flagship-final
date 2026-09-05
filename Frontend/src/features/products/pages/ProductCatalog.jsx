@@ -2,6 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router';
 import useProducts from '../hook/useProducts.js';
 import { useDebounce } from '../../../shared/hooks/useDebounce.js';
+import PermissionGate from '../../../shared/components/PermissionGate.jsx';
 import '../styles/products.scss';
 
 function formatCurrency(val) {
@@ -39,20 +40,24 @@ export const ProductCatalog = () => {
 
         {/* Buttons matching Wireframe #16 */}
         <div className="df-products__actions-row">
-          <Link to="/products/new" className="df-products__btn-primary">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" className="df-products__btn-icon">
-              <line x1="12" x2="12" y1="5" y2="19" />
-              <line x1="5" x2="19" y1="12" y2="12" />
-            </svg>
-             New Product
-          </Link>
+          <PermissionGate allowedRoles={['admin', 'sales_manager', 'operations']}>
+            <Link to="/products/new" className="df-products__btn-primary">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" className="df-products__btn-icon">
+                <line x1="12" x2="12" y1="5" y2="19" />
+                <line x1="5" x2="19" y1="12" y2="12" />
+              </svg>
+               New Product
+            </Link>
+          </PermissionGate>
 
-          <Link
-            to="/discount-rules"
-            className="df-products__btn-secondary"
-          >
-            Discount Tiers & Rules
-          </Link>
+          <PermissionGate allowedRoles={['admin', 'sales_manager']}>
+            <Link
+              to="/discount-rules"
+              className="df-products__btn-secondary"
+            >
+              Discount Tiers & Rules
+            </Link>
+          </PermissionGate>
         </div>
 
         {/* 3 Summary Cards matching Wireframe #16 */}

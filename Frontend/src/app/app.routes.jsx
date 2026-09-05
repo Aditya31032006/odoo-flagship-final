@@ -39,6 +39,8 @@ const PagePlaceholder = ({ title, description }) => (
 );
 
 
+import RoleGuard from '../features/auth/components/RoleGuard.jsx';
+
 export const router = createBrowserRouter([
   // Protected Routes (Require Authentication, Includes Navbar Layout & Outlet)
   {
@@ -64,22 +66,37 @@ export const router = createBrowserRouter([
         path: '/quotations/:id',
         element: <QuotationDetail />,
       },
+
+      // Approvals: Admin, Sales Manager, Finance
       {
-        path: '/approvals',
-        element: <ApprovalsList />,
+        element: <RoleGuard allowedRoles={['admin', 'sales_manager', 'finance']} />,
+        children: [
+          {
+            path: '/approvals',
+            element: <ApprovalsList />,
+          },
+          {
+            path: '/approvals/:id',
+            element: <ApprovalDetail />,
+          },
+        ],
       },
+
+      // Fulfillment: Admin, Operations, Finance, Sales Manager
       {
-        path: '/approvals/:id',
-        element: <ApprovalDetail />,
+        element: <RoleGuard allowedRoles={['admin', 'operations', 'finance', 'sales_manager']} />,
+        children: [
+          {
+            path: '/fulfillment',
+            element: <FulfillmentList />,
+          },
+          {
+            path: '/fulfillment/:orderId',
+            element: <FulfillmentDetail />,
+          },
+        ],
       },
-      {
-        path: '/fulfillment',
-        element: <FulfillmentList />,
-      },
-      {
-        path: '/fulfillment/:orderId',
-        element: <FulfillmentDetail />,
-      },
+
       {
         path: '/subscriptions',
         element: <SubscriptionsList />,
@@ -124,25 +141,46 @@ export const router = createBrowserRouter([
         path: '/profile',
         element: <Profile />,
       },
+
+      // Staff Management: Admin only
       {
-        path: '/staff',
-        element: <StaffManagement />,
+        element: <RoleGuard allowedRoles={['admin']} />,
+        children: [
+          {
+            path: '/staff',
+            element: <StaffManagement />,
+          },
+        ],
       },
+
+      // Discount Rules Setup: Admin & Sales Manager
       {
-        path: '/discount-rules',
-        element: <DiscountRulesSetup />,
+        element: <RoleGuard allowedRoles={['admin', 'sales_manager']} />,
+        children: [
+          {
+            path: '/discount-rules',
+            element: <DiscountRulesSetup />,
+          },
+          {
+            path: '/discount-tiers',
+            element: <DiscountRulesSetup />,
+          },
+        ],
       },
+
+      // Customer Portal Views
       {
-        path: '/discount-tiers',
-        element: <DiscountRulesSetup />,
-      },
-      {
-        path: '/my_quotations',
-        element: <MyQuotations />,
-      },
-      {
-        path: '/my_invoices',
-        element: <MyInvoices />,
+        element: <RoleGuard allowedRoles={['customer', 'admin']} />,
+        children: [
+          {
+            path: '/my_quotations',
+            element: <MyQuotations />,
+          },
+          {
+            path: '/my_invoices',
+            element: <MyInvoices />,
+          },
+        ],
       },
     ],
   },

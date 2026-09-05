@@ -15,7 +15,8 @@ import {
   deleteProductController,
   deleteVariantController,
 } from '../controllers/catalog.controller.js';
-import { authMiddleware } from '../middleware/auth.middleware.js';
+import { authMiddleware, authorizeRoles } from '../middleware/auth.middleware.js';
+import { ROLES } from '../constants/roles.js';
 
 const router = Router();
 
@@ -34,10 +35,27 @@ router.get('/products/summary', getProductCatalogSummaryController);
 router.get('/products/all', getAllProductsController);
 router.get('/products/categories', getProductCategoriesController);
 router.get('/products/:id', getProductDetailController);
-router.post('/products', createProductController);
-router.put('/products/:id', updateProductController);
-router.delete('/products/:id', deleteProductController);
-router.delete('/variants/:id', deleteVariantController);
+
+// Restricted Product & Variant Management
+router.post(
+  '/products',
+  authorizeRoles(ROLES.ADMIN, ROLES.SALES_MANAGER, ROLES.OPERATIONS),
+  createProductController
+);
+router.put(
+  '/products/:id',
+  authorizeRoles(ROLES.ADMIN, ROLES.SALES_MANAGER, ROLES.OPERATIONS),
+  updateProductController
+);
+router.delete(
+  '/products/:id',
+  authorizeRoles(ROLES.ADMIN, ROLES.SALES_MANAGER, ROLES.OPERATIONS),
+  deleteProductController
+);
+router.delete(
+  '/variants/:id',
+  authorizeRoles(ROLES.ADMIN, ROLES.SALES_MANAGER, ROLES.OPERATIONS),
+  deleteVariantController
+);
 
 export default router;
-

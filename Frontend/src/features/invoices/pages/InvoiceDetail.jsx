@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router';
 import { useForm } from 'react-hook-form';
 import { invoiceApi } from '../services/invoice.api.js';
 import InvoicePrintModal from '../components/InvoicePrintModal.jsx';
+import PermissionGate from '../../../shared/components/PermissionGate.jsx';
 import '../styles/invoices.scss';
 
 const formatDate = (dateStr) => {
@@ -452,14 +453,16 @@ const InvoiceDetail = () => {
 
         {/* Action Buttons matching Wireframe #13 */}
         <div className="df-invoices__actions-row">
-          <button
-            type="button"
-            className="df-invoices__btn-payment"
-            onClick={() => setIsPaymentModalOpen(true)}
-            disabled={isPaid}
-          >
-            {isPaid ? 'Fully Paid' : 'Record Payment'}
-          </button>
+          <PermissionGate allowedRoles={['admin', 'finance']}>
+            <button
+              type="button"
+              className="df-invoices__btn-payment"
+              onClick={() => setIsPaymentModalOpen(true)}
+              disabled={isPaid}
+            >
+              {isPaid ? 'Fully Paid' : 'Record Payment'}
+            </button>
+          </PermissionGate>
           <button
             type="button"
             className="df-invoices__btn-download"

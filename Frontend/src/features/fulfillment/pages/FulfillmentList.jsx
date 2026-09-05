@@ -5,6 +5,7 @@ import { useDebounce } from '../../../shared/hooks/useDebounce.js';
 import WarehouseStockModal from '../components/WarehouseStockModal.jsx';
 import OrderModal from '../components/OrderModal.jsx';
 import DeleteConfirmModal from '../components/DeleteConfirmModal.jsx';
+import PermissionGate from '../../../shared/components/PermissionGate.jsx';
 import '../styles/fulfillment.scss';
 
 export const FulfillmentList = () => {
@@ -221,13 +222,15 @@ export const FulfillmentList = () => {
                 </button>
               )}
             </div>
-            <button
-              type="button"
-              className="df-fulfillment__add-btn"
-              onClick={handleOpenAddStock}
-            >
-              + Add Warehouse Stock
-            </button>
+            <PermissionGate allowedRoles={['admin', 'operations']}>
+              <button
+                type="button"
+                className="df-fulfillment__add-btn"
+                onClick={handleOpenAddStock}
+              >
+                + Add Warehouse Stock
+              </button>
+            </PermissionGate>
           </div>
         </div>
 
@@ -348,13 +351,15 @@ export const FulfillmentList = () => {
                 </button>
               )}
             </div>
-            <button
-              type="button"
-              className="df-fulfillment__add-btn"
-              onClick={handleOpenAddOrder}
-            >
-              + Create Fulfillment Order
-            </button>
+            <PermissionGate allowedRoles={['admin', 'operations', 'finance']}>
+              <button
+                type="button"
+                className="df-fulfillment__add-btn"
+                onClick={handleOpenAddOrder}
+              >
+                + Create Fulfillment Order
+              </button>
+            </PermissionGate>
           </div>
         </div>
 
