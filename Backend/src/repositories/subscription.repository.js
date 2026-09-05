@@ -59,49 +59,83 @@ export const getSubscriptionsListRepo = async (statusFilter = null) => {
     params.push(statusFilter);
   }
 
-  const [subscriptionsRes, statusCountsRes] = await Promise.all([
-    pool.query(query, params),
-    pool.query(GET_SUBSCRIPTION_STATUS_COUNTS),
-  ]);
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    const [subscriptionsRes, statusCountsRes] = await Promise.all([
+      client.query(query, params),
+      client.query(GET_SUBSCRIPTION_STATUS_COUNTS),
+    ]);
+    await client.query('COMMIT');
 
-  return {
-    subscriptions: subscriptionsRes.rows,
-    statusCounts: statusCountsRes.rows[0] || {
-      active_count: 0,
-      paused_count: 0,
-      cancelled_count: 0,
-      expired_count: 0,
-      total_count: 0,
-    },
-  };
+    return {
+      subscriptions: subscriptionsRes.rows,
+      statusCounts: statusCountsRes.rows[0] || {
+        active_count: 0,
+        paused_count: 0,
+        cancelled_count: 0,
+        expired_count: 0,
+        total_count: 0,
+      },
+    };
+  } catch (error) {
+    console.error('Error in getSubscriptionsListRepo:', error);
+    await client.query('ROLLBACK');
+    throw error;
+  } finally {
+    client.release();
+  }
 };
 
 export const getSubscriptionDetailRepo = async (subscriptionId) => {
-  const subRes = await pool.query(GET_SUBSCRIPTION_BY_ID, [subscriptionId]);
-  if (subRes.rows.length === 0) {
-    return null;
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    const subRes = await client.query(GET_SUBSCRIPTION_BY_ID, [subscriptionId]);
+    if (subRes.rows.length === 0) {
+      await client.query('COMMIT');
+      return null;
+    }
+
+    const subscription = subRes.rows[0];
+    const orderId = subscription.order_id;
+
+    const [oneTimeRes, billingLinesRes, allPlansRes] = await Promise.all([
+      orderId ? client.query(GET_ORIGINATING_ORDER_ONE_TIME_ITEMS, [orderId]) : { rows: [] },
+      client.query(GET_SUBSCRIPTION_BILLING_LINES, [subscriptionId]),
+      client.query(GET_ALL_SUBSCRIPTION_PLANS),
+    ]);
+    await client.query('COMMIT');
+
+    return {
+      subscription,
+      oneTimeLines: oneTimeRes.rows,
+      billingLines: billingLinesRes.rows,
+      availablePlans: allPlansRes.rows,
+    };
+  } catch (error) {
+    console.error('Error in getSubscriptionDetailRepo:', error);
+    await client.query('ROLLBACK');
+    throw error;
+  } finally {
+    client.release();
   }
-
-  const subscription = subRes.rows[0];
-  const orderId = subscription.order_id;
-
-  const [oneTimeRes, billingLinesRes, allPlansRes] = await Promise.all([
-    orderId ? pool.query(GET_ORIGINATING_ORDER_ONE_TIME_ITEMS, [orderId]) : { rows: [] },
-    pool.query(GET_SUBSCRIPTION_BILLING_LINES, [subscriptionId]),
-    pool.query(GET_ALL_SUBSCRIPTION_PLANS),
-  ]);
-
-  return {
-    subscription,
-    oneTimeLines: oneTimeRes.rows,
-    billingLines: billingLinesRes.rows,
-    availablePlans: allPlansRes.rows,
-  };
 };
 
 export const getSubscriptionPlansRepo = async () => {
-  const res = await pool.query(GET_ALL_SUBSCRIPTION_PLANS);
-  return res.rows;
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    const res = await client.query(GET_ALL_SUBSCRIPTION_PLANS);
+    await client.query('COMMIT');
+    return res.rows;
+  } catch (error) {
+    console.error('Error in getSubscriptionPlansRepo:', error);
+    await client.query('ROLLBACK');
+    throw error;
+  } finally {
+    client.release();
+  }
 };
 
 export const createSubscriptionPlanRepo = async ({
@@ -113,38 +147,50 @@ export const createSubscriptionPlanRepo = async ({
   allow_cancellation = true,
   allow_partial_refund = false,
 }) => {
-  let targetProductId = product_id;
-  if (!targetProductId) {
-    const prodRes = await pool.query(`SELECT id FROM products LIMIT 1;`);
-    if (prodRes.rows.length > 0) {
-      targetProductId = prodRes.rows[0].id;
-    } else {
-      const catRes = await pool.query(`SELECT id FROM product_categories LIMIT 1;`);
-      let catId;
-      if (catRes.rows.length > 0) {
-        catId = catRes.rows[0].id;
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+
+    let targetProductId = product_id;
+    if (!targetProductId) {
+      const prodRes = await client.query(`SELECT id FROM products LIMIT 1;`);
+      if (prodRes.rows.length > 0) {
+        targetProductId = prodRes.rows[0].id;
       } else {
-        const newCat = await pool.query(`INSERT INTO product_categories (name) VALUES ('General') RETURNING id;`);
-        catId = newCat.rows[0].id;
+        const catRes = await client.query(`SELECT id FROM product_categories LIMIT 1;`);
+        let catId;
+        if (catRes.rows.length > 0) {
+          catId = catRes.rows[0].id;
+        } else {
+          const newCat = await client.query(`INSERT INTO product_categories (name) VALUES ('General') RETURNING id;`);
+          catId = newCat.rows[0].id;
+        }
+        const newP = await client.query(`
+          INSERT INTO products (name, category_id, base_price) VALUES ($1, $2, $3) RETURNING id;
+        `, [name, catId, price]);
+        targetProductId = newP.rows[0].id;
       }
-      const newP = await pool.query(`
-        INSERT INTO products (name, category_id, base_price) VALUES ($1, $2, $3) RETURNING id;
-      `, [name, catId, price]);
-      targetProductId = newP.rows[0].id;
     }
+
+    const res = await client.query(CREATE_SUBSCRIPTION_PLAN, [
+      targetProductId,
+      name,
+      billing_cycle,
+      price,
+      Boolean(allow_proration),
+      Boolean(allow_cancellation),
+      Boolean(allow_partial_refund),
+    ]);
+
+    await client.query('COMMIT');
+    return res.rows[0];
+  } catch (error) {
+    console.error('Error in createSubscriptionPlanRepo:', error);
+    await client.query('ROLLBACK');
+    throw error;
+  } finally {
+    client.release();
   }
-
-  const res = await pool.query(CREATE_SUBSCRIPTION_PLAN, [
-    targetProductId,
-    name,
-    billing_cycle,
-    price,
-    Boolean(allow_proration),
-    Boolean(allow_cancellation),
-    Boolean(allow_partial_refund),
-  ]);
-
-  return res.rows[0];
 };
 
 export const updateSubscriptionConfigRepo = async (id, {
@@ -207,6 +253,7 @@ export const updateSubscriptionConfigRepo = async (id, {
     await client.query('COMMIT');
     return updatedSub;
   } catch (err) {
+    console.error('Error in updateSubscriptionConfigRepo:', err);
     await client.query('ROLLBACK');
     throw err;
   } finally {
@@ -256,6 +303,7 @@ export const cancelSubscriptionRepo = async (id, { reason, is_prorated = false, 
     await client.query('COMMIT');
     return cancelRes.rows[0];
   } catch (err) {
+    console.error('Error in cancelSubscriptionRepo:', err);
     await client.query('ROLLBACK');
     throw err;
   } finally {

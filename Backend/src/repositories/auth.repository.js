@@ -215,10 +215,13 @@ export const completeUserOnboardingRepo = async ({ user_id, register_type, compa
 export const listActiveCompaniesRepo = async () => {
     const client = await pool.connect();
     try {
+        await client.query("BEGIN");
         const result = await client.query(LIST_ACTIVE_CUSTOMERS);
+        await client.query("COMMIT");
         return result.rows;
     } catch (error) {
         console.error("Error in listActiveCompaniesRepo:", error);
+        await client.query("ROLLBACK");
         throw error;
     } finally {
         client.release();
@@ -228,10 +231,13 @@ export const listActiveCompaniesRepo = async () => {
 export const findUserRepo = async (email) => {
     const client = await pool.connect();
     try {
+        await client.query("BEGIN");
         const result = await client.query(FIND_USER, [email]);
+        await client.query("COMMIT");
         return result.rows[0];
     } catch (error) {
         console.error("Error in findUserRepo:", error);
+        await client.query("ROLLBACK");
         throw error;
     } finally {
         client.release();
@@ -241,11 +247,14 @@ export const findUserRepo = async (email) => {
 export const findUserByIdentifierRepo = async (identifier) => {
     const client = await pool.connect();
     try {
+        await client.query("BEGIN");
         const cleanIdentifier = identifier.trim();
         const result = await client.query(FIND_USER_BY_IDENTIFIER, [cleanIdentifier]);
+        await client.query("COMMIT");
         return result.rows[0];
     } catch (error) {
         console.error("Error in findUserByIdentifierRepo:", error);
+        await client.query("ROLLBACK");
         throw error;
     } finally {
         client.release();
@@ -255,10 +264,13 @@ export const findUserByIdentifierRepo = async (identifier) => {
 export const findUserByIdRepo = async (id) => {
     const client = await pool.connect();
     try {
+        await client.query("BEGIN");
         const result = await client.query(FIND_USER_BY_ID, [id]);
+        await client.query("COMMIT");
         return result.rows[0];
     } catch (error) {
         console.error("Error in findUserByIdRepo:", error);
+        await client.query("ROLLBACK");
         throw error;
     } finally {
         client.release();
@@ -271,10 +283,13 @@ export const findUserByIdRepo = async (id) => {
 export const getUserFullProfileRepo = async (id) => {
     const client = await pool.connect();
     try {
+        await client.query("BEGIN");
         const result = await client.query(GET_USER_FULL_PROFILE, [id]);
+        await client.query("COMMIT");
         return result.rows[0];
     } catch (error) {
         console.error("Error in getUserFullProfileRepo:", error);
+        await client.query("ROLLBACK");
         throw error;
     } finally {
         client.release();
@@ -335,10 +350,13 @@ export const updateUserProfileRepo = async (userId, { name, mobile, company_name
 export const findUserWithPasswordByIdRepo = async (id) => {
     const client = await pool.connect();
     try {
+        await client.query("BEGIN");
         const result = await client.query(FIND_USER_WITH_PASSWORD_BY_ID, [id]);
+        await client.query("COMMIT");
         return result.rows[0];
     } catch (error) {
         console.error("Error in findUserWithPasswordByIdRepo:", error);
+        await client.query("ROLLBACK");
         throw error;
     } finally {
         client.release();

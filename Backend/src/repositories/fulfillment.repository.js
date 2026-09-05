@@ -12,99 +12,134 @@ import {
 } from '../queries/fulfillment.query.js';
 
 export const getFulfillmentListRepo = async () => {
-  const [stockRes, ordersRes] = await Promise.all([
-    pool.query(GET_WAREHOUSE_STOCK_LIST),
-    pool.query(GET_ORDERS_AWAITING_FULFILLMENT),
-  ]);
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    const [stockRes, ordersRes] = await Promise.all([
+      client.query(GET_WAREHOUSE_STOCK_LIST),
+      client.query(GET_ORDERS_AWAITING_FULFILLMENT),
+    ]);
+    await client.query('COMMIT');
 
-  return {
-    stock: stockRes.rows,
-    orders: ordersRes.rows,
-  };
+    return {
+      stock: stockRes.rows,
+      orders: ordersRes.rows,
+    };
+  } catch (error) {
+    console.error('Error in getFulfillmentListRepo:', error);
+    await client.query('ROLLBACK');
+    throw error;
+  } finally {
+    client.release();
+  }
 };
 
 export const getFulfillmentMetaRepo = async () => {
-  const [warehousesRes, customersRes, variantsRes] = await Promise.all([
-    pool.query(GET_ALL_ACTIVE_WAREHOUSES),
-    pool.query(GET_FULFILLMENT_META_CUSTOMERS),
-    pool.query(GET_FULFILLMENT_META_VARIANTS),
-  ]);
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    const [warehousesRes, customersRes, variantsRes] = await Promise.all([
+      client.query(GET_ALL_ACTIVE_WAREHOUSES),
+      client.query(GET_FULFILLMENT_META_CUSTOMERS),
+      client.query(GET_FULFILLMENT_META_VARIANTS),
+    ]);
+    await client.query('COMMIT');
 
-  return {
-    warehouses: warehousesRes.rows,
-    customers: customersRes.rows,
-    variants: variantsRes.rows,
-  };
+    return {
+      warehouses: warehousesRes.rows,
+      customers: customersRes.rows,
+      variants: variantsRes.rows,
+    };
+  } catch (error) {
+    console.error('Error in getFulfillmentMetaRepo:', error);
+    await client.query('ROLLBACK');
+    throw error;
+  } finally {
+    client.release();
+  }
 };
 
 export const getFulfillmentDetailRepo = async (orderIdOrNumber) => {
-  const headerRes = await pool.query(GET_FULFILLMENT_DETAIL_HEADER, [String(orderIdOrNumber)]);
-  if (headerRes.rows.length === 0) {
-    return null;
-  }
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    const headerRes = await client.query(GET_FULFILLMENT_DETAIL_HEADER, [String(orderIdOrNumber)]);
+    if (headerRes.rows.length === 0) {
+      await client.query('COMMIT');
+      return null;
+    }
 
-  const header = headerRes.rows[0];
-  const orderId = header.order_id;
+    const header = headerRes.rows[0];
+    const orderId = header.order_id;
 
-  const [itemsRes, splitsRes, backordersRes, warehousesRes, stockRes] = await Promise.all([
-    pool.query(GET_ORDER_ITEMS_BY_ORDER_ID, [orderId]),
-    pool.query(GET_FULFILLMENT_SPLITS_BY_ORDER_ID, [orderId]),
-    pool.query(GET_BACKORDERS_BY_ORDER_ID, [orderId]),
-    pool.query(GET_ALL_ACTIVE_WAREHOUSES),
-    pool.query(GET_WAREHOUSE_STOCK_LIST),
-  ]);
+    const [itemsRes, splitsRes, backordersRes, warehousesRes, stockRes] = await Promise.all([
+      client.query(GET_ORDER_ITEMS_BY_ORDER_ID, [orderId]),
+      client.query(GET_FULFILLMENT_SPLITS_BY_ORDER_ID, [orderId]),
+      client.query(GET_BACKORDERS_BY_ORDER_ID, [orderId]),
+      client.query(GET_ALL_ACTIVE_WAREHOUSES),
+      client.query(GET_WAREHOUSE_STOCK_LIST),
+    ]);
 
-  const items = itemsRes.rows;
-  let splits = splitsRes.rows;
-  const backorders = backordersRes.rows;
-  const warehouses = warehousesRes.rows;
-  const allStock = stockRes.rows;
+    const items = itemsRes.rows;
+    let splits = splitsRes.rows;
+    const backorders = backordersRes.rows;
+    const warehouses = warehousesRes.rows;
+    const allStock = stockRes.rows;
 
-  // If no splits exist yet in DB, compute automatic suggested split
-  if (splits.length === 0 && items.length > 0) {
-    const suggestedSplits = [];
-    items.forEach((item) => {
-      const variantStock = allStock.filter(
-        (s) => String(s.product_variant_id) === String(item.product_variant_id)
-      );
+    // If no splits exist yet in DB, compute automatic suggested split
+    if (splits.length === 0 && items.length > 0) {
+      const suggestedSplits = [];
+      items.forEach((item) => {
+        const variantStock = allStock.filter(
+          (s) => String(s.product_variant_id) === String(item.product_variant_id)
+        );
 
-      let remainingNeeded = item.quantity;
-      const sortedWarehouses = [...variantStock].sort((a, b) => b.available - a.available);
+        let remainingNeeded = item.quantity;
+        const sortedWarehouses = [...variantStock].sort((a, b) => b.available - a.available);
 
-      sortedWarehouses.forEach((ws) => {
-        if (remainingNeeded <= 0) return;
-        const alloc = Math.min(Math.max(0, ws.available), remainingNeeded);
-        if (alloc > 0) {
-          const baseRate = 25.0;
-          const cost = (alloc * 1.5 * (ws.shipping_cost_weight || 1.0) + baseRate).toFixed(2);
-          suggestedSplits.push({
-            split_id: `sugg-${ws.warehouse_id}`,
-            order_item_id: item.order_item_id,
-            warehouse_id: ws.warehouse_id,
-            warehouse_name: ws.warehouse_name,
-            warehouse_code: ws.warehouse_code,
-            qty_fulfilled: alloc,
-            est_shipments: Math.ceil(alloc / 20),
-            estimated_shipping_cost: Number(cost),
-            status: 'suggested',
-            manual_override: false,
-          });
-          remainingNeeded -= alloc;
-        }
+        sortedWarehouses.forEach((ws) => {
+          if (remainingNeeded <= 0) return;
+          const alloc = Math.min(Math.max(0, ws.available), remainingNeeded);
+          if (alloc > 0) {
+            const baseRate = 25.0;
+            const cost = (alloc * 1.5 * (ws.shipping_cost_weight || 1.0) + baseRate).toFixed(2);
+            suggestedSplits.push({
+              split_id: `sugg-${ws.warehouse_id}`,
+              order_item_id: item.order_item_id,
+              warehouse_id: ws.warehouse_id,
+              warehouse_name: ws.warehouse_name,
+              warehouse_code: ws.warehouse_code,
+              qty_fulfilled: alloc,
+              est_shipments: Math.ceil(alloc / 20),
+              estimated_shipping_cost: Number(cost),
+              status: 'suggested',
+              manual_override: false,
+            });
+            remainingNeeded -= alloc;
+          }
+        });
       });
-    });
 
-    splits = suggestedSplits;
+      splits = suggestedSplits;
+    }
+
+    await client.query('COMMIT');
+
+    return {
+      header,
+      items,
+      splits,
+      backorders,
+      warehouses,
+      availableStock: allStock,
+    };
+  } catch (error) {
+    console.error('Error in getFulfillmentDetailRepo:', error);
+    await client.query('ROLLBACK');
+    throw error;
+  } finally {
+    client.release();
   }
-
-  return {
-    header,
-    items,
-    splits,
-    backorders,
-    warehouses,
-    availableStock: allStock,
-  };
 };
 
 export const acceptSuggestedSplitRepo = async (orderIdOrNumber) => {
@@ -147,6 +182,7 @@ export const acceptSuggestedSplitRepo = async (orderIdOrNumber) => {
     await client.query('COMMIT');
     return await getFulfillmentDetailRepo(orderId);
   } catch (error) {
+    console.error('Error in acceptSuggestedSplitRepo:', error);
     await client.query('ROLLBACK');
     throw error;
   } finally {
@@ -210,6 +246,7 @@ export const saveManualOverrideSplitRepo = async (orderIdOrNumber, { splits = []
     await client.query('COMMIT');
     return await getFulfillmentDetailRepo(orderId);
   } catch (error) {
+    console.error('Error in saveManualOverrideSplitRepo:', error);
     await client.query('ROLLBACK');
     throw error;
   } finally {
@@ -261,6 +298,7 @@ export const createWarehouseStockRepo = async ({
     await client.query('COMMIT');
     return stockRes.rows[0];
   } catch (error) {
+    console.error('Error in createWarehouseStockRepo:', error);
     await client.query('ROLLBACK');
     throw error;
   } finally {
@@ -275,32 +313,53 @@ export const updateWarehouseStockRepo = async (stockId, {
   quantity_reserved,
   lead_time_days,
 }) => {
-  const res = await pool.query(`
-    UPDATE warehouse_stock 
-    SET 
-      warehouse_id = COALESCE($1, warehouse_id),
-      product_variant_id = COALESCE($2, product_variant_id),
-      quantity_on_hand = COALESCE($3, quantity_on_hand),
-      quantity_reserved = COALESCE($4, quantity_reserved),
-      lead_time_days = COALESCE($5, lead_time_days),
-      updated_at = NOW()
-    WHERE id = $6
-    RETURNING *;
-  `, [
-    warehouse_id || null,
-    product_variant_id || null,
-    quantity_on_hand != null ? parseInt(quantity_on_hand, 10) : null,
-    quantity_reserved != null ? parseInt(quantity_reserved, 10) : null,
-    lead_time_days != null ? parseInt(lead_time_days, 10) : null,
-    stockId,
-  ]);
-
-  return res.rows[0];
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    const res = await client.query(`
+      UPDATE warehouse_stock 
+      SET 
+        warehouse_id = COALESCE($1, warehouse_id),
+        product_variant_id = COALESCE($2, product_variant_id),
+        quantity_on_hand = COALESCE($3, quantity_on_hand),
+        quantity_reserved = COALESCE($4, quantity_reserved),
+        lead_time_days = COALESCE($5, lead_time_days),
+        updated_at = NOW()
+      WHERE id = $6
+      RETURNING *;
+    `, [
+      warehouse_id || null,
+      product_variant_id || null,
+      quantity_on_hand != null ? parseInt(quantity_on_hand, 10) : null,
+      quantity_reserved != null ? parseInt(quantity_reserved, 10) : null,
+      lead_time_days != null ? parseInt(lead_time_days, 10) : null,
+      stockId,
+    ]);
+    await client.query('COMMIT');
+    return res.rows[0];
+  } catch (error) {
+    console.error('Error in updateWarehouseStockRepo:', error);
+    await client.query('ROLLBACK');
+    throw error;
+  } finally {
+    client.release();
+  }
 };
 
 export const deleteWarehouseStockRepo = async (stockId) => {
-  const res = await pool.query(`DELETE FROM warehouse_stock WHERE id = $1 RETURNING *;`, [stockId]);
-  return res.rows[0];
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    const res = await client.query(`DELETE FROM warehouse_stock WHERE id = $1 RETURNING *;`, [stockId]);
+    await client.query('COMMIT');
+    return res.rows[0];
+  } catch (error) {
+    console.error('Error in deleteWarehouseStockRepo:', error);
+    await client.query('ROLLBACK');
+    throw error;
+  } finally {
+    client.release();
+  }
 };
 
 // ==========================================
@@ -367,7 +426,7 @@ export const createOrderRepo = async ({
 
     const orderItemId = itemRes.rows[0].id;
 
-    // 4. If warehouse specified, create initial split
+    // 5. If warehouse specified, create initial split
     let targetWhId = warehouse_id;
     if (!targetWhId) {
       const whRes = await client.query('SELECT id FROM warehouses LIMIT 1');
@@ -385,6 +444,7 @@ export const createOrderRepo = async ({
     await client.query('COMMIT');
     return await getFulfillmentDetailRepo(orderId);
   } catch (error) {
+    console.error('Error in createOrderRepo:', error);
     await client.query('ROLLBACK');
     throw error;
   } finally {
@@ -454,6 +514,7 @@ export const updateOrderRepo = async (orderId, {
     await client.query('COMMIT');
     return await getFulfillmentDetailRepo(orderId);
   } catch (error) {
+    console.error('Error in updateOrderRepo:', error);
     await client.query('ROLLBACK');
     throw error;
   } finally {
@@ -482,6 +543,7 @@ export const deleteOrderRepo = async (orderId) => {
     await client.query('COMMIT');
     return { success: true, deletedOrderId: orderId };
   } catch (error) {
+    console.error('Error in deleteOrderRepo:', error);
     await client.query('ROLLBACK');
     throw error;
   } finally {

@@ -14,67 +14,180 @@ import {
 } from '../queries/catalog.query.js';
 
 export const getActiveCustomersRepo = async () => {
-  const result = await pool.query(GET_ACTIVE_CUSTOMERS_WITH_TIER);
-  return result.rows;
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    const result = await client.query(GET_ACTIVE_CUSTOMERS_WITH_TIER);
+    await client.query('COMMIT');
+    return result.rows;
+  } catch (error) {
+    console.error('Error in getActiveCustomersRepo:', error);
+    await client.query('ROLLBACK');
+    throw error;
+  } finally {
+    client.release();
+  }
 };
 
 export const getActivePriceListsRepo = async () => {
-  const result = await pool.query(GET_ACTIVE_PRICE_LISTS);
-  return result.rows;
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    const result = await client.query(GET_ACTIVE_PRICE_LISTS);
+    await client.query('COMMIT');
+    return result.rows;
+  } catch (error) {
+    console.error('Error in getActivePriceListsRepo:', error);
+    await client.query('ROLLBACK');
+    throw error;
+  } finally {
+    client.release();
+  }
 };
 
 export const getSellableVariantsRepo = async () => {
-  const result = await pool.query(GET_SELLABLE_PRODUCT_VARIANTS);
-  return result.rows;
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    const result = await client.query(GET_SELLABLE_PRODUCT_VARIANTS);
+    await client.query('COMMIT');
+    return result.rows;
+  } catch (error) {
+    console.error('Error in getSellableVariantsRepo:', error);
+    await client.query('ROLLBACK');
+    throw error;
+  } finally {
+    client.release();
+  }
 };
 
 export const getPriceListItemsRepo = async (priceListId) => {
-  const result = await pool.query(GET_PRICE_LIST_ITEMS_BY_PRICE_LIST, [priceListId]);
-  return result.rows;
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    const result = await client.query(GET_PRICE_LIST_ITEMS_BY_PRICE_LIST, [priceListId]);
+    await client.query('COMMIT');
+    return result.rows;
+  } catch (error) {
+    console.error('Error in getPriceListItemsRepo:', error);
+    await client.query('ROLLBACK');
+    throw error;
+  } finally {
+    client.release();
+  }
 };
 
 export const getUpsellRulesForProductsRepo = async (productIds = []) => {
   if (!productIds || productIds.length === 0) return [];
-  const result = await pool.query(GET_UPSELL_RULES_FOR_PRODUCTS, [productIds]);
-  return result.rows;
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    const result = await client.query(GET_UPSELL_RULES_FOR_PRODUCTS, [productIds]);
+    await client.query('COMMIT');
+    return result.rows;
+  } catch (error) {
+    console.error('Error in getUpsellRulesForProductsRepo:', error);
+    await client.query('ROLLBACK');
+    throw error;
+  } finally {
+    client.release();
+  }
 };
 
 export const getActiveApprovalRulesRepo = async () => {
-  const result = await pool.query(GET_ACTIVE_APPROVAL_RULES);
-  return result.rows;
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    const result = await client.query(GET_ACTIVE_APPROVAL_RULES);
+    await client.query('COMMIT');
+    return result.rows;
+  } catch (error) {
+    console.error('Error in getActiveApprovalRulesRepo:', error);
+    await client.query('ROLLBACK');
+    throw error;
+  } finally {
+    client.release();
+  }
 };
 
 export const getProductCatalogSummaryRepo = async () => {
-  const result = await pool.query(GET_PRODUCT_CATALOG_SUMMARY);
-  return result.rows[0] || {
-    active_products_count: 0,
-    archived_products_count: 0,
-    pricelists_count: 0,
-    currencies_count: 0,
-    total_variants_count: 0,
-  };
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    const result = await client.query(GET_PRODUCT_CATALOG_SUMMARY);
+    await client.query('COMMIT');
+    return result.rows[0] || {
+      active_products_count: 0,
+      archived_products_count: 0,
+      pricelists_count: 0,
+      currencies_count: 0,
+      total_variants_count: 0,
+    };
+  } catch (error) {
+    console.error('Error in getProductCatalogSummaryRepo:', error);
+    await client.query('ROLLBACK');
+    throw error;
+  } finally {
+    client.release();
+  }
 };
 
 export const getAllProductsRepo = async () => {
-  const result = await pool.query(GET_ALL_PRODUCTS_WITH_VARIANTS_COUNT);
-  return result.rows;
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    const result = await client.query(GET_ALL_PRODUCTS_WITH_VARIANTS_COUNT);
+    await client.query('COMMIT');
+    return result.rows;
+  } catch (error) {
+    console.error('Error in getAllProductsRepo:', error);
+    await client.query('ROLLBACK');
+    throw error;
+  } finally {
+    client.release();
+  }
 };
 
 export const getProductCategoriesRepo = async () => {
-  const result = await pool.query(GET_PRODUCT_CATEGORIES);
-  return result.rows;
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    const result = await client.query(GET_PRODUCT_CATEGORIES);
+    await client.query('COMMIT');
+    return result.rows;
+  } catch (error) {
+    console.error('Error in getProductCategoriesRepo:', error);
+    await client.query('ROLLBACK');
+    throw error;
+  } finally {
+    client.release();
+  }
 };
 
 export const getProductDetailRepo = async (productId) => {
-  const prodRes = await pool.query(GET_PRODUCT_BY_ID_FULL, [productId]);
-  if (prodRes.rows.length === 0) return null;
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    const prodRes = await client.query(GET_PRODUCT_BY_ID_FULL, [productId]);
+    if (prodRes.rows.length === 0) {
+      await client.query('COMMIT');
+      return null;
+    }
 
-  const variantsRes = await pool.query(GET_PRODUCT_VARIANTS_BY_PRODUCT_ID, [productId]);
+    const variantsRes = await client.query(GET_PRODUCT_VARIANTS_BY_PRODUCT_ID, [productId]);
+    await client.query('COMMIT');
 
-  return {
-    ...prodRes.rows[0],
-    variants: variantsRes.rows,
-  };
+    return {
+      ...prodRes.rows[0],
+      variants: variantsRes.rows,
+    };
+  } catch (error) {
+    console.error('Error in getProductDetailRepo:', error);
+    await client.query('ROLLBACK');
+    throw error;
+  } finally {
+    client.release();
+  }
 };
 
 export const createProductRepo = async ({
@@ -135,6 +248,7 @@ export const createProductRepo = async ({
       variants: createdVariants,
     };
   } catch (error) {
+    console.error('Error in createProductRepo:', error);
     await client.query('ROLLBACK');
     throw error;
   } finally {
@@ -225,6 +339,7 @@ export const updateProductRepo = async (productId, {
       variants: finalVariants.rows,
     };
   } catch (error) {
+    console.error('Error in updateProductRepo:', error);
     await client.query('ROLLBACK');
     throw error;
   } finally {
@@ -243,31 +358,57 @@ export const deleteProductRepo = async (productId) => {
       return res.rows[0];
     } catch (fkErr) {
       await client.query('ROLLBACK');
-      const softRes = await pool.query(
+      
+      // Start fallback transaction for soft delete
+      await client.query('BEGIN');
+      const softRes = await client.query(
         'UPDATE products SET is_active = FALSE, updated_at = NOW() WHERE id = $1 RETURNING id',
         [productId]
       );
-      await pool.query(
+      await client.query(
         'UPDATE product_variants SET is_active = FALSE WHERE product_id = $1',
         [productId]
       );
+      await client.query('COMMIT');
       return softRes.rows[0];
     }
+  } catch (error) {
+    console.error('Error in deleteProductRepo:', error);
+    try {
+      await client.query('ROLLBACK');
+    } catch (_) {}
+    throw error;
   } finally {
     client.release();
   }
 };
 
 export const deleteProductVariantRepo = async (variantId) => {
+  const client = await pool.connect();
   try {
-    const res = await pool.query('DELETE FROM product_variants WHERE id = $1 RETURNING id', [variantId]);
-    return res.rows[0];
-  } catch (err) {
-    const result = await pool.query(
-      'UPDATE product_variants SET is_active = FALSE WHERE id = $1 RETURNING id',
-      [variantId]
-    );
-    return result.rows[0];
+    await client.query('BEGIN');
+    try {
+      const res = await client.query('DELETE FROM product_variants WHERE id = $1 RETURNING id', [variantId]);
+      await client.query('COMMIT');
+      return res.rows[0];
+    } catch (fkErr) {
+      await client.query('ROLLBACK');
+
+      await client.query('BEGIN');
+      const result = await client.query(
+        'UPDATE product_variants SET is_active = FALSE WHERE id = $1 RETURNING id',
+        [variantId]
+      );
+      await client.query('COMMIT');
+      return result.rows[0];
+    }
+  } catch (error) {
+    console.error('Error in deleteProductVariantRepo:', error);
+    try {
+      await client.query('ROLLBACK');
+    } catch (_) {}
+    throw error;
+  } finally {
+    client.release();
   }
 };
-

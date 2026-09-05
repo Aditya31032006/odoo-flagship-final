@@ -8,17 +8,28 @@ import {
 } from '../queries/discountRules.query.js';
 
 export const getDiscountConfigurationRepo = async () => {
-  const [tiersRes, ceilingsRes, rulesRes] = await Promise.all([
-    pool.query(GET_ALL_CUSTOMER_TIERS),
-    pool.query(GET_ALL_CATEGORY_DISCOUNT_CEILINGS),
-    pool.query(GET_ALL_APPROVAL_RULES),
-  ]);
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    const [tiersRes, ceilingsRes, rulesRes] = await Promise.all([
+      client.query(GET_ALL_CUSTOMER_TIERS),
+      client.query(GET_ALL_CATEGORY_DISCOUNT_CEILINGS),
+      client.query(GET_ALL_APPROVAL_RULES),
+    ]);
+    await client.query('COMMIT');
 
-  return {
-    customer_tiers: tiersRes.rows,
-    category_ceilings: ceilingsRes.rows,
-    approval_rules: rulesRes.rows,
-  };
+    return {
+      customer_tiers: tiersRes.rows,
+      category_ceilings: ceilingsRes.rows,
+      approval_rules: rulesRes.rows,
+    };
+  } catch (error) {
+    console.error('Error in getDiscountConfigurationRepo:', error);
+    await client.query('ROLLBACK');
+    throw error;
+  } finally {
+    client.release();
+  }
 };
 
 export const saveDiscountConfigurationRepo = async ({
@@ -80,12 +91,14 @@ export const saveDiscountConfigurationRepo = async ({
 
     await client.query('COMMIT');
 
-    // Fetch and return the updated configuration
+    // Fetch and return the updated configuration using a fresh transaction
+    await client.query('BEGIN');
     const [updatedTiers, updatedCeilings, updatedRules] = await Promise.all([
-      pool.query(GET_ALL_CUSTOMER_TIERS),
-      pool.query(GET_ALL_CATEGORY_DISCOUNT_CEILINGS),
-      pool.query(GET_ALL_APPROVAL_RULES),
+      client.query(GET_ALL_CUSTOMER_TIERS),
+      client.query(GET_ALL_CATEGORY_DISCOUNT_CEILINGS),
+      client.query(GET_ALL_APPROVAL_RULES),
     ]);
+    await client.query('COMMIT');
 
     return {
       customer_tiers: updatedTiers.rows,
@@ -93,6 +106,7 @@ export const saveDiscountConfigurationRepo = async ({
       approval_rules: updatedRules.rows,
     };
   } catch (error) {
+    console.error('Error in saveDiscountConfigurationRepo:', error);
     await client.query('ROLLBACK');
     throw error;
   } finally {

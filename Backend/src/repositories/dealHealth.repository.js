@@ -11,25 +11,39 @@ import {
 } from '../queries/dealHealth.query.js';
 
 export const getOrCreateDealHealthConfig = async () => {
-  let res = await pool.query(GET_DEAL_HEALTH_CONFIG);
-  if (res.rows.length === 0) {
-    res = await pool.query(INSERT_DEAL_HEALTH_CONFIG_DEFAULT);
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    let res = await client.query(GET_DEAL_HEALTH_CONFIG);
+    if (res.rows.length === 0) {
+      res = await client.query(INSERT_DEAL_HEALTH_CONFIG_DEFAULT);
+    }
+    await client.query('COMMIT');
+    return res.rows[0];
+  } catch (error) {
+    console.error('Error in getOrCreateDealHealthConfig:', error);
+    await client.query('ROLLBACK');
+    throw error;
+  } finally {
+    client.release();
   }
-  return res.rows[0];
 };
 
 /**
  * Scan database records and automatically insert detected deal health flags
  */
 export const runHealthCheckScan = async () => {
+  const client = await pool.connect();
   try {
+    await client.query('BEGIN');
+
     const config = await getOrCreateDealHealthConfig();
     const stalledDays = config.stalled_days || 7;
     const discountMultiplier = parseFloat(config.discount_anomaly_multiplier) || 1.5;
     const slippageDays = config.delivery_slippage_days || 3;
 
     // 1. Scan for Stalled Deals
-    const stalledQuotes = await pool.query(`
+    const stalledQuotes = await client.query(`
       SELECT 
         q.id,
         q.quotation_number,
@@ -47,7 +61,7 @@ export const runHealthCheckScan = async () => {
     `, [stalledDays]);
 
     for (const row of stalledQuotes.rows) {
-      await pool.query(INSERT_DEAL_HEALTH_FLAG, [
+      await client.query(INSERT_DEAL_HEALTH_FLAG, [
         row.id,
         'stalled_deal',
         `Idle ${row.idle_days || stalledDays} days`,
@@ -55,7 +69,7 @@ export const runHealthCheckScan = async () => {
     }
 
     // 2. Scan for Discount Anomalies
-    const avgDiscountRes = await pool.query(`
+    const avgDiscountRes = await client.query(`
       SELECT COALESCE(AVG(discount_percentage), 8.0)::numeric(5,2) AS avg_discount 
       FROM quotation_items 
       WHERE discount_percentage > 0;
@@ -63,7 +77,7 @@ export const runHealthCheckScan = async () => {
     const avgDiscount = parseFloat(avgDiscountRes.rows[0]?.avg_discount || 8.0);
     const thresholdDiscount = (avgDiscount * discountMultiplier).toFixed(1);
 
-    const discountAnomalies = await pool.query(`
+    const discountAnomalies = await client.query(`
       SELECT 
         qi.quotation_id,
         MAX(qi.discount_percentage)::numeric(5,2) AS max_discount,
@@ -83,7 +97,7 @@ export const runHealthCheckScan = async () => {
 
     for (const row of discountAnomalies.rows) {
       const detail = `Discount ${row.max_discount}% vs avg ${avgDiscount}%`;
-      await pool.query(INSERT_DEAL_HEALTH_FLAG, [
+      await client.query(INSERT_DEAL_HEALTH_FLAG, [
         row.quotation_id,
         'discount_anomaly',
         detail,
@@ -91,7 +105,7 @@ export const runHealthCheckScan = async () => {
     }
 
     // 3. Scan for Delivery Slippage
-    const slippageRes = await pool.query(`
+    const slippageRes = await client.query(`
       SELECT 
         o.quotation_id,
         fs.id AS split_id,
@@ -113,14 +127,21 @@ export const runHealthCheckScan = async () => {
 
     for (const row of slippageRes.rows) {
       const detail = `Shipment overdue by ${row.overdue_days || slippageDays} days`;
-      await pool.query(INSERT_DEAL_HEALTH_FLAG, [
+      await client.query(INSERT_DEAL_HEALTH_FLAG, [
         row.quotation_id,
         'delivery_slippage',
         detail,
       ]);
     }
+
+    await client.query('COMMIT');
   } catch (err) {
     console.error('runHealthCheckScan warning:', err.message);
+    try {
+      await client.query('ROLLBACK');
+    } catch (_) {}
+  } finally {
+    client.release();
   }
 };
 
@@ -138,22 +159,33 @@ export const getDealHealthDashboardRepo = async (flagTypeFilter = null) => {
     params.push(flagTypeFilter);
   }
 
-  const [flagsRes, summaryRes] = await Promise.all([
-    pool.query(flagsQuery, params),
-    pool.query(GET_DEAL_HEALTH_SUMMARY_COUNTS),
-  ]);
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    const [flagsRes, summaryRes] = await Promise.all([
+      client.query(flagsQuery, params),
+      client.query(GET_DEAL_HEALTH_SUMMARY_COUNTS),
+    ]);
+    await client.query('COMMIT');
 
-  return {
-    flags: flagsRes.rows,
-    summary: summaryRes.rows[0] || {
-      stalled_count: 0,
-      discount_anomaly_count: 0,
-      delivery_slippage_count: 0,
-      total_open_flags: 0,
-      total_all_flags: 0,
-    },
-    config,
-  };
+    return {
+      flags: flagsRes.rows,
+      summary: summaryRes.rows[0] || {
+        stalled_count: 0,
+        discount_anomaly_count: 0,
+        delivery_slippage_count: 0,
+        total_open_flags: 0,
+        total_all_flags: 0,
+      },
+      config,
+    };
+  } catch (error) {
+    console.error('Error in getDealHealthDashboardRepo:', error);
+    await client.query('ROLLBACK');
+    throw error;
+  } finally {
+    client.release();
+  }
 };
 
 export const getDealHealthConfigRepo = async () => {
@@ -165,28 +197,49 @@ export const updateDealHealthConfigRepo = async ({
   discount_anomaly_multiplier,
   delivery_slippage_days,
 }) => {
-  const res = await pool.query(UPDATE_DEAL_HEALTH_CONFIG, [
-    stalled_days !== undefined ? parseInt(stalled_days, 10) : null,
-    discount_anomaly_multiplier !== undefined ? parseFloat(discount_anomaly_multiplier) : null,
-    delivery_slippage_days !== undefined ? parseInt(delivery_slippage_days, 10) : null,
-  ]);
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    const res = await client.query(UPDATE_DEAL_HEALTH_CONFIG, [
+      stalled_days !== undefined ? parseInt(stalled_days, 10) : null,
+      discount_anomaly_multiplier !== undefined ? parseFloat(discount_anomaly_multiplier) : null,
+      delivery_slippage_days !== undefined ? parseInt(delivery_slippage_days, 10) : null,
+    ]);
+    await client.query('COMMIT');
 
-  // Re-run scan with updated thresholds
-  await runHealthCheckScan();
+    // Re-run scan with updated thresholds
+    await runHealthCheckScan();
 
-  return res.rows[0];
+    return res.rows[0];
+  } catch (error) {
+    console.error('Error in updateDealHealthConfigRepo:', error);
+    await client.query('ROLLBACK');
+    throw error;
+  } finally {
+    client.release();
+  }
 };
 
 export const updateDealHealthFlagActionRepo = async (id, { action, detail, userId }) => {
   const validActions = ['open', 'acknowledged', 'resolved'];
   const targetAction = validActions.includes(action) ? action : 'acknowledged';
 
-  const res = await pool.query(UPDATE_DEAL_HEALTH_FLAG_ACTION, [
-    id,
-    targetAction,
-    detail || null,
-    userId || null,
-  ]);
-
-  return res.rows[0];
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    const res = await client.query(UPDATE_DEAL_HEALTH_FLAG_ACTION, [
+      id,
+      targetAction,
+      detail || null,
+      userId || null,
+    ]);
+    await client.query('COMMIT');
+    return res.rows[0];
+  } catch (error) {
+    console.error('Error in updateDealHealthFlagActionRepo:', error);
+    await client.query('ROLLBACK');
+    throw error;
+  } finally {
+    client.release();
+  }
 };

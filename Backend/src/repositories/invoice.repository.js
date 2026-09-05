@@ -76,79 +76,114 @@ export const getInvoicesListRepo = async (statusFilter = null) => {
     `;
   }
 
-  const [invoicesRes, statusCountsRes] = await Promise.all([
-    pool.query(query, params),
-    pool.query(GET_INVOICE_STATUS_COUNTS),
-  ]);
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    const [invoicesRes, statusCountsRes] = await Promise.all([
+      client.query(query, params),
+      client.query(GET_INVOICE_STATUS_COUNTS),
+    ]);
+    await client.query('COMMIT');
 
-  return {
-    invoices: invoicesRes.rows,
-    statusCounts: statusCountsRes.rows[0] || {
-      unpaid_count: 0,
-      paid_count: 0,
-      partially_paid_count: 0,
-      total_count: 0,
-    },
-  };
+    return {
+      invoices: invoicesRes.rows,
+      statusCounts: statusCountsRes.rows[0] || {
+        unpaid_count: 0,
+        paid_count: 0,
+        partially_paid_count: 0,
+        total_count: 0,
+      },
+    };
+  } catch (error) {
+    console.error('Error in getInvoicesListRepo:', error);
+    await client.query('ROLLBACK');
+    throw error;
+  } finally {
+    client.release();
+  }
 };
 
 export const getInvoiceMetaRepo = async () => {
-  const [customersRes, productsRes, ordersRes] = await Promise.all([
-    pool.query(GET_INVOICE_META_CUSTOMERS),
-    pool.query(GET_INVOICE_META_PRODUCTS),
-    pool.query(GET_INVOICE_META_ORDERS),
-  ]);
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    const [customersRes, productsRes, ordersRes] = await Promise.all([
+      client.query(GET_INVOICE_META_CUSTOMERS),
+      client.query(GET_INVOICE_META_PRODUCTS),
+      client.query(GET_INVOICE_META_ORDERS),
+    ]);
+    await client.query('COMMIT');
 
-  return {
-    customers: customersRes.rows,
-    products: productsRes.rows,
-    orders: ordersRes.rows,
-  };
+    return {
+      customers: customersRes.rows,
+      products: productsRes.rows,
+      orders: ordersRes.rows,
+    };
+  } catch (error) {
+    console.error('Error in getInvoiceMetaRepo:', error);
+    await client.query('ROLLBACK');
+    throw error;
+  } finally {
+    client.release();
+  }
 };
 
 export const getInvoiceDetailRepo = async (invoiceId) => {
-  const invRes = await pool.query(GET_INVOICE_BY_ID, [invoiceId]);
-  if (invRes.rows.length === 0) {
-    return null;
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    const invRes = await client.query(GET_INVOICE_BY_ID, [invoiceId]);
+    if (invRes.rows.length === 0) {
+      await client.query('COMMIT');
+      return null;
+    }
+
+    const invoice = invRes.rows[0];
+    const orderId = invoice.order_id;
+    const customerId = invoice.customer_id;
+
+    const [itemsRes, paymentsRes, reconRes, relatedRes] = await Promise.all([
+      client.query(GET_INVOICE_ITEMS_BY_INVOICE_ID, [invoiceId]),
+      client.query(GET_PAYMENTS_BY_INVOICE_ID, [invoiceId]),
+      orderId ? client.query(GET_DELIVERY_RECONCILIATION_BY_ORDER_ID, [orderId]) : { rows: [] },
+      customerId ? client.query(GET_RELATED_INVOICES_FOR_CUSTOMER, [customerId]) : { rows: [] },
+    ]);
+
+    const items = itemsRes.rows;
+    const payments = paymentsRes.rows;
+    const deliveryReconciliation = reconRes.rows;
+    const relatedInvoices = relatedRes.rows;
+
+    // Calculate lifecycle progress state
+    const isOrderConfirmed = Boolean(invoice.order_id || invoice.order_status === 'confirmed');
+    const hasShipped = deliveryReconciliation.some((r) => r.shipped_qty > 0) || Boolean(invoice.order_id);
+    const isInvoiced = true;
+    const isPaid = invoice.status === 'paid' || parseFloat(invoice.paid_amount) >= parseFloat(invoice.grand_total);
+
+    const lifecycle = {
+      order_confirmed: { completed: isOrderConfirmed, current: isOrderConfirmed && !hasShipped },
+      shipped: { completed: hasShipped, current: hasShipped && !isInvoiced },
+      invoiced: { completed: isInvoiced, current: isInvoiced && !isPaid },
+      paid: { completed: isPaid, current: isPaid },
+    };
+
+    await client.query('COMMIT');
+
+    return {
+      invoice,
+      items,
+      payments,
+      deliveryReconciliation,
+      relatedInvoices,
+      lifecycle,
+    };
+  } catch (error) {
+    console.error('Error in getInvoiceDetailRepo:', error);
+    await client.query('ROLLBACK');
+    throw error;
+  } finally {
+    client.release();
   }
-
-  const invoice = invRes.rows[0];
-  const orderId = invoice.order_id;
-  const customerId = invoice.customer_id;
-
-  const [itemsRes, paymentsRes, reconRes, relatedRes] = await Promise.all([
-    pool.query(GET_INVOICE_ITEMS_BY_INVOICE_ID, [invoiceId]),
-    pool.query(GET_PAYMENTS_BY_INVOICE_ID, [invoiceId]),
-    orderId ? pool.query(GET_DELIVERY_RECONCILIATION_BY_ORDER_ID, [orderId]) : { rows: [] },
-    customerId ? pool.query(GET_RELATED_INVOICES_FOR_CUSTOMER, [customerId]) : { rows: [] },
-  ]);
-
-  const items = itemsRes.rows;
-  const payments = paymentsRes.rows;
-  const deliveryReconciliation = reconRes.rows;
-  const relatedInvoices = relatedRes.rows;
-
-  // Calculate lifecycle progress state
-  const isOrderConfirmed = Boolean(invoice.order_id || invoice.order_status === 'confirmed');
-  const hasShipped = deliveryReconciliation.some((r) => r.shipped_qty > 0) || Boolean(invoice.order_id);
-  const isInvoiced = true;
-  const isPaid = invoice.status === 'paid' || parseFloat(invoice.paid_amount) >= parseFloat(invoice.grand_total);
-
-  const lifecycle = {
-    order_confirmed: { completed: isOrderConfirmed, current: isOrderConfirmed && !hasShipped },
-    shipped: { completed: hasShipped, current: hasShipped && !isInvoiced },
-    invoiced: { completed: isInvoiced, current: isInvoiced && !isPaid },
-    paid: { completed: isPaid, current: isPaid },
-  };
-
-  return {
-    invoice,
-    items,
-    payments,
-    deliveryReconciliation,
-    relatedInvoices,
-    lifecycle,
-  };
 };
 
 export const createInvoiceRepo = async ({
@@ -226,6 +261,7 @@ export const createInvoiceRepo = async ({
 
     return await getInvoiceDetailRepo(createdInvoice.id);
   } catch (err) {
+    console.error('Error in createInvoiceRepo:', err);
     await client.query('ROLLBACK');
     throw err;
   } finally {
@@ -280,6 +316,7 @@ export const recordPaymentRepo = async ({
       invoice: updatedInvRes.rows[0],
     };
   } catch (error) {
+    console.error('Error in recordPaymentRepo:', error);
     await client.query('ROLLBACK');
     throw error;
   } finally {

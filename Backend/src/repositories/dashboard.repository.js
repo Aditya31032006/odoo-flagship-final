@@ -6,14 +6,25 @@ import { GET_DASHBOARD_STATS, GET_RECENT_ACTIVITY_LOGS } from '../queries/dashbo
  * @param {number|null} salesRepId - Optional filter if user is sales_rep
  */
 export const getDashboardStatsRepo = async (salesRepId = null) => {
-  const result = await pool.query(GET_DASHBOARD_STATS, [salesRepId]);
-  return result.rows[0] || {
-    pending_approvals_count: 0,
-    open_quotations_count: 0,
-    at_risk_deals_count: 0,
-    confirmed_orders_count: 0,
-    total_pipeline_value: 0
-  };
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    const result = await client.query(GET_DASHBOARD_STATS, [salesRepId]);
+    await client.query('COMMIT');
+    return result.rows[0] || {
+      pending_approvals_count: 0,
+      open_quotations_count: 0,
+      at_risk_deals_count: 0,
+      confirmed_orders_count: 0,
+      total_pipeline_value: 0,
+    };
+  } catch (error) {
+    console.error('Error in getDashboardStatsRepo:', error);
+    await client.query('ROLLBACK');
+    throw error;
+  } finally {
+    client.release();
+  }
 };
 
 /**
@@ -22,6 +33,17 @@ export const getDashboardStatsRepo = async (salesRepId = null) => {
  * @param {number} limit - Number of records to fetch
  */
 export const getRecentActivityLogsRepo = async (salesRepId = null, limit = 15) => {
-  const result = await pool.query(GET_RECENT_ACTIVITY_LOGS, [salesRepId, limit]);
-  return result.rows;
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    const result = await client.query(GET_RECENT_ACTIVITY_LOGS, [salesRepId, limit]);
+    await client.query('COMMIT');
+    return result.rows;
+  } catch (error) {
+    console.error('Error in getRecentActivityLogsRepo:', error);
+    await client.query('ROLLBACK');
+    throw error;
+  } finally {
+    client.release();
+  }
 };

@@ -9,80 +9,104 @@ import {
 } from '../queries/approval.query.js';
 
 export const getApprovalsListRepo = async () => {
-  const [countsRes, listRes] = await Promise.all([
-    pool.query(GET_APPROVALS_SUMMARY_COUNTS),
-    pool.query(GET_ALL_APPROVALS_LIST),
-  ]);
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    const [countsRes, listRes] = await Promise.all([
+      client.query(GET_APPROVALS_SUMMARY_COUNTS),
+      client.query(GET_ALL_APPROVALS_LIST),
+    ]);
+    await client.query('COMMIT');
 
-  return {
-    counts: countsRes.rows[0] || {
-      pending_count: 0,
-      returned_count: 0,
-      approved_count: 0,
-      total_count: 0,
-    },
-    approvals: listRes.rows,
-  };
+    return {
+      counts: countsRes.rows[0] || {
+        pending_count: 0,
+        returned_count: 0,
+        approved_count: 0,
+        total_count: 0,
+      },
+      approvals: listRes.rows,
+    };
+  } catch (error) {
+    console.error('Error in getApprovalsListRepo:', error);
+    await client.query('ROLLBACK');
+    throw error;
+  } finally {
+    client.release();
+  }
 };
 
 export const getApprovalDetailRepo = async (quotationId) => {
-  const [headerRes, linesRes, logsRes, stepsRes] = await Promise.all([
-    pool.query(GET_APPROVAL_DETAIL_HEADER, [quotationId]),
-    pool.query(GET_APPROVAL_FLAGGED_LINES, [quotationId]),
-    pool.query(GET_APPROVAL_AUDIT_LOGS, [quotationId]),
-    pool.query(GET_APPROVAL_REQUEST_STEPS, [quotationId]),
-  ]);
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    const [headerRes, linesRes, logsRes, stepsRes] = await Promise.all([
+      client.query(GET_APPROVAL_DETAIL_HEADER, [quotationId]),
+      client.query(GET_APPROVAL_FLAGGED_LINES, [quotationId]),
+      client.query(GET_APPROVAL_AUDIT_LOGS, [quotationId]),
+      client.query(GET_APPROVAL_REQUEST_STEPS, [quotationId]),
+    ]);
 
-  if (headerRes.rows.length === 0) {
-    return null;
-  }
+    if (headerRes.rows.length === 0) {
+      await client.query('COMMIT');
+      return null;
+    }
 
-  const header = headerRes.rows[0];
-  const flaggedLines = linesRes.rows;
-  const auditLogs = logsRes.rows;
-  const steps = stepsRes.rows;
+    const header = headerRes.rows[0];
+    const flaggedLines = linesRes.rows;
+    const auditLogs = logsRes.rows;
+    const steps = stepsRes.rows;
 
-  // Build stepper progression
-  // Stepper flow: Submitted -> Sales Manager -> Finance (if high risk) -> Confirmed
-  const isHighRisk = Number(header.blended_risk_score) > 10 || header.risk_level === 'HIGH';
-  const isApprovedOrConfirmed = ['approved', 'confirmed', 'sent'].includes(header.status);
-  const isPending = header.status === 'pending_approval';
-  const isRejected = header.status === 'rejected';
+    // Build stepper progression
+    // Stepper flow: Submitted -> Sales Manager -> Finance (if high risk) -> Confirmed
+    const isHighRisk = Number(header.blended_risk_score) > 10 || header.risk_level === 'HIGH';
+    const isApprovedOrConfirmed = ['approved', 'confirmed', 'sent'].includes(header.status);
+    const isPending = header.status === 'pending_approval';
+    const isRejected = header.status === 'rejected';
 
-  const stepper = [
-    {
-      id: 'submitted',
-      label: 'Submitted',
-      status: 'completed',
-    },
-    {
-      id: 'sales_manager',
-      label: 'Sales Manager',
-      status: isPending ? 'active' : (isApprovedOrConfirmed ? 'completed' : (isRejected ? 'rejected' : 'pending')),
-    },
-  ];
+    const stepper = [
+      {
+        id: 'submitted',
+        label: 'Submitted',
+        status: 'completed',
+      },
+      {
+        id: 'sales_manager',
+        label: 'Sales Manager',
+        status: isPending ? 'active' : (isApprovedOrConfirmed ? 'completed' : (isRejected ? 'rejected' : 'pending')),
+      },
+    ];
 
-  if (isHighRisk || steps.some((s) => s.approver_role === 'finance')) {
+    if (isHighRisk || steps.some((s) => s.approver_role === 'finance')) {
+      stepper.push({
+        id: 'finance',
+        label: 'Finance',
+        status: isApprovedOrConfirmed ? 'completed' : 'pending',
+      });
+    }
+
     stepper.push({
-      id: 'finance',
-      label: 'Finance',
+      id: 'confirmed',
+      label: 'Confirmed',
       status: isApprovedOrConfirmed ? 'completed' : 'pending',
     });
+
+    await client.query('COMMIT');
+
+    return {
+      header,
+      flaggedLines,
+      auditLogs,
+      steps,
+      stepper,
+    };
+  } catch (error) {
+    console.error('Error in getApprovalDetailRepo:', error);
+    await client.query('ROLLBACK');
+    throw error;
+  } finally {
+    client.release();
   }
-
-  stepper.push({
-    id: 'confirmed',
-    label: 'Confirmed',
-    status: isApprovedOrConfirmed ? 'completed' : 'pending',
-  });
-
-  return {
-    header,
-    flaggedLines,
-    auditLogs,
-    steps,
-    stepper,
-  };
 };
 
 export const submitApprovalDecisionRepo = async ({
@@ -158,6 +182,7 @@ export const submitApprovalDecisionRepo = async ({
 
     return await getApprovalDetailRepo(quotationId);
   } catch (error) {
+    console.error('Error in submitApprovalDecisionRepo:', error);
     await client.query('ROLLBACK');
     throw error;
   } finally {

@@ -15,33 +15,69 @@ import {
 import { GET_ACTIVE_APPROVAL_RULES } from '../queries/catalog.query.js';
 
 export const getQuotationsListRepo = async ({ salesRepId = null, customerId = null, status = null, searchQuery = null } = {}) => {
-  const result = await pool.query(GET_QUOTATIONS_LIST, [
-    salesRepId,
-    status || null,
-    searchQuery || null,
-    customerId || null,
-  ]);
-  return result.rows;
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    const result = await client.query(GET_QUOTATIONS_LIST, [
+      salesRepId,
+      status || null,
+      searchQuery || null,
+      customerId || null,
+    ]);
+    await client.query('COMMIT');
+    return result.rows;
+  } catch (error) {
+    console.error('Error in getQuotationsListRepo:', error);
+    await client.query('ROLLBACK');
+    throw error;
+  } finally {
+    client.release();
+  }
 };
 
 export const getQuotationsKanbanSummaryRepo = async ({ salesRepId = null, customerId = null } = {}) => {
-  const result = await pool.query(GET_QUOTATIONS_KANBAN_SUMMARY, [
-    salesRepId || null,
-    customerId || null,
-  ]);
-  return result.rows;
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    const result = await client.query(GET_QUOTATIONS_KANBAN_SUMMARY, [
+      salesRepId || null,
+      customerId || null,
+    ]);
+    await client.query('COMMIT');
+    return result.rows;
+  } catch (error) {
+    console.error('Error in getQuotationsKanbanSummaryRepo:', error);
+    await client.query('ROLLBACK');
+    throw error;
+  } finally {
+    client.release();
+  }
 };
 
 export const getQuotationFullDetailRepo = async (quotationId) => {
-  const headerRes = await pool.query(GET_QUOTATION_BY_ID, [quotationId]);
-  if (headerRes.rows.length === 0) return null;
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    const headerRes = await client.query(GET_QUOTATION_BY_ID, [quotationId]);
+    if (headerRes.rows.length === 0) {
+      await client.query('COMMIT');
+      return null;
+    }
 
-  const itemsRes = await pool.query(GET_QUOTATION_ITEMS, [quotationId]);
+    const itemsRes = await client.query(GET_QUOTATION_ITEMS, [quotationId]);
+    await client.query('COMMIT');
 
-  return {
-    ...headerRes.rows[0],
-    items: itemsRes.rows,
-  };
+    return {
+      ...headerRes.rows[0],
+      items: itemsRes.rows,
+    };
+  } catch (error) {
+    console.error('Error in getQuotationFullDetailRepo:', error);
+    await client.query('ROLLBACK');
+    throw error;
+  } finally {
+    client.release();
+  }
 };
 
 /**
@@ -215,6 +251,7 @@ export const saveQuotationRepo = async ({
       items: insertedItems,
     };
   } catch (error) {
+    console.error('Error in saveQuotationRepo:', error);
     await client.query('ROLLBACK');
     throw error;
   } finally {

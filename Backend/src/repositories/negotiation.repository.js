@@ -16,18 +16,25 @@ import { GET_QUOTATION_BY_ID } from '../queries/quotation.query.js';
 export const getNegotiationWithMessagesRepo = async (quotationId) => {
   const client = await pool.connect();
   try {
+    await client.query('BEGIN');
     const negRes = await client.query(GET_ACTIVE_NEGOTIATION, [quotationId]);
     if (negRes.rows.length === 0) {
+      await client.query('COMMIT');
       return null;
     }
 
     const negotiation = negRes.rows[0];
     const messagesRes = await client.query(GET_NEGOTIATION_MESSAGES, [negotiation.id]);
+    await client.query('COMMIT');
 
     return {
       ...negotiation,
       messages: messagesRes.rows,
     };
+  } catch (error) {
+    console.error('Error in getNegotiationWithMessagesRepo:', error);
+    await client.query('ROLLBACK');
+    throw error;
   } finally {
     client.release();
   }
@@ -91,8 +98,8 @@ export const submitCounterOfferRepo = async ({
     // Return complete updated thread
     return await getNegotiationWithMessagesRepo(quotationId);
   } catch (error) {
-    await client.query('ROLLBACK');
     console.error('Error in submitCounterOfferRepo:', error);
+    await client.query('ROLLBACK');
     throw error;
   } finally {
     client.release();
@@ -150,8 +157,8 @@ export const addNegotiationMessageRepo = async ({
 
     return await getNegotiationWithMessagesRepo(quotationId);
   } catch (error) {
-    await client.query('ROLLBACK');
     console.error('Error in addNegotiationMessageRepo:', error);
+    await client.query('ROLLBACK');
     throw error;
   } finally {
     client.release();
@@ -281,8 +288,8 @@ export const acceptQuotationTermsRepo = async ({ quotationId, userId, userRole }
       order: createdOrder,
     };
   } catch (error) {
-    await client.query('ROLLBACK');
     console.error('Error in acceptQuotationTermsRepo:', error);
+    await client.query('ROLLBACK');
     throw error;
   } finally {
     client.release();
