@@ -12,6 +12,7 @@ import staffRouter from './routes/staff.route.js';
 import discountRulesRouter from './routes/discountRules.route.js';
 import approvalRouter from './routes/approval.route.js';
 import fulfillmentRouter from './routes/fulfillment.route.js';
+import negotiationRouter from './routes/negotiation.route.js';
 import handleError from './middleware/error.middleware.js';
 import config from './config/config.js';
 
@@ -38,6 +39,7 @@ app.use('/staff', staffRouter);
 app.use('/api/discount-rules', discountRulesRouter);
 app.use('/api/approvals', approvalRouter);
 app.use('/api/fulfillment', fulfillmentRouter);
+app.use('/api/negotiations', negotiationRouter);
 
 // Global Error Handler
 app.use(handleError);

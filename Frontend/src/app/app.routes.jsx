@@ -17,6 +17,7 @@ import Onboarding from '../features/auth/pages/Onboarding.jsx';
 import ForgotPassword from '../features/auth/pages/ForgotPassword.jsx';
 import Profile from '../features/auth/pages/Profile.jsx';
 import StaffManagement from '../features/staff/pages/StaffManagement.jsx';
+import MyQuotations from '../features/quotations/pages/MyQuotations.jsx';
 import './placeholder.scss';
 
 // Lightweight placeholder view component for quick verification
@@ -134,6 +135,10 @@ export const router = createBrowserRouter([
       {
         path: '/discount-tiers',
         element: <DiscountRulesSetup />,
+      },
+      {
+        path: '/my_quotations',
+        element: <MyQuotations />,
       },
     ],
   },

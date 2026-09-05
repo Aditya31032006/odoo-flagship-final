@@ -72,6 +72,7 @@ export const GET_QUOTATIONS_LIST = `
       OR q.quotation_number ILIKE '%' || $3 || '%'
       OR u.name ILIKE '%' || $3 || '%'
     )
+    AND ($4::BIGINT IS NULL OR q.customer_id = $4)
   ORDER BY q.created_at DESC
 `;
 
@@ -82,6 +83,7 @@ export const GET_QUOTATIONS_KANBAN_SUMMARY = `
     COALESCE(SUM(q.grand_total), 0)::NUMERIC(15,2) AS total_amount
   FROM quotations q
   WHERE ($1::BIGINT IS NULL OR q.sales_rep_id = $1)
+    AND ($2::BIGINT IS NULL OR q.customer_id = $2)
   GROUP BY q.status
 `;
 

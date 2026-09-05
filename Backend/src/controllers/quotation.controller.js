@@ -12,10 +12,12 @@ export const getQuotationsController = async (req, res, next) => {
   try {
     const user = req.user;
     const salesRepId = user.role === 'sales_rep' ? user.id : null;
+    const customerId = user.role === 'customer' ? user.customer_id : null;
     const { view = 'kanban', status = null, search = null } = req.query;
 
     const quotations = await getQuotationsListRepo({
       salesRepId,
+      customerId,
       status: status ? status.trim() : null,
       searchQuery: search ? search.trim() : null,
     });
@@ -68,7 +70,8 @@ export const getQuotationsSummaryController = async (req, res, next) => {
   try {
     const user = req.user;
     const salesRepId = user.role === 'sales_rep' ? user.id : null;
-    const summary = await getQuotationsKanbanSummaryRepo(salesRepId);
+    const customerId = user.role === 'customer' ? user.customer_id : null;
+    const summary = await getQuotationsKanbanSummaryRepo({ salesRepId, customerId });
     return res.status(STATUS_CODES.OK).json({ success: true, data: summary });
   } catch (error) {
     next(error);
@@ -78,12 +81,21 @@ export const getQuotationsSummaryController = async (req, res, next) => {
 export const getQuotationDetailController = async (req, res, next) => {
   try {
     const { id } = req.params;
+    const user = req.user;
     const quotation = await getQuotationFullDetailRepo(id);
 
     if (!quotation) {
       return res.status(STATUS_CODES.NOT_FOUND).json({
         success: false,
         message: 'Quotation not found',
+      });
+    }
+
+    // Ensure customer accounts can only view quotations belonging to their company
+    if (user.role === 'customer' && String(quotation.customer_id) !== String(user.customer_id)) {
+      return res.status(STATUS_CODES.FORBIDDEN).json({
+        success: false,
+        message: 'Access denied: You can only view quotations for your own organization.',
       });
     }
 
