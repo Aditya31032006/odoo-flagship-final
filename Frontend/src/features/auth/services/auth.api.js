@@ -4,23 +4,11 @@ const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api'
 
 const apiClient = axios.create({
   baseURL: API_BASE_URL,
-  withCredentials: true,
+  withCredentials: true, // Automatically sends and receives httpOnly auth_token cookies
   headers: {
     'Content-Type': 'application/json',
   },
 });
-
-// Interceptor to attach Authorization header if token exists in localStorage
-apiClient.interceptors.request.use(
-  (config) => {
-    const token = localStorage.getItem('df_token');
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
-    return config;
-  },
-  (error) => Promise.reject(error)
-);
 
 // Interceptor to handle global responses and error standardizations
 apiClient.interceptors.response.use(
@@ -37,7 +25,7 @@ apiClient.interceptors.response.use(
 
 export const authApi = {
   /**
-   * Log in user with email & password (role is resolved automatically by backend)
+   * Log in user with email & password (cookie is set automatically by backend)
    */
   async login(credentials) {
     const response = await apiClient.post('/auth/login', credentials);
@@ -45,7 +33,7 @@ export const authApi = {
   },
 
   /**
-   * Register as a new Company or an Employee under a Company
+   * Register as a new Company or an Employee under a Company (cookie is set automatically)
    */
   async register(userData) {
     const response = await apiClient.post('/auth/register', userData);
@@ -69,7 +57,7 @@ export const authApi = {
   },
 
   /**
-   * Fetch current authenticated user profile
+   * Fetch current authenticated user profile using httpOnly cookie
    */
   async getMe() {
     const response = await apiClient.get('/auth/me');
@@ -77,7 +65,7 @@ export const authApi = {
   },
 
   /**
-   * Logout user from backend session & clear cookies
+   * Logout user from backend session & clear httpOnly cookie
    */
   async logout() {
     const response = await apiClient.get('/auth/logout');

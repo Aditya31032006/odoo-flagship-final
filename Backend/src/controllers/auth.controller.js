@@ -239,12 +239,36 @@ export const getMeController = async (req, res, next) => {
 
 export const googleAuthCallbackController = async (req, res, next) => {
     try {
-        const { password_hash, ...safeUser } = req.user;
-        const token = signToken(safeUser);
-        res.cookie("auth_token", token, getAccessCookieOptions());
-
         const frontendUrl = config.FRONTEND_ORIGIN || 'http://localhost:5173';
-        return res.redirect(`${frontendUrl}?token=${encodeURIComponent(token)}`);
+
+        // 1. If user already exists in DB -> Log them in directly via httpOnly cookie
+        if (!req.user.isNew && req.user.user) {
+            const { password_hash, ...safeUser } = req.user.user;
+
+            if (!safeUser.is_active) {
+                return res.redirect(`${frontendUrl}/login?error=${encodeURIComponent('Your account is deactivated.')}`);
+            }
+
+            const token = signToken(safeUser);
+            res.cookie("auth_token", token, getAccessCookieOptions());
+
+            return res.redirect(`${frontendUrl}/`);
+        }
+
+        // 2. If new user -> Redirect to /onboarding with Google name & email pre-filled
+        if (req.user.isNew && req.user.googleProfile) {
+            const { name, email, avatar } = req.user.googleProfile;
+            const params = new URLSearchParams({
+                name: name || '',
+                email: email || '',
+                avatar: avatar || '',
+                is_google: 'true',
+            }).toString();
+
+            return res.redirect(`${frontendUrl}/onboarding?${params}`);
+        }
+
+        return res.redirect(`${frontendUrl}/login`);
     } catch (error) {
         next(error);
     }

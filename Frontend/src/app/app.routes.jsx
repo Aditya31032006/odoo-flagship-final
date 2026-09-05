@@ -1,4 +1,3 @@
-import React from 'react';
 import { createBrowserRouter, Navigate } from 'react-router';
 import ProtectedRoute from '../features/auth/components/ProtectedRoute.jsx';
 import PublicRoute from '../features/auth/components/PublicRoute.jsx';
@@ -6,6 +5,7 @@ import Login from '../features/auth/pages/Login.jsx';
 import Register from '../features/auth/pages/Register.jsx';
 import Dashboard from '../features/dashboard/pages/Dashboard.jsx';
 import QuotationsList from '../features/quotations/pages/QuotationsList.jsx';
+import Onboarding from '../features/auth/pages/Onboarding.jsx';
 
 // Lightweight placeholder view component for quick verification
 const PagePlaceholder = ({ title, description }) => (
@@ -124,12 +124,16 @@ export const router = createBrowserRouter([
         path: '/register',
         element: <Register />,
       },
+      {
+        path: '/onboarding',
+        element: <Onboarding />,
+      },
     ],
   },
 
-  // Catch-all route -> redirect to dashboard
+  // Catch-all route -> redirect to root
   {
     path: '*',
-    element: <Navigate to="/dashboard" replace />,
+    element: <Navigate to="/" replace />,
   },
 ]);
