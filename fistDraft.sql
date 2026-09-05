@@ -6,7 +6,11 @@
 
 CREATE EXTENSION IF NOT EXISTS pgcrypto;
 
+-- 1. Add avatar_url to users
+ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar_url TEXT DEFAULT NULL;
 
+-- 2. Add image_url to products and product_variants
+ALTER TABLE product_variants ADD COLUMN IF NOT EXISTS image_url TEXT DEFAULT NULL;
 -- ============================================================
 -- 1. ENUMS
 -- ============================================================
@@ -165,7 +169,7 @@ CREATE TABLE users (
 
     password_hash TEXT NOT NULL,
 
-    mobile VARCHAR(30),
+    mobile VARCHAR(13) UNIQUE,
 
     role user_role_enum NOT NULL,
 
@@ -176,6 +180,11 @@ CREATE TABLE users (
     updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
+ALTER TABLE users 
+ADD CONSTRAINT users_mobile_unique UNIQUE (mobile);
+
+SELECT * FROM users;
+DELETE FROM users;
 
 -- ============================================================
 -- 3. CUSTOMER COMPANIES
@@ -204,6 +213,8 @@ CREATE TABLE customers (
     updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
+SELECT * FROM customers;
+DELETE FROM customers;
 
 -- ============================================================
 -- 4. CUSTOMER USERS
@@ -228,6 +239,8 @@ CREATE TABLE customer_users (
         REFERENCES users(id)
         ON DELETE CASCADE
 );
+
+SELECT * FROM customer_users;
 
 
 CREATE UNIQUE INDEX uq_customer_primary_contact
