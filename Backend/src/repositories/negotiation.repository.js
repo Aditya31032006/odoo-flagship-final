@@ -215,14 +215,60 @@ export const acceptQuotationTermsRepo = async ({ quotationId, userId, userRole }
     // 5. Transfer quotation items to order_items and generate subscription records
     const qItemsRes = await client.query(GET_QUOTATION_ITEMS_ORDERED_BY_LINE, [quotationId]);
     for (const item of qItemsRes.rows) {
-      // Determine if item is subscription
-      const isSub = item.product_name_snapshot && (
-        item.product_name_snapshot.toLowerCase().includes('plan') ||
-        item.product_name_snapshot.toLowerCase().includes('sla') ||
-        item.product_name_snapshot.toLowerCase().includes('subscription') ||
-        item.product_name_snapshot.toLowerCase().includes('amc') ||
-        item.product_name_snapshot.toLowerCase().includes('care')
-      );
+      let isSub = false;
+      let subscriptionPlanId = null;
+      let subscriptionCycle = 'monthly';
+      let productId = null;
+
+      if (item.product_variant_id) {
+        const prodCheck = await client.query(`
+          SELECT p.id AS product_id, p.name AS product_name, p.unit, sp.id AS plan_id, sp.billing_cycle
+          FROM product_variants pv
+          JOIN products p ON pv.product_id = p.id
+          LEFT JOIN subscription_plans sp ON sp.product_id = p.id AND sp.is_active = TRUE
+          WHERE pv.id = $1
+          LIMIT 1;
+        `, [item.product_variant_id]);
+
+        if (prodCheck.rows.length > 0) {
+          const pRow = prodCheck.rows[0];
+          productId = pRow.product_id;
+          subscriptionPlanId = pRow.plan_id;
+          subscriptionCycle = pRow.billing_cycle || 'monthly';
+          const pUnit = (pRow.unit || '').toLowerCase();
+          const pName = (pRow.product_name || '').toLowerCase();
+
+          if (
+            pUnit === 'recurring' ||
+            subscriptionPlanId != null ||
+            pName.includes('plan') ||
+            pName.includes('subscription') ||
+            pName.includes('recurring') ||
+            pName.includes('sla') ||
+            pName.includes('service') ||
+            pName.includes('amc') ||
+            pName.includes('care')
+          ) {
+            isSub = true;
+          }
+        }
+      }
+
+      if (!isSub && item.product_name_snapshot) {
+        const snapName = item.product_name_snapshot.toLowerCase();
+        if (
+          snapName.includes('plan') ||
+          snapName.includes('subscription') ||
+          snapName.includes('recurring') ||
+          snapName.includes('sla') ||
+          snapName.includes('service') ||
+          snapName.includes('amc') ||
+          snapName.includes('care')
+        ) {
+          isSub = true;
+        }
+      }
+
       const lineType = isSub ? 'subscription' : 'one_time';
 
       const oiRes = await client.query(INSERT_ORDER_ITEM_FROM_QUOTATION, [
@@ -244,32 +290,24 @@ export const acceptQuotationTermsRepo = async ({ quotationId, userId, userRole }
 
       // If subscription line item, automatically generate subscription & schedule
       if (isSub) {
-        // Find product ID from variant
-        const pvRes = await client.query(GET_PRODUCT_ID_FROM_VARIANT, [item.product_variant_id]);
-        const productId = pvRes.rows[0]?.product_id || null;
-
-        // Find or create subscription plan
-        let planRes = await client.query(FIND_SUBSCRIPTION_PLAN_BY_NAME, [item.product_name_snapshot]);
-        let planId = planRes.rows[0]?.id;
-        let billingCycle = planRes.rows[0]?.billing_cycle || 'monthly';
-
-        if (!planId) {
-          const newPlan = await client.query(INSERT_DEFAULT_SUBSCRIPTION_PLAN, [
-            productId || 1,
-            item.product_name_snapshot,
-            item.unit_price,
-          ]);
-          planId = newPlan.rows[0].id;
-          billingCycle = newPlan.rows[0].billing_cycle;
+        if (!subscriptionPlanId) {
+          const newPlan = await client.query(`
+            INSERT INTO subscription_plans (
+              product_id, name, billing_cycle, price, allow_proration, allow_cancellation, allow_partial_refund, is_active
+            ) VALUES ($1, $2, 'monthly', $3, true, true, true, true)
+            RETURNING id, billing_cycle;
+          `, [productId || 1, item.product_name_snapshot || 'Subscription Plan', item.unit_price]);
+          subscriptionPlanId = newPlan.rows[0].id;
+          subscriptionCycle = newPlan.rows[0].billing_cycle || 'monthly';
         }
 
         const subRes = await client.query(INSERT_SUBSCRIPTION_FROM_ORDER, [
           orderItemId,
           quotation.customer_id,
-          planId,
+          subscriptionPlanId,
           item.quantity,
           item.unit_price,
-          billingCycle,
+          subscriptionCycle,
         ]);
         const newSubId = subRes.rows[0].id;
 

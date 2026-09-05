@@ -159,13 +159,48 @@ export const getFulfillmentDetailRepo = async (orderIdOrNumber) => {
       splits = suggestedSplits;
     }
 
+    // Compute total allocated units vs total required units
+    const totalAllocated = splits.reduce((sum, s) => sum + (parseInt(s.qty_fulfilled, 10) || 0), 0);
+    const totalRequired = items.reduce((sum, i) => sum + (parseInt(i.quantity, 10) || 0), 0);
+    let currentBackorders = backorders;
+
+    // If new stock was added to warehouses and can now fully fulfill the order, resolve existing pending backorders
+    if (totalAllocated >= totalRequired && backorders.some((b) => b.status === 'pending')) {
+      await client.query(`
+        UPDATE backorders 
+        SET status = 'fulfilled', updated_at = NOW() 
+        WHERE order_item_id IN (SELECT id FROM order_items WHERE order_id = $1) AND status = 'pending';
+      `, [orderId]);
+      currentBackorders = [];
+    } else if (totalAllocated < totalRequired && backorders.length === 0 && items.length > 0) {
+      // Record shortage as pending backorder
+      for (const item of items) {
+        const itemAlloc = splits
+          .filter((s) => String(s.order_item_id) === String(item.order_item_id))
+          .reduce((sum, s) => sum + (parseInt(s.qty_fulfilled, 10) || 0), 0);
+        const shortage = item.quantity - itemAlloc;
+        if (shortage > 0) {
+          const boRes = await client.query(`
+            INSERT INTO backorders (order_item_id, quantity, status, created_at, updated_at)
+            VALUES ($1, $2, 'pending', NOW(), NOW())
+            RETURNING id AS backorder_id, order_item_id, $2::INT AS quantity, NULL AS preferred_warehouse_name, 'pending' AS status;
+          `, [item.order_item_id, shortage]);
+          currentBackorders.push({
+            ...boRes.rows[0],
+            product_name: item.product_name,
+            sku: item.sku,
+          });
+        }
+      }
+    }
+
     await client.query('COMMIT');
 
     return {
       header,
       items,
       splits,
-      backorders,
+      backorders: currentBackorders,
       warehouses,
       availableStock: allStock,
     };
@@ -235,24 +270,19 @@ export const acceptSuggestedSplitRepo = async (orderIdOrNumber) => {
   try {
     await client.query('BEGIN');
 
-    for (const item of (detail.items || [])) {
-      const requestedQty = parseInt(item.quantity, 10) || 1;
-      const stockCheck = await client.query(CHECK_VARIANT_TOTAL_AVAILABLE_STOCK, [item.product_variant_id]);
+    // Calculate total required vs total allocated across all splits
+    const totalAllocated = (detail.splits || []).reduce((sum, s) => sum + (parseInt(s.qty_fulfilled || s.quantity, 10) || 0), 0);
+    const totalRequired = (detail.items || []).reduce((sum, i) => sum + (parseInt(i.quantity, 10) || 0), 0);
+    const hasPendingBackorders = (detail.backorders || []).some((b) => b.status === 'pending') || totalAllocated < totalRequired;
 
-      const totalAvailable = stockCheck.rows[0]?.total_available || 0;
-      const splitAllocated = (detail.splits || [])
-        .filter((s) => String(s.order_item_id) === String(item.order_item_id))
-        .reduce((sum, s) => sum + (parseInt(s.qty_fulfilled || s.quantity, 10) || 0), 0);
-
-      if (totalAvailable <= 0 && splitAllocated <= 0) {
-        await client.query(INSERT_BACKORDER_RECORD, [item.order_item_id, requestedQty]);
-
-        const err = new Error(
-          `Cannot accept split: Zero stock available in any warehouse for "${item.product_name_snapshot || item.product_name || 'Product'}". Item has been stored as a Backorder.`
-        );
-        err.statusCode = 400;
-        throw err;
-      }
+    // Reject split acceptance if stock is insufficient or active backorders exist
+    if (hasPendingBackorders) {
+      const shortage = Math.max(0, totalRequired - totalAllocated);
+      const err = new Error(
+        `Cannot accept split: ${shortage > 0 ? `${shortage} units are missing / on backorder.` : 'Pending backorder exists.'} Please add stock to a warehouse before accepting the fulfillment split.`
+      );
+      err.statusCode = 400;
+      throw err;
     }
 
     await client.query(DELETE_FULFILLMENT_SPLITS_BY_ORDER_ID, [orderId]);

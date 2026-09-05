@@ -213,6 +213,8 @@ export const createProductRepo = async ({
   tax_percentage = 0,
   is_active = true,
   variants = [],
+  is_subscription = false,
+  recurring_cycle = 'monthly',
 }) => {
   const client = await pool.connect();
   try {
@@ -260,6 +262,20 @@ export const createProductRepo = async ({
       createdVariants.push(varRes.rows[0]);
     }
 
+    // If marked as recurring / subscription, automatically create active subscription plan
+    if (unit === 'Recurring' || Boolean(is_subscription)) {
+      let cycle = 'monthly';
+      const c = String(recurring_cycle || '').toLowerCase();
+      if (['monthly', 'quarterly', 'yearly'].includes(c)) {
+        cycle = c;
+      }
+      await client.query(`
+        INSERT INTO subscription_plans (
+          product_id, name, billing_cycle, price, allow_proration, allow_cancellation, allow_partial_refund, is_active
+        ) VALUES ($1, $2, $3::subscription_cycle_enum, $4, true, true, true, true)
+      `, [product.id, name, cycle, base_price]);
+    }
+
     await client.query('COMMIT');
     return {
       ...product,
@@ -283,6 +299,8 @@ export const updateProductRepo = async (productId, {
   tax_percentage = 0,
   is_active = true,
   variants = [],
+  is_subscription = false,
+  recurring_cycle = 'monthly',
 }) => {
   const client = await pool.connect();
   try {
@@ -342,6 +360,29 @@ export const updateProductRepo = async (productId, {
             true,
           ]);
         }
+      }
+    }
+
+    // If marked as recurring / subscription, automatically create active subscription plan if missing
+    if (unit === 'Recurring' || Boolean(is_subscription)) {
+      let cycle = 'monthly';
+      const c = String(recurring_cycle || '').toLowerCase();
+      if (['monthly', 'quarterly', 'yearly'].includes(c)) {
+        cycle = c;
+      }
+      const existingPlan = await client.query('SELECT id FROM subscription_plans WHERE product_id = $1 LIMIT 1', [productId]);
+      if (existingPlan.rows.length === 0) {
+        await client.query(`
+          INSERT INTO subscription_plans (
+            product_id, name, billing_cycle, price, allow_proration, allow_cancellation, allow_partial_refund, is_active
+          ) VALUES ($1, $2, $3::subscription_cycle_enum, $4, true, true, true, true)
+        `, [productId, name, cycle, base_price]);
+      } else {
+        await client.query(`
+          UPDATE subscription_plans
+          SET name = $1, price = $2, billing_cycle = $3::subscription_cycle_enum, is_active = true
+          WHERE id = $4
+        `, [name, base_price, cycle, existingPlan.rows[0].id]);
       }
     }
 
