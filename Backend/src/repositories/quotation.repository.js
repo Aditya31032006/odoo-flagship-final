@@ -152,6 +152,9 @@ export const saveQuotationRepo = async ({
 
     // If submitted for approval, evaluate approval rules and create approval steps
     if (status === 'pending_approval') {
+      await client.query('DELETE FROM approval_steps WHERE approval_request_id IN (SELECT id FROM approval_requests WHERE quotation_id = $1)', [quotation.id]);
+      await client.query('DELETE FROM approval_requests WHERE quotation_id = $1', [quotation.id]);
+
       const appReqRes = await client.query(CREATE_APPROVAL_REQUEST, [
         quotation.id,
         user_id,

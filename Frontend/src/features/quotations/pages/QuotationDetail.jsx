@@ -262,6 +262,37 @@ export const QuotationDetail = ({ isNew = false }) => {
                 }}>
                   ✅ Order Confirmed &amp; Locked
                 </div>
+              ) : status === 'pending_approval' ? (
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '1rem',
+                  flexWrap: 'wrap'
+                }}>
+                  <div style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '0.5rem',
+                    padding: '0.65rem 1.25rem',
+                    background: 'rgba(245, 158, 11, 0.15)',
+                    border: '1px solid rgba(245, 158, 11, 0.4)',
+                    borderRadius: '8px',
+                    color: '#fbbf24',
+                    fontWeight: 600,
+                    fontSize: '0.9375rem'
+                  }}>
+                    ⏳ Status: Pending Approval
+                  </div>
+
+                  <button
+                    type="button"
+                    className="df-quotation-detail__btn-draft"
+                    onClick={handleSaveDraft}
+                    disabled={isSaving}
+                  >
+                    {isSaving ? 'Saving...' : 'Update Quotation'}
+                  </button>
+                </div>
               ) : (
                 <>
                   <button
