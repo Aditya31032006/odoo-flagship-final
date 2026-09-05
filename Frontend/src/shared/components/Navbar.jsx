@@ -287,8 +287,19 @@ function NavbarComponent() {
                 }}
                 title="View & Edit My Profile"
               >
-                <div className="df-navbar__user-avatar">{getInitials(user.name)}</div>
-                <span className="df-navbar__user-role">{formatRole(user.role)}</span>
+                <div className={`df-navbar__user-avatar ${user.role === 'customer' ? (user.ring_class || 'df-avatar--standard') : ''}`}>
+                  {getInitials(user.name)}
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', lineHeight: 1.15 }}>
+                  <span className="df-navbar__user-role">
+                    {user.role === 'customer' ? (user.tier_name ? `${user.tier_name} Tier` : 'Standard Member') : formatRole(user.role)}
+                  </span>
+                  {user.role === 'customer' && user.company_name && (
+                    <span style={{ fontSize: '0.6875rem', color: '#94a3b8', maxWidth: '110px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {user.company_name}
+                    </span>
+                  )}
+                </div>
                 <button
                   type="button"
                   className="df-navbar__chevron-btn"
@@ -324,6 +335,16 @@ function NavbarComponent() {
                     {user.company_name && (
                       <div className="df-navbar__dropdown-menu-company">
                         🏢 {user.company_name}
+                      </div>
+                    )}
+                    {user.role === 'customer' && (
+                      <div style={{ marginTop: '6px' }}>
+                        <span className={`df-profile__badge df-profile__badge--tier ${user.ring_class || 'df-avatar--standard'}`} style={{ fontSize: '0.7rem', padding: '2px 8px' }}>
+                          {user.tier_name === 'Gold' && '🥇 Gold Member (15% max)'}
+                          {user.tier_name === 'Silver' && '🥈 Silver Member (10% max)'}
+                          {user.tier_name === 'Bronze' && '🥉 Bronze Member (5% max)'}
+                          {(!user.tier_name || user.tier_name === 'Standard') && '⚪ Standard Member (0% max)'}
+                        </span>
                       </div>
                     )}
                   </div>

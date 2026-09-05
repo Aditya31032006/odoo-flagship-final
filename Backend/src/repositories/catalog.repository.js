@@ -38,7 +38,49 @@ export const getActiveCustomersRepo = async () => {
     await client.query('BEGIN');
     const result = await client.query(GET_ACTIVE_CUSTOMERS_WITH_TIER);
     await client.query('COMMIT');
-    return result.rows;
+    
+    return result.rows.map((row) => {
+      const paidCount = Number(row.quarterly_paid_orders_count) || 0;
+      let tierName = 'Standard';
+      let tierMaxDiscount = 0;
+      let tierId = null;
+      let ringClass = 'df-avatar--standard';
+      let ringColor = '#ffffff';
+
+      if (paidCount >= 9) {
+        tierName = 'Gold';
+        tierMaxDiscount = 15;
+        tierId = 3;
+        ringClass = 'df-avatar--gold';
+        ringColor = '#eab308';
+      } else if (paidCount >= 6) {
+        tierName = 'Silver';
+        tierMaxDiscount = 10;
+        tierId = 2;
+        ringClass = 'df-avatar--silver';
+        ringColor = '#cbd5e1';
+      } else if (paidCount >= 3) {
+        tierName = 'Bronze';
+        tierMaxDiscount = 5;
+        tierId = 1;
+        ringClass = 'df-avatar--bronze';
+        ringColor = '#cd7f32';
+      } else if (row.tier_name && row.tier_name !== 'Platinum') {
+        tierName = row.tier_name;
+        tierMaxDiscount = Number(row.tier_max_discount) || 0;
+        tierId = row.tier_id;
+      }
+
+      return {
+        ...row,
+        tier_id: tierId,
+        tier_name: tierName,
+        tier_max_discount: tierMaxDiscount,
+        quarterly_paid_orders_count: paidCount,
+        ring_class: ringClass,
+        ring_color: ringColor,
+      };
+    });
   } catch (error) {
     console.error('Error in getActiveCustomersRepo:', error);
     await client.query('ROLLBACK');

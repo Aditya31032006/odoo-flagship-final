@@ -61,6 +61,24 @@
     box-shadow: 0 4px 14px rgba(37, 99, 235, 0.4);
     border: 2px solid rgba(255, 255, 255, 0.2);
     flex-shrink: 0;
+    transition: all 0.25s ease;
+
+    &.df-avatar--gold {
+      border: 3px solid #eab308;
+      box-shadow: 0 0 0 3px rgba(234, 179, 8, 0.35), 0 0 20px rgba(234, 179, 8, 0.6);
+    }
+    &.df-avatar--silver {
+      border: 3px solid #cbd5e1;
+      box-shadow: 0 0 0 3px rgba(203, 213, 225, 0.35), 0 0 20px rgba(203, 213, 225, 0.6);
+    }
+    &.df-avatar--bronze {
+      border: 3px solid #cd7f32;
+      box-shadow: 0 0 0 3px rgba(205, 127, 50, 0.35), 0 0 20px rgba(205, 127, 50, 0.6);
+    }
+    &.df-avatar--standard {
+      border: 3px solid #ffffff;
+      box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.3), 0 0 16px rgba(255, 255, 255, 0.5);
+    }
   }
 
   &__hero-details {
@@ -176,6 +194,30 @@
       background: rgba(168, 85, 247, 0.15);
       border: 1px solid rgba(168, 85, 247, 0.35);
       color: #d8b4fe;
+    }
+
+    &--tier {
+      font-weight: 700;
+      &.df-avatar--gold {
+        background: rgba(234, 179, 8, 0.18);
+        color: #facc15;
+        border: 1px solid rgba(234, 179, 8, 0.45);
+      }
+      &.df-avatar--silver {
+        background: rgba(203, 213, 225, 0.18);
+        color: #f1f5f9;
+        border: 1px solid rgba(203, 213, 225, 0.45);
+      }
+      &.df-avatar--bronze {
+        background: rgba(205, 127, 50, 0.18);
+        color: #fdba74;
+        border: 1px solid rgba(205, 127, 50, 0.45);
+      }
+      &.df-avatar--standard {
+        background: rgba(255, 255, 255, 0.12);
+        color: #ffffff;
+        border: 1px solid rgba(255, 255, 255, 0.35);
+      }
     }
 
     &--active {

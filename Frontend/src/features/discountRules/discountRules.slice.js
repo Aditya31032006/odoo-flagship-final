@@ -64,7 +64,7 @@ export const discountRulesSlice = createSlice({
       .addCase(fetchDiscountConfig.fulfilled, (state, action) => {
         state.isLoading = false;
         state.isInitialized = true;
-        state.customerTiers = action.payload?.customer_tiers || [];
+        state.customerTiers = (action.payload?.customer_tiers || []).filter((t) => t.name?.toLowerCase() !== 'platinum');
         state.categoryCeilings = action.payload?.category_ceilings || [];
         state.approvalRules = action.payload?.approval_rules || [];
       })

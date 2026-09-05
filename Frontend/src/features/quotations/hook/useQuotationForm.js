@@ -196,7 +196,7 @@ export const useQuotationForm = ({ quotationId = null } = {}) => {
   );
 
   // Recalculate all lines when customer's tier or priceList changes
-  const tierMaxDiscount = selectedCustomer?.tier_max_discount ?? 15;
+  const tierMaxDiscount = selectedCustomer?.tier_max_discount != null ? selectedCustomer.tier_max_discount : (selectedCustomer ? 0 : 100);
 
   // Add a new product variant line
   const addProductLine = useCallback(
@@ -455,8 +455,13 @@ export const useQuotationForm = ({ quotationId = null } = {}) => {
       const targetId = quotationId && quotationId !== 'new' ? quotationId : 'new';
       const result = await quotationApi.submitForApproval(targetId, payload);
 
-      setSuccessMessage('Quotation submitted for approval successfully!');
-      setStatus('pending_approval');
+      const isApproved = !calculatedTotals.hasExcess;
+      setSuccessMessage(
+        isApproved
+          ? 'Quotation automatically approved within allowed discount limits!'
+          : 'Quotation submitted for governance approval.'
+      );
+      setStatus(isApproved ? 'approved' : 'pending_approval');
       return result;
     } catch (err) {
       setError(err.customMessage || 'Failed to submit quotation for approval');

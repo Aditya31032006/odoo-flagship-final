@@ -11,6 +11,14 @@ export const GET_ACTIVE_CUSTOMERS_WITH_TIER = `
     c.phone,
     c.billing_address,
     c.shipping_address,
+    COALESCE((
+      SELECT COUNT(DISTINCT i.id)::INT
+      FROM invoices i
+      WHERE i.customer_id = c.id
+        AND i.status = 'paid'
+        AND i.created_at >= date_trunc('quarter', CURRENT_DATE)
+        AND i.created_at < date_trunc('quarter', CURRENT_DATE) + INTERVAL '3 months'
+    ), 0) AS quarterly_paid_orders_count,
     cta.tier_id,
     ct.name AS tier_name,
     COALESCE(ct.max_discount_percentage, 0)::NUMERIC(5,2) AS tier_max_discount

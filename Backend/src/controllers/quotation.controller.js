@@ -204,12 +204,15 @@ export const createQuotationController = async (req, res, next) => {
       });
     }
 
+    const hasExcess = items.some((item) => Number(item.excess_discount_percentage || 0) > 0) || Number(blended_risk_score) > 0;
+    const resolvedStatus = status === 'draft' ? 'draft' : (hasExcess ? 'pending_approval' : 'approved');
+
     const savedQuotation = await saveQuotationRepo({
       customer_id,
       sales_rep_id: user.id,
       tier_id,
       price_list_id,
-      status: status || 'pending_approval',
+      status: resolvedStatus,
       blended_risk_score,
       risk_level,
       subtotal,
@@ -218,7 +221,7 @@ export const createQuotationController = async (req, res, next) => {
       grand_total,
       valid_until,
       items,
-      action_reason,
+      action_reason: hasExcess ? action_reason : 'Automatically approved within discount ceiling limits',
       user_id: user.id,
     });
 
@@ -271,7 +274,7 @@ export const updateQuotationController = async (req, res, next) => {
       customer_id,
       tier_id,
       price_list_id,
-      status = 'pending_approval',
+      status,
       blended_risk_score = 0,
       risk_level = 'low',
       subtotal = 0,
@@ -283,13 +286,16 @@ export const updateQuotationController = async (req, res, next) => {
       action_reason = null,
     } = req.body;
 
+    const hasExcess = items.some((item) => Number(item.excess_discount_percentage || 0) > 0) || Number(blended_risk_score) > 0;
+    const resolvedStatus = status === 'draft' ? 'draft' : (status === 'confirmed' || status === 'approved' || status === 'rejected' ? status : (hasExcess ? 'pending_approval' : 'approved'));
+
     const savedQuotation = await saveQuotationRepo({
       id,
       customer_id,
       sales_rep_id: user.id,
       tier_id,
       price_list_id,
-      status,
+      status: resolvedStatus,
       blended_risk_score,
       risk_level,
       subtotal,
@@ -298,12 +304,12 @@ export const updateQuotationController = async (req, res, next) => {
       grand_total,
       valid_until,
       items,
-      action_reason,
+      action_reason: action_reason || (hasExcess ? 'Updated with pending approval needed' : 'Updated within allowed discount limits'),
       user_id: user.id,
     });
 
     // If quotation is updated in pending_approval status, dispatch email
-    if (savedQuotation && status === 'pending_approval') {
+    if (savedQuotation && resolvedStatus === 'pending_approval') {
       try {
         const cust = await getCustomerNotificationContactRepo(customer_id);
         if (cust && cust.email) {
@@ -359,8 +365,11 @@ export const submitApprovalController = async (req, res, next) => {
       grand_total = 0,
       valid_until = null,
       items = [],
-      action_reason = 'Filed pending quotation for customer review',
+      action_reason = 'Filed quotation for review',
     } = req.body;
+
+    const hasExcess = items.some((item) => Number(item.excess_discount_percentage || 0) > 0) || Number(blended_risk_score) > 0;
+    const resolvedStatus = hasExcess ? 'pending_approval' : 'approved';
 
     const submitted = await saveQuotationRepo({
       id: id === 'new' ? null : id,
@@ -368,7 +377,7 @@ export const submitApprovalController = async (req, res, next) => {
       sales_rep_id: user.id,
       tier_id,
       price_list_id,
-      status: 'pending_approval',
+      status: resolvedStatus,
       blended_risk_score,
       risk_level,
       subtotal,
@@ -377,7 +386,7 @@ export const submitApprovalController = async (req, res, next) => {
       grand_total,
       valid_until,
       items,
-      action_reason,
+      action_reason: hasExcess ? 'Submitted for manager approval due to ceiling excess' : 'Automatically approved within discount ceiling limits',
       user_id: user.id,
     });
 

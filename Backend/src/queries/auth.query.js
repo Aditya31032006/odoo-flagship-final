@@ -18,7 +18,15 @@ export const FIND_USER = `
     c.id AS customer_id, 
     c.company_name, 
     c.gst_number, 
-    cu.is_primary_contact
+    cu.is_primary_contact,
+    COALESCE((
+      SELECT COUNT(DISTINCT i.id)::INT
+      FROM invoices i
+      WHERE i.customer_id = c.id
+        AND i.status = 'paid'
+        AND i.created_at >= date_trunc('quarter', CURRENT_DATE)
+        AND i.created_at < date_trunc('quarter', CURRENT_DATE) + INTERVAL '3 months'
+    ), 0) AS quarterly_paid_orders_count
   FROM users u
   LEFT JOIN customer_users cu ON u.id = cu.user_id
   LEFT JOIN customers c ON cu.customer_id = c.id
@@ -39,7 +47,15 @@ export const FIND_USER_BY_IDENTIFIER = `
     c.id AS customer_id, 
     c.company_name, 
     c.gst_number, 
-    cu.is_primary_contact
+    cu.is_primary_contact,
+    COALESCE((
+      SELECT COUNT(DISTINCT i.id)::INT
+      FROM invoices i
+      WHERE i.customer_id = c.id
+        AND i.status = 'paid'
+        AND i.created_at >= date_trunc('quarter', CURRENT_DATE)
+        AND i.created_at < date_trunc('quarter', CURRENT_DATE) + INTERVAL '3 months'
+    ), 0) AS quarterly_paid_orders_count
   FROM users u
   LEFT JOIN customer_users cu ON u.id = cu.user_id
   LEFT JOIN customers c ON cu.customer_id = c.id
@@ -60,7 +76,15 @@ export const FIND_USER_BY_ID = `
     c.id AS customer_id, 
     c.company_name, 
     c.gst_number, 
-    cu.is_primary_contact
+    cu.is_primary_contact,
+    COALESCE((
+      SELECT COUNT(DISTINCT i.id)::INT
+      FROM invoices i
+      WHERE i.customer_id = c.id
+        AND i.status = 'paid'
+        AND i.created_at >= date_trunc('quarter', CURRENT_DATE)
+        AND i.created_at < date_trunc('quarter', CURRENT_DATE) + INTERVAL '3 months'
+    ), 0) AS quarterly_paid_orders_count
   FROM users u
   LEFT JOIN customer_users cu ON u.id = cu.user_id
   LEFT JOIN customers c ON cu.customer_id = c.id
@@ -85,7 +109,15 @@ export const GET_USER_FULL_PROFILE = `
     c.phone AS company_phone,
     c.billing_address,
     c.shipping_address,
-    cu.is_primary_contact
+    cu.is_primary_contact,
+    COALESCE((
+      SELECT COUNT(DISTINCT i.id)::INT
+      FROM invoices i
+      WHERE i.customer_id = c.id
+        AND i.status = 'paid'
+        AND i.created_at >= date_trunc('quarter', CURRENT_DATE)
+        AND i.created_at < date_trunc('quarter', CURRENT_DATE) + INTERVAL '3 months'
+    ), 0) AS quarterly_paid_orders_count
   FROM users u
   LEFT JOIN customer_users cu ON u.id = cu.user_id
   LEFT JOIN customers c ON cu.customer_id = c.id
