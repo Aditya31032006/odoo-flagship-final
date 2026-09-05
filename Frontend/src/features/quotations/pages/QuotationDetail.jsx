@@ -6,6 +6,7 @@ import QuotationLineItemsTable from '../components/QuotationLineItemsTable.jsx';
 import DiscountAlertBanner from '../components/DiscountAlertBanner.jsx';
 import UpsellSuggestionsWidget from '../components/UpsellSuggestionsWidget.jsx';
 import NegotiationPanel from '../components/NegotiationPanel.jsx';
+import quotationApi from '../services/quotation.api.js';
 import '../styles/quotationDetail.scss';
 
 function formatCurrency(val) {
@@ -245,9 +246,85 @@ export const QuotationDetail = ({ isNew = false }) => {
             </div>
           </div>
 
-          {!isCustomer && (
+          {isCustomer ? (
             <div className="buttons-group">
-              {status === 'confirmed' ? (
+              {status === 'payment' ? (
+                <div style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '0.5rem',
+                  padding: '0.65rem 1.25rem',
+                  background: 'rgba(99, 102, 241, 0.15)',
+                  border: '1px solid rgba(99, 102, 241, 0.4)',
+                  borderRadius: '8px',
+                  color: '#818cf8',
+                  fontWeight: 600,
+                  fontSize: '0.9375rem'
+                }}>
+                  🎉 Paid &amp; Completed
+                </div>
+              ) : status === 'shipment' ? (
+                <button
+                  type="button"
+                  style={{
+                    background: 'linear-gradient(135deg, #10b981, #059669)',
+                    color: '#ffffff',
+                    border: 'none',
+                    padding: '0.75rem 1.5rem',
+                    borderRadius: '8px',
+                    fontWeight: 700,
+                    fontSize: '1rem',
+                    cursor: 'pointer',
+                    boxShadow: '0 4px 14px rgba(16, 185, 129, 0.4)',
+                  }}
+                  onClick={async () => {
+                    if (window.confirm(`Confirm payment of ${formatCurrency(calculatedTotals.grandTotal)}?`)) {
+                      try {
+                        await quotationApi.payQuotation(id);
+                        window.location.reload();
+                      } catch (err) {
+                        alert(err.customMessage || 'Payment failed');
+                      }
+                    }
+                  }}
+                >
+                  💳 Pay Now ({formatCurrency(calculatedTotals.grandTotal)})
+                </button>
+              ) : null}
+            </div>
+          ) : (
+            <div className="buttons-group">
+              {status === 'payment' ? (
+                <div style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '0.5rem',
+                  padding: '0.65rem 1.25rem',
+                  background: 'rgba(99, 102, 241, 0.15)',
+                  border: '1px solid rgba(99, 102, 241, 0.4)',
+                  borderRadius: '8px',
+                  color: '#818cf8',
+                  fontWeight: 600,
+                  fontSize: '0.9375rem'
+                }}>
+                  🎉 Status: Payment Completed &amp; Settled
+                </div>
+              ) : status === 'shipment' ? (
+                <div style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '0.5rem',
+                  padding: '0.65rem 1.25rem',
+                  background: 'rgba(56, 189, 248, 0.15)',
+                  border: '1px solid rgba(56, 189, 248, 0.4)',
+                  borderRadius: '8px',
+                  color: '#38bdf8',
+                  fontWeight: 600,
+                  fontSize: '0.9375rem'
+                }}>
+                  🚚 Status: In Shipment
+                </div>
+              ) : status === 'confirmed' ? (
                 <div style={{
                   display: 'inline-flex',
                   alignItems: 'center',

@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, memo } from 'react';
 import { useForm } from 'react-hook-form';
 import useAuth from '../../auth/hook/useAuth.js';
 import negotiationApi from '../services/negotiation.api.js';
+import quotationApi from '../services/quotation.api.js';
 import '../styles/negotiation.scss';
 
 export const NegotiationPanel = memo(({
@@ -35,12 +36,11 @@ export const NegotiationPanel = memo(({
     },
   });
 
-  // 2. React Hook Form for Chat Composer
+  // 2. React Hook Form for Chat Messaging
   const {
     register: registerChat,
     handleSubmit: handleSubmitChat,
     reset: resetChat,
-    watch: watchChat,
   } = useForm({
     defaultValues: {
       message: '',
@@ -48,22 +48,25 @@ export const NegotiationPanel = memo(({
     },
   });
 
-  const chatMessageVal = watchChat('message');
-
-  // Fetch negotiation thread
+  // Load active negotiation on mount or quotationId change
   const loadNegotiation = async () => {
     if (!quotationId) return;
+    setLoading(true);
     try {
-      const data = await negotiationApi.getNegotiation(quotationId);
-      setNegotiation(data);
-      if (data?.counter_discount_percentage != null) {
-        setCounterValue('counter_discount_percentage', data.counter_discount_percentage);
-      }
-      if (data?.requested_delivery_date) {
-        setCounterValue('requested_delivery_date', data.requested_delivery_date.split('T')[0]);
+      const res = await negotiationApi.getNegotiation(quotationId);
+      if (res?.data) {
+        setNegotiation(res.data);
+        if (res.data.counter_discount_percentage != null) {
+          setCounterValue('counter_discount_percentage', res.data.counter_discount_percentage);
+        }
+        if (res.data.requested_delivery_date) {
+          setCounterValue('requested_delivery_date', res.data.requested_delivery_date.split('T')[0]);
+        }
+      } else {
+        setNegotiation(null);
       }
     } catch (err) {
-      console.warn('Failed to load negotiation thread:', err);
+      console.warn('Could not load negotiation record:', err);
     } finally {
       setLoading(false);
     }
@@ -73,28 +76,27 @@ export const NegotiationPanel = memo(({
     loadNegotiation();
   }, [quotationId]);
 
-  // Scroll to bottom on new messages
+  // Scroll messages to bottom on new message
   useEffect(() => {
-    if (messagesEndRef.current) {
-      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
-    }
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [negotiation?.messages]);
 
   // Submit counter-offer handler
   const onCounterSubmit = async (formData) => {
-    if (!formData.counter_discount_percentage && !formData.requested_delivery_date) return;
-
     setSubmitting(true);
     try {
-      const res = await negotiationApi.submitCounterOffer(quotationId, {
-        counter_discount_percentage: formData.counter_discount_percentage ? Number(formData.counter_discount_percentage) : undefined,
-        requested_delivery_date: formData.requested_delivery_date || undefined,
-        message: formData.message || '',
-      });
+      const payload = {
+        counter_discount_percentage: formData.counter_discount_percentage ? Number(formData.counter_discount_percentage) : null,
+        requested_delivery_date: formData.requested_delivery_date || null,
+        message: formData.message || 'Customer submitted revised commercial terms for review.',
+      };
+
+      const res = await negotiationApi.submitCounterOffer(quotationId, payload);
       setNegotiation(res.data);
       setShowCounterForm(false);
       resetCounter();
       if (onQuotationUpdated) onQuotationUpdated();
+      alert('Counter-offer submitted successfully to your sales representative!');
     } catch (err) {
       alert(err.customMessage || 'Failed to submit counter-offer');
     } finally {
@@ -142,6 +144,24 @@ export const NegotiationPanel = memo(({
     }
   };
 
+  // Pay quotation when in shipment stage
+  const handlePayQuotation = async () => {
+    if (!window.confirm(`Proceed to payment of $${Number(quotation?.grand_total || 0).toLocaleString()} for this order?`)) {
+      return;
+    }
+
+    setSubmitting(true);
+    try {
+      await quotationApi.payQuotation(quotationId);
+      if (onQuotationUpdated) onQuotationUpdated();
+      alert('Payment successful! Order moved to payment stage.');
+    } catch (err) {
+      alert(err.customMessage || 'Failed to complete payment');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   const isConfirmed = quotation?.status === 'confirmed' || negotiation?.status === 'accepted';
   const hasActiveCounter = negotiation?.counter_discount_percentage != null;
 
@@ -170,7 +190,57 @@ export const NegotiationPanel = memo(({
 
         {/* Global Action Status */}
         <div className="header-actions">
-          {isConfirmed ? (
+          {quotation?.status === 'payment' ? (
+            <span
+              className="status-badge"
+              style={{
+                background: 'rgba(99, 102, 241, 0.15)',
+                color: '#818cf8',
+                border: '1px solid rgba(99, 102, 241, 0.4)',
+                padding: '0.4rem 0.85rem',
+                borderRadius: '6px',
+                fontWeight: 600,
+              }}
+            >
+              🎉 Payment Completed &amp; Settled
+            </span>
+          ) : quotation?.status === 'shipment' ? (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+              <span
+                className="status-badge"
+                style={{
+                  background: 'rgba(56, 189, 248, 0.15)',
+                  color: '#38bdf8',
+                  border: '1px solid rgba(56, 189, 248, 0.4)',
+                  padding: '0.4rem 0.85rem',
+                  borderRadius: '6px',
+                  fontWeight: 600,
+                }}
+              >
+                🚚 In Shipment
+              </span>
+              {isCustomer && (
+                <button
+                  type="button"
+                  style={{
+                    background: 'linear-gradient(135deg, #10b981, #059669)',
+                    color: '#ffffff',
+                    border: 'none',
+                    padding: '0.5rem 1.1rem',
+                    borderRadius: '8px',
+                    fontWeight: '700',
+                    cursor: 'pointer',
+                    boxShadow: '0 4px 12px rgba(16, 185, 129, 0.35)',
+                    transition: 'all 0.2s ease',
+                  }}
+                  onClick={handlePayQuotation}
+                  disabled={submitting}
+                >
+                  💳 Pay Now (${Number(quotation?.grand_total || 0).toLocaleString()})
+                </button>
+              )}
+            </div>
+          ) : isConfirmed ? (
             <span className="status-badge status-badge--confirmed">
               ✅ Quotation Accepted &amp; Confirmed
             </span>
@@ -358,8 +428,7 @@ export const NegotiationPanel = memo(({
             <button
               type="submit"
               className="btn-send"
-              disabled={submitting || !chatMessageVal?.trim()}
-              title="Send Message"
+              disabled={submitting}
             >
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                 <line x1="22" y1="2" x2="11" y2="13" />

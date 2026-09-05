@@ -39,6 +39,11 @@ export const fulfillmentApi = {
     return res.data;
   },
 
+  completeShipment: async (orderId) => {
+    const res = await apiClient.post(`/fulfillment/${orderId}/complete-shipment`);
+    return res.data;
+  },
+
   // Stock CRUD
   createStock: async (payload) => {
     const res = await apiClient.post('/fulfillment/stock', payload);

@@ -52,6 +52,19 @@ export const UPSERT_CATEGORY_DISCOUNT_CEILING = `
   RETURNING id, category_id, max_discount_percentage;
 `;
 
+export const CHECK_CATEGORY_DISCOUNT_CEILING_EXISTS = `
+  SELECT id FROM category_discount_ceilings WHERE category_id = $1;
+`;
+
+export const UPDATE_CATEGORY_DISCOUNT_CEILING = `
+  UPDATE category_discount_ceilings SET max_discount_percentage = $1 WHERE category_id = $2;
+`;
+
+export const INSERT_CATEGORY_DISCOUNT_CEILING = `
+  INSERT INTO category_discount_ceilings (category_id, max_discount_percentage) VALUES ($1, $2);
+`;
+
+
 export const UPDATE_APPROVAL_RULE = `
   UPDATE approval_rules
   SET 

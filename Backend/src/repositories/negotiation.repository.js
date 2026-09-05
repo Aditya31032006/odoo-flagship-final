@@ -7,8 +7,18 @@ import {
   INSERT_NEGOTIATION_MESSAGE,
   UPDATE_QUOTATION_STATUS,
   CREATE_ORDER_FROM_QUOTATION,
+  UPDATE_NEGOTIATION_STATUS_ACCEPTED,
+  COUNT_ORDERS_TOTAL,
+  GET_QUOTATION_ITEMS_ORDERED_BY_LINE,
+  INSERT_ORDER_ITEM_FROM_QUOTATION,
+  GET_PRODUCT_ID_FROM_VARIANT,
+  FIND_SUBSCRIPTION_PLAN_BY_NAME,
+  INSERT_DEFAULT_SUBSCRIPTION_PLAN,
+  INSERT_SUBSCRIPTION_FROM_ORDER,
+  INSERT_INITIAL_SUBSCRIPTION_BILLING_LINE,
 } from '../queries/negotiation.query.js';
 import { GET_QUOTATION_BY_ID } from '../queries/quotation.query.js';
+import { allocateStockGreedy } from './fulfillment.repository.js';
 
 /**
  * Fetch full negotiation thread with history of messages for a quotation
@@ -179,20 +189,17 @@ export const acceptQuotationTermsRepo = async ({ quotationId, userId, userRole }
     }
     const quotation = quoteRes.rows[0];
 
-    // 1. Update quotation status to 'approved'
-    const updatedQuoteRes = await client.query(UPDATE_QUOTATION_STATUS, ['approved', quotationId]);
+    // 1. Update quotation status to 'confirmed'
+    const updatedQuoteRes = await client.query(UPDATE_QUOTATION_STATUS, ['confirmed', quotationId]);
 
     // 2. Update negotiation record if active
     const negRes = await client.query(GET_ACTIVE_NEGOTIATION, [quotationId]);
     if (negRes.rows.length > 0) {
-      await client.query(
-        "UPDATE quotation_negotiations SET status = 'accepted', updated_at = CURRENT_TIMESTAMP WHERE id = $1",
-        [negRes.rows[0].id]
-      );
+      await client.query(UPDATE_NEGOTIATION_STATUS_ACCEPTED, [negRes.rows[0].id]);
     }
 
     // 3. Generate unique order number
-    const countRes = await client.query('SELECT COUNT(*)::INT AS count FROM orders');
+    const countRes = await client.query(COUNT_ORDERS_TOTAL);
     const orderCount = (countRes.rows[0]?.count || 0) + 1;
     const year = new Date().getFullYear();
     const orderNumber = `ORD-${year}-${String(orderCount).padStart(4, '0')}`;
@@ -206,7 +213,7 @@ export const acceptQuotationTermsRepo = async ({ quotationId, userId, userRole }
     const createdOrder = orderRes.rows[0];
 
     // 5. Transfer quotation items to order_items and generate subscription records
-    const qItemsRes = await client.query('SELECT * FROM quotation_items WHERE quotation_id = $1 ORDER BY line_number ASC', [quotationId]);
+    const qItemsRes = await client.query(GET_QUOTATION_ITEMS_ORDERED_BY_LINE, [quotationId]);
     for (const item of qItemsRes.rows) {
       // Determine if item is subscription
       const isSub = item.product_name_snapshot && (
@@ -218,14 +225,7 @@ export const acceptQuotationTermsRepo = async ({ quotationId, userId, userRole }
       );
       const lineType = isSub ? 'subscription' : 'one_time';
 
-      const oiRes = await client.query(`
-        INSERT INTO order_items (
-          order_id, quotation_item_id, product_variant_id, line_type,
-          product_name_snapshot, sku_snapshot, quantity, unit_price,
-          discount_percentage, discount_amount, tax_percentage, tax_amount, line_total
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
-        RETURNING id
-      `, [
+      const oiRes = await client.query(INSERT_ORDER_ITEM_FROM_QUOTATION, [
         createdOrder.id,
         item.id,
         item.product_variant_id,
@@ -245,39 +245,44 @@ export const acceptQuotationTermsRepo = async ({ quotationId, userId, userRole }
       // If subscription line item, automatically generate subscription & schedule
       if (isSub) {
         // Find product ID from variant
-        const pvRes = await client.query('SELECT product_id FROM product_variants WHERE id = $1', [item.product_variant_id]);
+        const pvRes = await client.query(GET_PRODUCT_ID_FROM_VARIANT, [item.product_variant_id]);
         const productId = pvRes.rows[0]?.product_id || null;
 
         // Find or create subscription plan
-        let planRes = await client.query(`SELECT id, billing_cycle, price FROM subscription_plans WHERE name ILIKE $1 LIMIT 1`, [item.product_name_snapshot]);
+        let planRes = await client.query(FIND_SUBSCRIPTION_PLAN_BY_NAME, [item.product_name_snapshot]);
         let planId = planRes.rows[0]?.id;
         let billingCycle = planRes.rows[0]?.billing_cycle || 'monthly';
 
         if (!planId) {
-          const newPlan = await client.query(`
-            INSERT INTO subscription_plans (product_id, name, billing_cycle, price, allow_proration, allow_cancellation, allow_partial_refund)
-            VALUES ($1, $2, 'monthly', $3, true, true, true)
-            RETURNING id, billing_cycle
-          `, [productId || 1, item.product_name_snapshot, item.unit_price]);
+          const newPlan = await client.query(INSERT_DEFAULT_SUBSCRIPTION_PLAN, [
+            productId || 1,
+            item.product_name_snapshot,
+            item.unit_price,
+          ]);
           planId = newPlan.rows[0].id;
           billingCycle = newPlan.rows[0].billing_cycle;
         }
 
-        const subRes = await client.query(`
-          INSERT INTO subscriptions (
-            order_item_id, customer_id, subscription_plan_id, quantity, unit_price,
-            billing_cycle, start_date, status
-          ) VALUES ($1, $2, $3, $4, $5, $6, CURRENT_DATE, 'active')
-          RETURNING id
-        `, [orderItemId, quotation.customer_id, planId, item.quantity, item.unit_price, billingCycle]);
+        const subRes = await client.query(INSERT_SUBSCRIPTION_FROM_ORDER, [
+          orderItemId,
+          quotation.customer_id,
+          planId,
+          item.quantity,
+          item.unit_price,
+          billingCycle,
+        ]);
         const newSubId = subRes.rows[0].id;
 
         // Insert initial billing schedule
-        await client.query(`
-          INSERT INTO subscription_billing_lines (
-            subscription_id, billing_period_start, billing_period_end, amount, is_prorated
-          ) VALUES ($1, CURRENT_DATE, CURRENT_DATE + INTERVAL '1 month', $2, false)
-        `, [newSubId, item.line_total]);
+        await client.query(INSERT_INITIAL_SUBSCRIPTION_BILLING_LINE, [newSubId, item.line_total]);
+      }
+      // 6. Greedy multi-warehouse stock allocation for physical items
+      if (!isSub && item.product_variant_id) {
+        try {
+          await allocateStockGreedy(client, createdOrder.id, orderItemId, item.product_variant_id, item.quantity);
+        } catch (allocErr) {
+          console.warn('Stock allocation warning (non-fatal):', allocErr.message);
+        }
       }
     }
 

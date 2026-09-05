@@ -11,6 +11,19 @@ import {
   GET_PRODUCT_CATEGORIES,
   GET_PRODUCT_BY_ID_FULL,
   GET_PRODUCT_VARIANTS_BY_PRODUCT_ID,
+  UPDATE_PRODUCT_BY_ID,
+  DELETE_PRODUCT_BY_ID,
+  DELETE_PRODUCT_VARIANT_BY_ID,
+  UPSERT_PRODUCT_CATEGORY,
+  INSERT_PRODUCT,
+  INSERT_PRODUCT_VARIANT,
+  DELETE_PRODUCT_VARIANTS_EXCLUDING_IDS,
+  DELETE_PRODUCT_VARIANTS_BY_PRODUCT_ID,
+  UPDATE_PRODUCT_VARIANT_BY_ID,
+  GET_ACTIVE_PRODUCT_VARIANTS_BY_PRODUCT_ID,
+  SOFT_DELETE_PRODUCT_BY_ID,
+  SOFT_DELETE_PRODUCT_VARIANTS_BY_PRODUCT_ID,
+  SOFT_DELETE_PRODUCT_VARIANT_BY_ID,
 } from '../queries/catalog.query.js';
 
 export const getActiveCustomersRepo = async () => {
@@ -207,38 +220,43 @@ export const createProductRepo = async ({
 
     let resolvedCategoryId = category_id;
     if (!resolvedCategoryId && category_name) {
-      const catRes = await client.query(
-        'INSERT INTO product_categories (name) VALUES ($1) ON CONFLICT (name) DO UPDATE SET name = EXCLUDED.name RETURNING id',
-        [category_name]
-      );
+      const catRes = await client.query(UPSERT_PRODUCT_CATEGORY, [category_name]);
       resolvedCategoryId = catRes.rows[0].id;
     }
 
-    const prodRes = await client.query(`
-      INSERT INTO products (name, category_id, description, unit, base_price, tax_percentage, is_active)
-      VALUES ($1, $2, $3, $4, $5, $6, $7)
-      RETURNING *;
-    `, [name, resolvedCategoryId, description, unit, base_price, tax_percentage, is_active]);
+    const prodRes = await client.query(INSERT_PRODUCT, [
+      name,
+      resolvedCategoryId,
+      description,
+      unit,
+      base_price,
+      tax_percentage,
+      is_active,
+    ]);
     const product = prodRes.rows[0];
 
     const createdVariants = [];
     if (variants && variants.length > 0) {
       for (const v of variants) {
-        const varRes = await client.query(`
-          INSERT INTO product_variants (product_id, sku, variant_name, selling_price, is_active)
-          VALUES ($1, $2, $3, $4, $5)
-          RETURNING *;
-        `, [product.id, v.sku, v.variant_name || null, v.selling_price || base_price, true]);
+        const varRes = await client.query(INSERT_PRODUCT_VARIANT, [
+          product.id,
+          v.sku,
+          v.variant_name || null,
+          v.selling_price || base_price,
+          true,
+        ]);
         createdVariants.push(varRes.rows[0]);
       }
     } else {
       // Create default base variant
       const defaultSku = `${name.replace(/[^a-zA-Z0-9]/g, '').toUpperCase().slice(0, 6)}-STD`;
-      const varRes = await client.query(`
-        INSERT INTO product_variants (product_id, sku, variant_name, selling_price, is_active)
-        VALUES ($1, $2, 'Standard', $3, TRUE)
-        RETURNING *;
-      `, [product.id, defaultSku, base_price]);
+      const varRes = await client.query(INSERT_PRODUCT_VARIANT, [
+        product.id,
+        defaultSku,
+        'Standard',
+        base_price,
+        true,
+      ]);
       createdVariants.push(varRes.rows[0]);
     }
 
@@ -270,13 +288,16 @@ export const updateProductRepo = async (productId, {
   try {
     await client.query('BEGIN');
 
-    const updateProdRes = await client.query(
-      `UPDATE products 
-       SET name = $1, category_id = $2, description = $3, unit = $4, base_price = $5, tax_percentage = $6, is_active = $7, updated_at = NOW()
-       WHERE id = $8
-       RETURNING *;`,
-      [name, category_id, description, unit, base_price, tax_percentage, is_active, productId]
-    );
+    const updateProdRes = await client.query(UPDATE_PRODUCT_BY_ID, [
+      name,
+      category_id,
+      description,
+      unit,
+      base_price,
+      tax_percentage,
+      is_active,
+      productId,
+    ]);
 
     if (updateProdRes.rows.length === 0) {
       await client.query('ROLLBACK');
@@ -293,45 +314,38 @@ export const updateProductRepo = async (productId, {
 
       if (existingVariantIds.length > 0) {
         // Delete variants that were removed from the product
-        await client.query(
-          `DELETE FROM product_variants 
-           WHERE product_id = $1 AND id != ALL($2::int[])`,
-          [productId, existingVariantIds]
-        );
+        await client.query(DELETE_PRODUCT_VARIANTS_EXCLUDING_IDS, [productId, existingVariantIds]);
       } else if (variants.length > 0) {
         // All variants are newly added, remove all old variants for this product
-        await client.query(
-          'DELETE FROM product_variants WHERE product_id = $1',
-          [productId]
-        );
+        await client.query(DELETE_PRODUCT_VARIANTS_BY_PRODUCT_ID, [productId]);
       }
 
       // Upsert/Insert the current list of variants
       for (const v of variants) {
         if (v.id && typeof v.id === 'number' && v.id < 1000000000000) {
           // Update existing variant
-          await client.query(
-            `UPDATE product_variants 
-             SET variant_name = $1, selling_price = $2, sku = COALESCE($5, sku), is_active = TRUE
-             WHERE id = $3 AND product_id = $4`,
-            [v.variant_name || 'Standard', v.selling_price || base_price, v.id, productId, v.sku || null]
-          );
+          await client.query(UPDATE_PRODUCT_VARIANT_BY_ID, [
+            v.variant_name || 'Standard',
+            v.selling_price || base_price,
+            v.id,
+            productId,
+            v.sku || null,
+          ]);
         } else {
           // Insert new variant
           const sku = v.sku || `${name.replace(/[^a-zA-Z0-9]/g, '').toUpperCase().slice(0, 4)}-${Math.floor(Math.random() * 9000 + 1000)}`;
-          await client.query(
-            `INSERT INTO product_variants (product_id, sku, variant_name, selling_price, is_active)
-             VALUES ($1, $2, $3, $4, TRUE)`,
-            [productId, sku, v.variant_name || 'Standard', v.selling_price || base_price]
-          );
+          await client.query(INSERT_PRODUCT_VARIANT, [
+            productId,
+            sku,
+            v.variant_name || 'Standard',
+            v.selling_price || base_price,
+            true,
+          ]);
         }
       }
     }
 
-    const finalVariants = await client.query(
-      'SELECT * FROM product_variants WHERE product_id = $1 AND is_active = TRUE ORDER BY id ASC',
-      [productId]
-    );
+    const finalVariants = await client.query(GET_ACTIVE_PRODUCT_VARIANTS_BY_PRODUCT_ID, [productId]);
 
     await client.query('COMMIT');
     return {
@@ -352,8 +366,8 @@ export const deleteProductRepo = async (productId) => {
   try {
     await client.query('BEGIN');
     try {
-      await client.query('DELETE FROM product_variants WHERE product_id = $1', [productId]);
-      const res = await client.query('DELETE FROM products WHERE id = $1 RETURNING id', [productId]);
+      await client.query(DELETE_PRODUCT_VARIANTS_BY_PRODUCT_ID, [productId]);
+      const res = await client.query(DELETE_PRODUCT_BY_ID, [productId]);
       await client.query('COMMIT');
       return res.rows[0];
     } catch (fkErr) {
@@ -361,14 +375,8 @@ export const deleteProductRepo = async (productId) => {
       
       // Start fallback transaction for soft delete
       await client.query('BEGIN');
-      const softRes = await client.query(
-        'UPDATE products SET is_active = FALSE, updated_at = NOW() WHERE id = $1 RETURNING id',
-        [productId]
-      );
-      await client.query(
-        'UPDATE product_variants SET is_active = FALSE WHERE product_id = $1',
-        [productId]
-      );
+      const softRes = await client.query(SOFT_DELETE_PRODUCT_BY_ID, [productId]);
+      await client.query(SOFT_DELETE_PRODUCT_VARIANTS_BY_PRODUCT_ID, [productId]);
       await client.query('COMMIT');
       return softRes.rows[0];
     }
@@ -388,17 +396,14 @@ export const deleteProductVariantRepo = async (variantId) => {
   try {
     await client.query('BEGIN');
     try {
-      const res = await client.query('DELETE FROM product_variants WHERE id = $1 RETURNING id', [variantId]);
+      const res = await client.query(DELETE_PRODUCT_VARIANT_BY_ID, [variantId]);
       await client.query('COMMIT');
       return res.rows[0];
     } catch (fkErr) {
       await client.query('ROLLBACK');
 
       await client.query('BEGIN');
-      const result = await client.query(
-        'UPDATE product_variants SET is_active = FALSE WHERE id = $1 RETURNING id',
-        [variantId]
-      );
+      const result = await client.query(SOFT_DELETE_PRODUCT_VARIANT_BY_ID, [variantId]);
       await client.query('COMMIT');
       return result.rows[0];
     }

@@ -5,6 +5,7 @@ import {
   getFulfillmentDetailController,
   acceptSuggestedSplitController,
   saveManualOverrideSplitController,
+  completeShipmentController,
   createStockController,
   updateStockController,
   deleteStockController,
@@ -35,6 +36,7 @@ router.delete('/orders/:id', deleteOrderController);
 router.get('/:id', getFulfillmentDetailController);
 router.post('/:id/accept-split', acceptSuggestedSplitController);
 router.post('/:id/manual-override', saveManualOverrideSplitController);
+router.post('/:id/complete-shipment', completeShipmentController);
 
 // List overview route
 router.get('/', getFulfillmentListController);

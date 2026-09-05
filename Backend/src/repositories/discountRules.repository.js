@@ -5,17 +5,18 @@ import {
   GET_ALL_APPROVAL_RULES,
   UPDATE_CUSTOMER_TIER,
   UPDATE_APPROVAL_RULE,
+  CHECK_CATEGORY_DISCOUNT_CEILING_EXISTS,
+  UPDATE_CATEGORY_DISCOUNT_CEILING,
+  INSERT_CATEGORY_DISCOUNT_CEILING,
 } from '../queries/discountRules.query.js';
 
 export const getDiscountConfigurationRepo = async () => {
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
-    const [tiersRes, ceilingsRes, rulesRes] = await Promise.all([
-      client.query(GET_ALL_CUSTOMER_TIERS),
-      client.query(GET_ALL_CATEGORY_DISCOUNT_CEILINGS),
-      client.query(GET_ALL_APPROVAL_RULES),
-    ]);
+    const tiersRes = await client.query(GET_ALL_CUSTOMER_TIERS);
+    const ceilingsRes = await client.query(GET_ALL_CATEGORY_DISCOUNT_CEILINGS);
+    const rulesRes = await client.query(GET_ALL_APPROVAL_RULES);
     await client.query('COMMIT');
 
     return {
@@ -55,21 +56,18 @@ export const saveDiscountConfigurationRepo = async ({
     for (const cat of category_ceilings) {
       if (cat.category_id) {
         // Check if row already exists for category_id
-        const existing = await client.query(
-          'SELECT id FROM category_discount_ceilings WHERE category_id = $1',
-          [cat.category_id]
-        );
+        const existing = await client.query(CHECK_CATEGORY_DISCOUNT_CEILING_EXISTS, [cat.category_id]);
 
         if (existing.rows.length > 0) {
-          await client.query(
-            'UPDATE category_discount_ceilings SET max_discount_percentage = $1 WHERE category_id = $2',
-            [Number(cat.max_discount_percentage) || 0, cat.category_id]
-          );
+          await client.query(UPDATE_CATEGORY_DISCOUNT_CEILING, [
+            Number(cat.max_discount_percentage) || 0,
+            cat.category_id,
+          ]);
         } else {
-          await client.query(
-            'INSERT INTO category_discount_ceilings (category_id, max_discount_percentage) VALUES ($1, $2)',
-            [cat.category_id, Number(cat.max_discount_percentage) || 0]
-          );
+          await client.query(INSERT_CATEGORY_DISCOUNT_CEILING, [
+            cat.category_id,
+            Number(cat.max_discount_percentage) || 0,
+          ]);
         }
       }
     }
@@ -93,11 +91,9 @@ export const saveDiscountConfigurationRepo = async ({
 
     // Fetch and return the updated configuration using a fresh transaction
     await client.query('BEGIN');
-    const [updatedTiers, updatedCeilings, updatedRules] = await Promise.all([
-      client.query(GET_ALL_CUSTOMER_TIERS),
-      client.query(GET_ALL_CATEGORY_DISCOUNT_CEILINGS),
-      client.query(GET_ALL_APPROVAL_RULES),
-    ]);
+    const updatedTiers = await client.query(GET_ALL_CUSTOMER_TIERS);
+    const updatedCeilings = await client.query(GET_ALL_CATEGORY_DISCOUNT_CEILINGS);
+    const updatedRules = await client.query(GET_ALL_APPROVAL_RULES);
     await client.query('COMMIT');
 
     return {

@@ -203,3 +203,60 @@ export const CREATE_SUBSCRIPTION_BILLING_LINE = `
   VALUES ($1, $2, $3, $4, $5, $6)
   RETURNING *;
 `;
+
+export const GET_SUBSCRIPTIONS_BY_STATUS = `
+  SELECT 
+    s.id,
+    s.order_item_id,
+    s.customer_id,
+    s.subscription_plan_id,
+    s.quantity,
+    s.unit_price,
+    s.billing_cycle,
+    s.start_date,
+    s.end_date,
+    s.status,
+    s.created_at,
+    s.updated_at,
+    c.company_name AS customer_name,
+    c.email AS customer_email,
+    sp.name AS plan_name,
+    sp.price AS plan_price,
+    sp.allow_proration,
+    sp.allow_cancellation,
+    sp.allow_partial_refund,
+    COALESCE(
+      (
+        SELECT sbl.billing_period_end
+        FROM subscription_billing_lines sbl
+        WHERE sbl.subscription_id = s.id
+          AND sbl.billing_period_end >= CURRENT_DATE
+        ORDER BY sbl.billing_period_end ASC
+        LIMIT 1
+      ),
+      s.end_date,
+      s.start_date + INTERVAL '1 month'
+    ) AS next_bill_date
+  FROM subscriptions s
+  JOIN customers c ON s.customer_id = c.id
+  JOIN subscription_plans sp ON s.subscription_plan_id = sp.id
+  WHERE s.status = $1
+  ORDER BY s.created_at DESC;
+`;
+
+export const GET_FIRST_PRODUCT_ID = `
+  SELECT id FROM products LIMIT 1;
+`;
+
+export const GET_FIRST_PRODUCT_CATEGORY_ID = `
+  SELECT id FROM product_categories LIMIT 1;
+`;
+
+export const INSERT_PRODUCT_CATEGORY = `
+  INSERT INTO product_categories (name) VALUES ($1) RETURNING id;
+`;
+
+export const INSERT_PRODUCT_WITH_CATEGORY = `
+  INSERT INTO products (name, category_id, base_price) VALUES ($1, $2, $3) RETURNING id;
+`;
+

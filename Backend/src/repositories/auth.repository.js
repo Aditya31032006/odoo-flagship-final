@@ -13,7 +13,8 @@ import {
     LINK_CUSTOMER_USER,
     UPDATE_PASSWORD,
     FIND_USER_WITH_PASSWORD_BY_ID,
-    UPDATE_USER_PASSWORD_BY_ID
+    UPDATE_USER_PASSWORD_BY_ID,
+    UPDATE_USER_MOBILE
 } from '../queries/auth.query.js';
 
 /**
@@ -162,7 +163,7 @@ export const completeUserOnboardingRepo = async ({ user_id, register_type, compa
 
         // Update mobile if provided
         if (mobile) {
-            await client.query("UPDATE users SET mobile = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2", [mobile.trim(), user_id]);
+            await client.query(UPDATE_USER_MOBILE, [mobile.trim(), user_id]);
         }
 
         let customerId = null;

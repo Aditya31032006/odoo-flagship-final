@@ -6,6 +6,18 @@ function formatCurrency(amount) {
   return `$${Number(amount).toLocaleString()}`;
 }
 
+const FLAG_ICONS = {
+  stalled_deal: '⏸',
+  discount_anomaly: '⚠️',
+  delivery_slippage: '🚚',
+};
+
+const FLAG_COLORS = {
+  stalled_deal: '#f59e0b',
+  discount_anomaly: '#ef4444',
+  delivery_slippage: '#f97316',
+};
+
 export const QuotationCard = memo(({ quotation, onClick }) => {
   const {
     quotation_number,
@@ -15,7 +27,11 @@ export const QuotationCard = memo(({ quotation, onClick }) => {
     risk_level,
     approval_status,
     counter_discount_percentage,
+    deal_health_flags,
+    status,
   } = quotation;
+
+  const flags = Array.isArray(deal_health_flags) ? deal_health_flags : [];
 
   return (
     <div
@@ -54,6 +70,22 @@ export const QuotationCard = memo(({ quotation, onClick }) => {
           )}
         </div>
       </div>
+
+      {/* Deal Health Flags */}
+      {flags.length > 0 && (
+        <div className="df-quote-card__health-flags">
+          {flags.slice(0, 3).map((flag, i) => (
+            <span
+              key={flag.id || i}
+              className="df-quote-card__health-flag"
+              style={{ borderColor: FLAG_COLORS[flag.flag_type] || '#94a3b8', color: FLAG_COLORS[flag.flag_type] || '#94a3b8' }}
+              title={flag.detail || flag.flag_type}
+            >
+              {FLAG_ICONS[flag.flag_type] || '🔴'} {flag.flag_type?.replace(/_/g, ' ')}
+            </span>
+          ))}
+        </div>
+      )}
     </div>
   );
 });

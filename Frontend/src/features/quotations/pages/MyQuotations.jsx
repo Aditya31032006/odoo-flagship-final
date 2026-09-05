@@ -232,6 +232,8 @@ export default function MyQuotations() {
             { id: 'approved', label: 'Approved' },
             { id: 'negotiating', label: 'Negotiating' },
             { id: 'confirmed', label: 'Confirmed' },
+            { id: 'shipment', label: 'Shipment' },
+            { id: 'payment', label: 'Payment' },
           ].map((st) => (
             <button
               key={st.id}
@@ -272,7 +274,7 @@ export default function MyQuotations() {
                   {quote.quotation_number}
                 </span>
                 <span className={`status-tag status-tag--${quote.status}`}>
-                  {quote.status}
+                  {quote.status === 'shipment' ? '🚚 Shipment' : quote.status === 'payment' ? '🎉 Paid' : quote.status}
                 </span>
               </div>
 
@@ -288,12 +290,39 @@ export default function MyQuotations() {
                 <span className="rep-info" title={`Sales Rep: ${quote.sales_rep_name}`}>
                   👤 {quote.sales_rep_name || 'Assigned Sales Rep'}
                 </span>
-                <button type="button" className="btn-view-deal">
-                  Negotiate / View
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" width="12" height="12">
-                    <polyline points="9 18 15 12 9 6" />
-                  </svg>
-                </button>
+                {quote.status === 'shipment' ? (
+                  <button
+                    type="button"
+                    className="btn-view-deal"
+                    style={{
+                      background: 'linear-gradient(135deg, #10b981, #059669)',
+                      color: '#ffffff',
+                      border: 'none',
+                      fontWeight: 700,
+                    }}
+                    onClick={async (e) => {
+                      e.stopPropagation();
+                      if (window.confirm(`Proceed to payment of ${formatCurrency(quote.grand_total)} for ${quote.quotation_number}?`)) {
+                        try {
+                          await quotationApi.payQuotation(quote.id);
+                          await fetchCompanyQuotations();
+                          alert('Payment recorded successfully!');
+                        } catch (err) {
+                          alert(err.customMessage || 'Payment failed');
+                        }
+                      }
+                    }}
+                  >
+                    💳 Pay Now
+                  </button>
+                ) : (
+                  <button type="button" className="btn-view-deal">
+                    Negotiate / View
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" width="12" height="12">
+                      <polyline points="9 18 15 12 9 6" />
+                    </svg>
+                  </button>
+                )}
               </div>
             </div>
           ))}

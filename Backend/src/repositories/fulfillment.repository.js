@@ -9,16 +9,54 @@ import {
   GET_ALL_ACTIVE_WAREHOUSES,
   GET_FULFILLMENT_META_CUSTOMERS,
   GET_FULFILLMENT_META_VARIANTS,
+  GET_VARIANT_STOCK_FOR_ALLOCATION,
+  DEDUCT_WAREHOUSE_STOCK_QTY,
+  INSERT_FULFILLMENT_SPLIT_RECORD,
+  INSERT_SUGGESTED_FULFILLMENT_SPLIT,
+  INSERT_MANUAL_FULFILLMENT_SPLIT,
+  INSERT_BACKORDER_RECORD,
+  CHECK_VARIANT_TOTAL_AVAILABLE_STOCK,
+  DELETE_FULFILLMENT_SPLITS_BY_ORDER_ID,
+  DELETE_BACKORDERS_BY_ORDER_ID,
+  UPDATE_ORDER_STATUS_BY_ID,
+  UPDATE_QUOTATION_STATUS_BY_ID,
+  CHECK_INVOICE_EXISTS_FOR_ORDER,
+  COUNT_INVOICES_TOTAL,
+  INSERT_INVOICE_RECORD,
+  INSERT_INVOICE_ITEM_RECORD,
+  MARK_FULFILLMENT_SPLITS_DELIVERED,
+  INSERT_WAREHOUSE_STOCK_RECORD,
+  UPDATE_WAREHOUSE_STOCK_RECORD,
+  DELETE_WAREHOUSE_STOCK_RECORD,
+  GET_VARIANT_PRICE_SNAPSHOT,
+  UPSERT_CONFIRMED_QUOTATION_RECORD,
+  INSERT_ORDER_RECORD,
+  INSERT_ORDER_ITEM_RECORD,
+  INSERT_NEW_WAREHOUSE_RECORD,
+  GET_FIRST_ACTIVE_WAREHOUSE,
+  UPDATE_ORDER_BASIC_FIELDS,
+  UPDATE_ORDER_ITEM_FIELDS,
+  UPDATE_FULFILLMENT_SPLIT_QTY_BY_ORDER_ID,
+  DELETE_SUBSCRIPTION_BILLING_LINES_BY_ORDER_ID,
+  DELETE_SUBSCRIPTIONS_BY_ORDER_ID,
+  DELETE_PAYMENTS_BY_ORDER_ID,
+  DELETE_INVOICE_ITEMS_BY_ORDER_ID,
+  DELETE_INVOICES_BY_ORDER_ID,
+  DELETE_ORDER_ITEMS_BY_ORDER_ID,
+  DELETE_ORDER_BY_ID,
+  GET_QUOTATION_WITH_CUSTOMER_FOR_PAYMENT,
+  GET_ORDER_BY_QUOTATION_ID,
+  GET_INVOICE_BY_ORDER_ID,
+  UPDATE_INVOICE_TO_PAID,
+  INSERT_PAYMENT_RECORD,
 } from '../queries/fulfillment.query.js';
 
 export const getFulfillmentListRepo = async () => {
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
-    const [stockRes, ordersRes] = await Promise.all([
-      client.query(GET_WAREHOUSE_STOCK_LIST),
-      client.query(GET_ORDERS_AWAITING_FULFILLMENT),
-    ]);
+    const stockRes = await client.query(GET_WAREHOUSE_STOCK_LIST);
+    const ordersRes = await client.query(GET_ORDERS_AWAITING_FULFILLMENT);
     await client.query('COMMIT');
 
     return {
@@ -38,11 +76,9 @@ export const getFulfillmentMetaRepo = async () => {
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
-    const [warehousesRes, customersRes, variantsRes] = await Promise.all([
-      client.query(GET_ALL_ACTIVE_WAREHOUSES),
-      client.query(GET_FULFILLMENT_META_CUSTOMERS),
-      client.query(GET_FULFILLMENT_META_VARIANTS),
-    ]);
+    const warehousesRes = await client.query(GET_ALL_ACTIVE_WAREHOUSES);
+    const customersRes = await client.query(GET_FULFILLMENT_META_CUSTOMERS);
+    const variantsRes = await client.query(GET_FULFILLMENT_META_VARIANTS);
     await client.query('COMMIT');
 
     return {
@@ -72,13 +108,11 @@ export const getFulfillmentDetailRepo = async (orderIdOrNumber) => {
     const header = headerRes.rows[0];
     const orderId = header.order_id;
 
-    const [itemsRes, splitsRes, backordersRes, warehousesRes, stockRes] = await Promise.all([
-      client.query(GET_ORDER_ITEMS_BY_ORDER_ID, [orderId]),
-      client.query(GET_FULFILLMENT_SPLITS_BY_ORDER_ID, [orderId]),
-      client.query(GET_BACKORDERS_BY_ORDER_ID, [orderId]),
-      client.query(GET_ALL_ACTIVE_WAREHOUSES),
-      client.query(GET_WAREHOUSE_STOCK_LIST),
-    ]);
+    const itemsRes = await client.query(GET_ORDER_ITEMS_BY_ORDER_ID, [orderId]);
+    const splitsRes = await client.query(GET_FULFILLMENT_SPLITS_BY_ORDER_ID, [orderId]);
+    const backordersRes = await client.query(GET_BACKORDERS_BY_ORDER_ID, [orderId]);
+    const warehousesRes = await client.query(GET_ALL_ACTIVE_WAREHOUSES);
+    const stockRes = await client.query(GET_WAREHOUSE_STOCK_LIST);
 
     const items = itemsRes.rows;
     let splits = splitsRes.rows;
@@ -109,6 +143,8 @@ export const getFulfillmentDetailRepo = async (orderIdOrNumber) => {
               warehouse_id: ws.warehouse_id,
               warehouse_name: ws.warehouse_name,
               warehouse_code: ws.warehouse_code,
+              product_name: item.product_name,
+              sku: item.sku,
               qty_fulfilled: alloc,
               est_shipments: Math.ceil(alloc / 20),
               estimated_shipping_cost: Number(cost),
@@ -142,6 +178,51 @@ export const getFulfillmentDetailRepo = async (orderIdOrNumber) => {
   }
 };
 
+/**
+ * Greedy Multi-Warehouse Descending Stock Allocation
+ * Allocates requested quantity from active warehouses in DESCENDING order of available stock.
+ * Deducts stock from warehouse_stock.quantity_on_hand.
+ * Creates fulfillment_splits records, and any unfulfilled remainder goes to backorders.
+ */
+export const allocateStockGreedy = async (client, orderId, orderItemId, productVariantId, requestedQty) => {
+  let remainingNeeded = Math.max(0, parseInt(requestedQty, 10) || 0);
+  if (remainingNeeded <= 0) return { allocatedSplits: [], backorderQty: 0 };
+
+  const stockRes = await client.query(GET_VARIANT_STOCK_FOR_ALLOCATION, [productVariantId]);
+  const allocatedSplits = [];
+
+  for (const ws of stockRes.rows) {
+    if (remainingNeeded <= 0) break;
+    const available = Math.max(0, parseInt(ws.available, 10) || 0);
+    if (available <= 0) continue;
+
+    const alloc = Math.min(available, remainingNeeded);
+    if (alloc > 0) {
+      await client.query(DEDUCT_WAREHOUSE_STOCK_QTY, [alloc, ws.id]);
+
+      const cost = Number((alloc * 1.5 * (parseFloat(ws.shipping_cost_weight) || 1.0) + 25.0).toFixed(2));
+      const leadTime = parseInt(ws.lead_time_days, 10) || 2;
+
+      const splitRes = await client.query(INSERT_FULFILLMENT_SPLIT_RECORD, [
+        orderItemId,
+        ws.warehouse_id,
+        alloc,
+        leadTime,
+        cost,
+      ]);
+
+      allocatedSplits.push(splitRes.rows[0]);
+      remainingNeeded -= alloc;
+    }
+  }
+
+  if (remainingNeeded > 0) {
+    await client.query(INSERT_BACKORDER_RECORD, [orderItemId, remainingNeeded]);
+  }
+
+  return { allocatedSplits, backorderQty: remainingNeeded };
+};
+
 export const acceptSuggestedSplitRepo = async (orderIdOrNumber) => {
   const detail = await getFulfillmentDetailRepo(orderIdOrNumber);
   if (!detail) {
@@ -149,40 +230,158 @@ export const acceptSuggestedSplitRepo = async (orderIdOrNumber) => {
   }
 
   const orderId = detail.header.order_id;
+  const quotationId = detail.header.quotation_id;
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
 
-    await client.query(`
-      DELETE FROM fulfillment_splits 
-      WHERE order_item_id IN (SELECT id FROM order_items WHERE order_id = $1);
-    `, [orderId]);
+    for (const item of (detail.items || [])) {
+      const requestedQty = parseInt(item.quantity, 10) || 1;
+      const stockCheck = await client.query(CHECK_VARIANT_TOTAL_AVAILABLE_STOCK, [item.product_variant_id]);
+
+      const totalAvailable = stockCheck.rows[0]?.total_available || 0;
+      const splitAllocated = (detail.splits || [])
+        .filter((s) => String(s.order_item_id) === String(item.order_item_id))
+        .reduce((sum, s) => sum + (parseInt(s.qty_fulfilled || s.quantity, 10) || 0), 0);
+
+      if (totalAvailable <= 0 && splitAllocated <= 0) {
+        await client.query(INSERT_BACKORDER_RECORD, [item.order_item_id, requestedQty]);
+
+        const err = new Error(
+          `Cannot accept split: Zero stock available in any warehouse for "${item.product_name_snapshot || item.product_name || 'Product'}". Item has been stored as a Backorder.`
+        );
+        err.statusCode = 400;
+        throw err;
+      }
+    }
+
+    await client.query(DELETE_FULFILLMENT_SPLITS_BY_ORDER_ID, [orderId]);
 
     for (const s of detail.splits) {
-      if (s.qty_fulfilled > 0) {
-        await client.query(`
-          INSERT INTO fulfillment_splits (
-            order_item_id, warehouse_id, quantity, estimated_shipment_date, estimated_shipping_cost, status, manual_override
-          ) VALUES ($1, $2, $3, CURRENT_DATE + 2, $4, 'allocated', false);
-        `, [
+      const qty = s.qty_fulfilled || s.quantity || 0;
+      if (qty > 0) {
+        await client.query(INSERT_SUGGESTED_FULFILLMENT_SPLIT, [
           s.order_item_id || detail.items[0]?.order_item_id,
           s.warehouse_id,
-          s.qty_fulfilled,
+          qty,
           s.estimated_shipping_cost || 35.0,
         ]);
       }
     }
 
-    await client.query(`
-      UPDATE orders 
-      SET status = 'processing', updated_at = NOW() 
-      WHERE id = $1;
-    `, [orderId]);
+    await client.query(UPDATE_ORDER_STATUS_BY_ID, ['processing', orderId]);
+
+    if (quotationId) {
+      await client.query(UPDATE_QUOTATION_STATUS_BY_ID, ['shipment', quotationId]);
+    }
+
+    const invCheck = await client.query(CHECK_INVOICE_EXISTS_FOR_ORDER, [orderId]);
+    if (invCheck.rows.length === 0) {
+      const countRes = await client.query(COUNT_INVOICES_TOTAL);
+      const invCount = (countRes.rows[0]?.count || 0) + 1;
+      const invNumber = `INV-${new Date().getFullYear()}-${String(invCount).padStart(4, '0')}`;
+      const grandTotal = parseFloat(detail.header.grand_total) || 0;
+
+      const invRes = await client.query(INSERT_INVOICE_RECORD, [
+        invNumber,
+        orderId,
+        detail.header.customer_id,
+        'issued',
+        grandTotal,
+        0,
+      ]);
+
+      const invoiceId = invRes.rows[0].id;
+
+      for (const item of (detail.items || [])) {
+        const qty = parseInt(item.quantity, 10) || 1;
+        const unitPrice = parseFloat(item.unit_price) || 0;
+        const taxAmt = (qty * unitPrice * 0.18);
+        const lineTotal = (qty * unitPrice * 1.18);
+        await client.query(INSERT_INVOICE_ITEM_RECORD, [
+          invoiceId,
+          item.order_item_id,
+          item.product_name_snapshot || item.product_name || 'Product',
+          qty,
+          unitPrice,
+          taxAmt,
+          lineTotal,
+        ]);
+      }
+    }
 
     await client.query('COMMIT');
     return await getFulfillmentDetailRepo(orderId);
   } catch (error) {
     console.error('Error in acceptSuggestedSplitRepo:', error);
+    await client.query('ROLLBACK');
+    throw error;
+  } finally {
+    client.release();
+  }
+};
+
+export const completeShipmentRepo = async (orderIdOrNumber) => {
+  const detail = await getFulfillmentDetailRepo(orderIdOrNumber);
+  if (!detail) {
+    throw new Error('Order not found for shipment completion');
+  }
+
+  const orderId = detail.header.order_id;
+  const quotationId = detail.header.quotation_id;
+  const customerId = detail.header.customer_id;
+  const grandTotal = detail.header.grand_total || 0;
+
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+
+    await client.query(MARK_FULFILLMENT_SPLITS_DELIVERED, [orderId]);
+    await client.query(UPDATE_ORDER_STATUS_BY_ID, ['fulfilled', orderId]);
+
+    if (quotationId) {
+      await client.query(UPDATE_QUOTATION_STATUS_BY_ID, ['payment', quotationId]);
+    }
+
+    const invCheck = await client.query(CHECK_INVOICE_EXISTS_FOR_ORDER, [orderId]);
+    if (invCheck.rows.length === 0) {
+      const countRes = await client.query(COUNT_INVOICES_TOTAL);
+      const invCount = (countRes.rows[0]?.count || 0) + 1;
+      const invNumber = `INV-${new Date().getFullYear()}-${String(invCount).padStart(4, '0')}`;
+      const subtotal = parseFloat(grandTotal) || 0;
+
+      const invRes = await client.query(INSERT_INVOICE_RECORD, [
+        invNumber,
+        orderId,
+        customerId,
+        'issued',
+        subtotal,
+        0,
+      ]);
+
+      const invoiceId = invRes.rows[0].id;
+
+      for (const item of detail.items) {
+        const qty = parseInt(item.quantity, 10) || 1;
+        const unitPrice = parseFloat(item.unit_price) || 0;
+        const taxAmt = (qty * unitPrice * 0.18);
+        const lineTotal = (qty * unitPrice * 1.18);
+        await client.query(INSERT_INVOICE_ITEM_RECORD, [
+          invoiceId,
+          item.order_item_id,
+          item.product_name || 'Product',
+          qty,
+          unitPrice,
+          taxAmt,
+          lineTotal,
+        ]);
+      }
+    }
+
+    await client.query('COMMIT');
+    return await getFulfillmentDetailRepo(orderId);
+  } catch (error) {
+    console.error('Error in completeShipmentRepo:', error);
     await client.query('ROLLBACK');
     throw error;
   } finally {
@@ -197,25 +396,19 @@ export const saveManualOverrideSplitRepo = async (orderIdOrNumber, { splits = []
   }
 
   const orderId = detail.header.order_id;
+  const quotationId = detail.header.quotation_id;
   const orderItemId = detail.items[0]?.order_item_id;
 
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
 
-    await client.query(`
-      DELETE FROM fulfillment_splits 
-      WHERE order_item_id IN (SELECT id FROM order_items WHERE order_id = $1);
-    `, [orderId]);
+    await client.query(DELETE_FULFILLMENT_SPLITS_BY_ORDER_ID, [orderId]);
 
     for (const sp of splits) {
       if (sp.quantity > 0) {
         const cost = sp.estimated_shipping_cost || (sp.quantity * 1.75 + 20).toFixed(2);
-        await client.query(`
-          INSERT INTO fulfillment_splits (
-            order_item_id, warehouse_id, quantity, estimated_shipment_date, estimated_shipping_cost, status, manual_override
-          ) VALUES ($1, $2, $3, CURRENT_DATE + 3, $4, 'allocated', true);
-        `, [
+        await client.query(INSERT_MANUAL_FULFILLMENT_SPLIT, [
           sp.order_item_id || orderItemId,
           sp.warehouse_id,
           sp.quantity,
@@ -224,24 +417,17 @@ export const saveManualOverrideSplitRepo = async (orderIdOrNumber, { splits = []
       }
     }
 
-    await client.query(`
-      DELETE FROM backorders 
-      WHERE order_item_id IN (SELECT id FROM order_items WHERE order_id = $1);
-    `, [orderId]);
+    await client.query(DELETE_BACKORDERS_BY_ORDER_ID, [orderId]);
 
     if (backorderQty > 0) {
-      await client.query(`
-        INSERT INTO backorders (
-          order_item_id, quantity, status, created_at, updated_at
-        ) VALUES ($1, $2, 'pending', NOW(), NOW());
-      `, [orderItemId, backorderQty]);
+      await client.query(INSERT_BACKORDER_RECORD, [orderItemId, backorderQty]);
     }
 
-    await client.query(`
-      UPDATE orders 
-      SET status = 'partially_fulfilled', updated_at = NOW() 
-      WHERE id = $1;
-    `, [orderId]);
+    await client.query(UPDATE_ORDER_STATUS_BY_ID, ['partially_fulfilled', orderId]);
+
+    if (quotationId) {
+      await client.query(UPDATE_QUOTATION_STATUS_BY_ID, ['shipment', quotationId]);
+    }
 
     await client.query('COMMIT');
     return await getFulfillmentDetailRepo(orderId);
@@ -273,21 +459,12 @@ export const createWarehouseStockRepo = async ({
 
     let targetWhId = warehouse_id;
     if (!targetWhId && warehouse_name) {
-      const code = warehouse_code || warehouse_name.substring(0, 4).toUpperCase();
-      const whRes = await client.query(`
-        INSERT INTO warehouses (name, code, address, shipping_cost_weight, is_active)
-        VALUES ($1, $2, 'Warehouse Facility', 1.0, true)
-        RETURNING id;
-      `, [warehouse_name, code]);
+      const code = (warehouse_code || warehouse_name.trim().substring(0, 4)).toUpperCase();
+      const whRes = await client.query(INSERT_NEW_WAREHOUSE_RECORD, [warehouse_name, code]);
       targetWhId = whRes.rows[0].id;
     }
 
-    const stockRes = await client.query(`
-      INSERT INTO warehouse_stock (
-        warehouse_id, product_variant_id, quantity_on_hand, quantity_reserved, lead_time_days, updated_at
-      ) VALUES ($1, $2, $3, $4, $5, NOW())
-      RETURNING *;
-    `, [
+    const stockRes = await client.query(INSERT_WAREHOUSE_STOCK_RECORD, [
       targetWhId,
       product_variant_id,
       parseInt(quantity_on_hand, 10) || 0,
@@ -316,18 +493,7 @@ export const updateWarehouseStockRepo = async (stockId, {
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
-    const res = await client.query(`
-      UPDATE warehouse_stock 
-      SET 
-        warehouse_id = COALESCE($1, warehouse_id),
-        product_variant_id = COALESCE($2, product_variant_id),
-        quantity_on_hand = COALESCE($3, quantity_on_hand),
-        quantity_reserved = COALESCE($4, quantity_reserved),
-        lead_time_days = COALESCE($5, lead_time_days),
-        updated_at = NOW()
-      WHERE id = $6
-      RETURNING *;
-    `, [
+    const res = await client.query(UPDATE_WAREHOUSE_STOCK_RECORD, [
       warehouse_id || null,
       product_variant_id || null,
       quantity_on_hand != null ? parseInt(quantity_on_hand, 10) : null,
@@ -350,7 +516,7 @@ export const deleteWarehouseStockRepo = async (stockId) => {
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
-    const res = await client.query(`DELETE FROM warehouse_stock WHERE id = $1 RETURNING *;`, [stockId]);
+    const res = await client.query(DELETE_WAREHOUSE_STOCK_RECORD, [stockId]);
     await client.query('COMMIT');
     return res.rows[0];
   } catch (error) {
@@ -372,20 +538,15 @@ export const createOrderRepo = async ({
   product_variant_id,
   quantity = 1,
   warehouse_id,
+  warehouse_name,
+  warehouse_code,
   status = 'pending',
 }) => {
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
 
-    // 1. Get product variant snapshot info
-    const varRes = await client.query(`
-      SELECT pv.id, pv.sku, p.name AS product_name, COALESCE(pv.selling_price, p.base_price, 1000) AS price
-      FROM product_variants pv
-      JOIN products p ON pv.product_id = p.id
-      WHERE pv.id = $1;
-    `, [product_variant_id]);
-
+    const varRes = await client.query(GET_VARIANT_PRICE_SNAPSHOT, [product_variant_id]);
     const variant = varRes.rows[0] || { sku: 'SKU-ITEM', product_name: 'Product Item', price: 1000 };
     const qty = parseInt(quantity, 10) || 1;
     const unitPrice = parseFloat(variant.price);
@@ -394,51 +555,52 @@ export const createOrderRepo = async ({
     const grandTotal = (subtotal + taxAmount);
     const orderNum = order_number || `Q-${Math.floor(1000 + Math.random() * 9000)}`;
 
-    // 2. Create linked confirmed quotation
-    const quoteRes = await client.query(`
-      INSERT INTO quotations (
-        quotation_number, customer_id, sales_rep_id, status, subtotal, discount_total, tax_total, grand_total
-      ) VALUES ($1, $2, 1, 'confirmed', $3, 0, $4, $5)
-      ON CONFLICT (quotation_number) DO UPDATE SET status = 'confirmed'
-      RETURNING id;
-    `, [orderNum, customer_id, subtotal, taxAmount, grandTotal]);
+    const quoteRes = await client.query(UPSERT_CONFIRMED_QUOTATION_RECORD, [
+      orderNum,
+      customer_id,
+      subtotal,
+      taxAmount,
+      grandTotal,
+    ]);
     const quotationId = quoteRes.rows[0].id;
 
-    // 3. Insert into orders
-    const ordRes = await client.query(`
-      INSERT INTO orders (order_number, quotation_id, customer_id, status, created_at, updated_at)
-      VALUES ($1, $2, $3, $4::order_status_enum, NOW(), NOW())
-      RETURNING *;
-    `, [orderNum, quotationId, customer_id, status]);
-
+    const ordRes = await client.query(INSERT_ORDER_RECORD, [
+      orderNum,
+      quotationId,
+      customer_id,
+      status,
+    ]);
     const orderId = ordRes.rows[0].id;
 
-    // 4. Insert order item
-    const itemRes = await client.query(`
-      INSERT INTO order_items (
-        order_id, product_variant_id, line_type, product_name_snapshot, sku_snapshot,
-        quantity, unit_price, discount_percentage, discount_amount, tax_percentage, tax_amount, line_total
-      ) VALUES (
-        $1, $2, 'one_time', $3, $4,
-        $5, $6, 0, 0, 18.0, $7, $8
-      ) RETURNING *;
-    `, [orderId, product_variant_id, variant.product_name, variant.sku, qty, unitPrice, taxAmount, grandTotal]);
-
+    const itemRes = await client.query(INSERT_ORDER_ITEM_RECORD, [
+      orderId,
+      product_variant_id,
+      variant.product_name,
+      variant.sku,
+      qty,
+      unitPrice,
+      taxAmount,
+      grandTotal,
+    ]);
     const orderItemId = itemRes.rows[0].id;
 
-    // 5. If warehouse specified, create initial split
     let targetWhId = warehouse_id;
-    if (!targetWhId) {
-      const whRes = await client.query('SELECT id FROM warehouses LIMIT 1');
+    if (!targetWhId && warehouse_name) {
+      const code = (warehouse_code || warehouse_name.trim().substring(0, 4)).toUpperCase();
+      const newWh = await client.query(INSERT_NEW_WAREHOUSE_RECORD, [warehouse_name, code]);
+      targetWhId = newWh.rows[0].id;
+    } else if (!targetWhId) {
+      const whRes = await client.query(GET_FIRST_ACTIVE_WAREHOUSE);
       targetWhId = whRes.rows[0]?.id;
     }
 
     if (targetWhId) {
-      await client.query(`
-        INSERT INTO fulfillment_splits (
-          order_item_id, warehouse_id, quantity, estimated_shipment_date, estimated_shipping_cost, status, manual_override
-        ) VALUES ($1, $2, $3, CURRENT_DATE + 2, 35.00, 'pending', false);
-      `, [orderItemId, targetWhId, qty]);
+      await client.query(INSERT_SUGGESTED_FULFILLMENT_SPLIT, [
+        orderItemId,
+        targetWhId,
+        qty,
+        35.00,
+      ]);
     }
 
     await client.query('COMMIT');
@@ -463,37 +625,15 @@ export const updateOrderRepo = async (orderId, {
     await client.query('BEGIN');
 
     if (customer_id || status) {
-      await client.query(`
-        UPDATE orders 
-        SET 
-          customer_id = COALESCE($1, customer_id),
-          status = COALESCE($2::order_status_enum, status),
-          updated_at = NOW()
-        WHERE id = $3;
-      `, [customer_id || null, status || null, orderId]);
+      await client.query(UPDATE_ORDER_BASIC_FIELDS, [customer_id || null, status || null, orderId]);
     }
 
     if (product_variant_id || quantity != null) {
-      const varRes = await client.query(`
-        SELECT pv.id, pv.sku, p.name AS product_name, COALESCE(pv.selling_price, p.base_price, 1000) AS price
-        FROM product_variants pv
-        JOIN products p ON pv.product_id = p.id
-        WHERE pv.id = $1;
-      `, [product_variant_id]);
-
+      const varRes = await client.query(GET_VARIANT_PRICE_SNAPSHOT, [product_variant_id]);
       const variant = varRes.rows[0];
       const qty = parseInt(quantity, 10);
 
-      await client.query(`
-        UPDATE order_items 
-        SET 
-          product_variant_id = COALESCE($1, product_variant_id),
-          product_name_snapshot = COALESCE($2, product_name_snapshot),
-          sku_snapshot = COALESCE($3, sku_snapshot),
-          quantity = COALESCE($4, quantity),
-          line_total = COALESCE(($4 * unit_price), line_total)
-        WHERE order_id = $5;
-      `, [
+      await client.query(UPDATE_ORDER_ITEM_FIELDS, [
         product_variant_id || null,
         variant ? variant.product_name : null,
         variant ? variant.sku : null,
@@ -501,13 +641,8 @@ export const updateOrderRepo = async (orderId, {
         orderId,
       ]);
 
-      // Update split quantity
       if (qty > 0) {
-        await client.query(`
-          UPDATE fulfillment_splits 
-          SET quantity = $1
-          WHERE order_item_id IN (SELECT id FROM order_items WHERE order_id = $2);
-        `, [qty, orderId]);
+        await client.query(UPDATE_FULFILLMENT_SPLIT_QTY_BY_ORDER_ID, [qty, orderId]);
       }
     }
 
@@ -527,23 +662,103 @@ export const deleteOrderRepo = async (orderId) => {
   try {
     await client.query('BEGIN');
 
-    await client.query(`
-      DELETE FROM fulfillment_splits 
-      WHERE order_item_id IN (SELECT id FROM order_items WHERE order_id = $1);
-    `, [orderId]);
-
-    await client.query(`
-      DELETE FROM backorders 
-      WHERE order_item_id IN (SELECT id FROM order_items WHERE order_id = $1);
-    `, [orderId]);
-
-    await client.query(`DELETE FROM order_items WHERE order_id = $1;`, [orderId]);
-    await client.query(`DELETE FROM orders WHERE id = $1;`, [orderId]);
+    await client.query(DELETE_FULFILLMENT_SPLITS_BY_ORDER_ID, [orderId]);
+    await client.query(DELETE_BACKORDERS_BY_ORDER_ID, [orderId]);
+    await client.query(DELETE_SUBSCRIPTION_BILLING_LINES_BY_ORDER_ID, [orderId]);
+    await client.query(DELETE_SUBSCRIPTIONS_BY_ORDER_ID, [orderId]);
+    await client.query(DELETE_PAYMENTS_BY_ORDER_ID, [orderId]);
+    await client.query(DELETE_INVOICE_ITEMS_BY_ORDER_ID, [orderId]);
+    await client.query(DELETE_INVOICES_BY_ORDER_ID, [orderId]);
+    await client.query(DELETE_ORDER_ITEMS_BY_ORDER_ID, [orderId]);
+    await client.query(DELETE_ORDER_BY_ID, [orderId]);
 
     await client.query('COMMIT');
     return { success: true, deletedOrderId: orderId };
   } catch (error) {
     console.error('Error in deleteOrderRepo:', error);
+    await client.query('ROLLBACK');
+    throw error;
+  } finally {
+    client.release();
+  }
+};
+
+export const payQuotationRepo = async ({
+  quotationId,
+  paymentMethod = 'bank_transfer',
+  transactionReference = '',
+}) => {
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+
+    const quoteRes = await client.query(GET_QUOTATION_WITH_CUSTOMER_FOR_PAYMENT, [quotationId]);
+    if (quoteRes.rows.length === 0) {
+      throw new Error('Quotation not found');
+    }
+    const quotation = quoteRes.rows[0];
+    const amount = parseFloat(quotation.grand_total) || 0;
+
+    let orderId = null;
+    const orderRes = await client.query(GET_ORDER_BY_QUOTATION_ID, [quotationId]);
+    if (orderRes.rows.length > 0) {
+      orderId = orderRes.rows[0].id;
+    }
+
+    let invoiceId = null;
+    if (orderId) {
+      const invRes = await client.query(GET_INVOICE_BY_ORDER_ID, [orderId]);
+      if (invRes.rows.length > 0) {
+        invoiceId = invRes.rows[0].id;
+      }
+    }
+
+    if (!invoiceId) {
+      const countRes = await client.query(COUNT_INVOICES_TOTAL);
+      const invCount = (countRes.rows[0]?.count || 0) + 1;
+      const invNumber = `INV-${new Date().getFullYear()}-${String(invCount).padStart(4, '0')}`;
+
+      const invRes = await client.query(INSERT_INVOICE_RECORD, [
+        invNumber,
+        orderId,
+        quotation.customer_id,
+        'paid',
+        amount,
+        amount,
+      ]);
+      invoiceId = invRes.rows[0].id;
+    } else {
+      await client.query(UPDATE_INVOICE_TO_PAID, [invoiceId]);
+    }
+
+    const validMethods = ['cash', 'bank_transfer', 'upi', 'card', 'online'];
+    const sanitizedMethod = validMethods.includes(paymentMethod) ? paymentMethod : (paymentMethod === 'credit_card' ? 'card' : 'bank_transfer');
+
+    const paymentRes = await client.query(INSERT_PAYMENT_RECORD, [
+      invoiceId,
+      quotation.customer_id,
+      amount,
+      sanitizedMethod,
+      transactionReference || `PAY-${Date.now()}`,
+    ]);
+
+    await client.query(UPDATE_QUOTATION_STATUS_BY_ID, ['payment', quotationId]);
+
+    if (orderId) {
+      await client.query(UPDATE_ORDER_STATUS_BY_ID, ['fulfilled', orderId]);
+    }
+
+    await client.query('COMMIT');
+    return {
+      success: true,
+      quotation_id: quotationId,
+      status: 'payment',
+      amount,
+      payment: paymentRes.rows[0],
+      invoice_id: invoiceId,
+    };
+  } catch (error) {
+    console.error('Error in payQuotationRepo:', error);
     await client.query('ROLLBACK');
     throw error;
   } finally {

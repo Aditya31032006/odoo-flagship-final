@@ -29,7 +29,7 @@ function formatRole(role) {
 
 export default function Profile() {
   const navigate = useNavigate();
-  const { user, getProfile, updateProfile, changePassword, logout } = useAuth();
+  const { user, getProfile, updateProfile, changePassword, forgotPassword, resetPassword, logout } = useAuth();
 
   const [fullProfile, setFullProfile] = useState(null);
   const [profileLoading, setProfileLoading] = useState(true);
@@ -41,6 +41,13 @@ export default function Profile() {
 
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
+
+  // Forgot Password / OTP Flow State
+  const [isForgotMode, setIsForgotMode] = useState(false);
+  const [otpStep, setOtpStep] = useState('request'); // 'request' | 'verify'
+  const [otpLoading, setOtpLoading] = useState(false);
+  const [otpAlert, setOtpAlert] = useState({ type: '', text: '' });
+  const [showOtpPassword, setShowOtpPassword] = useState(false);
 
   // 1. React Hook Form for Profile Info
   const {
@@ -59,7 +66,7 @@ export default function Profile() {
     },
   });
 
-  // 2. React Hook Form for Security / Password Change
+  // 2. React Hook Form for Standard Security / Password Change
   const {
     register: registerPassword,
     handleSubmit: handleSubmitPassword,
@@ -74,7 +81,23 @@ export default function Profile() {
     },
   });
 
+  // 3. React Hook Form for OTP Password Reset
+  const {
+    register: registerOtpReset,
+    handleSubmit: handleSubmitOtpReset,
+    reset: resetOtpForm,
+    watch: watchOtpPassword,
+    formState: { errors: otpErrors },
+  } = useForm({
+    defaultValues: {
+      otp: '',
+      new_password: '',
+      confirm_password: '',
+    },
+  });
+
   const newPasswordValue = watchPassword('new_password');
+  const otpNewPasswordValue = watchOtpPassword('new_password');
 
   // Load Full Profile Data on mount
   useEffect(() => {
@@ -132,6 +155,69 @@ export default function Profile() {
       setFullProfile((prev) => (prev ? { ...prev, has_password: true } : prev));
     } else {
       setPasswordAlert({ type: 'error', text: res?.error || 'Failed to update password.' });
+    }
+  };
+
+  // Request OTP for Forgot Password flow
+  const handleRequestRecoveryOtp = async () => {
+    const emailToUse = (fullProfile?.email || user?.email || '').trim();
+    if (!emailToUse) {
+      setOtpAlert({ type: 'error', text: 'No registered email found on account.' });
+      return;
+    }
+
+    setOtpLoading(true);
+    setOtpAlert({ type: '', text: '' });
+
+    const res = await forgotPassword(emailToUse);
+    setOtpLoading(false);
+
+    if (res?.success) {
+      setOtpStep('verify');
+      setOtpAlert({
+        type: 'success',
+        text: `6-digit verification code sent to ${emailToUse}. Please check your inbox.`,
+      });
+    } else {
+      setOtpAlert({
+        type: 'error',
+        text: res?.error || 'Failed to send verification code. Please try again.',
+      });
+    }
+  };
+
+  // Verify OTP & Reset Password
+  const onVerifyAndResetPassword = async (data) => {
+    const emailToUse = (fullProfile?.email || user?.email || '').trim();
+    if (!emailToUse) {
+      setOtpAlert({ type: 'error', text: 'No registered email found on account.' });
+      return;
+    }
+
+    setOtpLoading(true);
+    setOtpAlert({ type: '', text: '' });
+
+    const res = await resetPassword({
+      email: emailToUse,
+      otp: data.otp,
+      new_password: data.new_password,
+    });
+    setOtpLoading(false);
+
+    if (res?.success) {
+      setPasswordAlert({
+        type: 'success',
+        text: 'Password reset successfully via email verification!',
+      });
+      setIsForgotMode(false);
+      setOtpStep('request');
+      resetOtpForm();
+      setFullProfile((prev) => (prev ? { ...prev, has_password: true } : prev));
+    } else {
+      setOtpAlert({
+        type: 'error',
+        text: res?.error || 'Failed to reset password. Please verify the code and try again.',
+      });
     }
   };
 
@@ -497,16 +583,65 @@ export default function Profile() {
           {/* Column 2: Security & Password Management */}
           <div className="df-profile__panel">
             <div className="df-profile__panel__header">
-              <h2>
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
-                  <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-                </svg>
-                {activeProfile.has_password ? 'Security & Password' : 'Set Account Password'}
-              </h2>
-              <span className="panel-subtitle">
-                {activeProfile.has_password ? 'Update your existing password' : 'Create a new password for your account'}
-              </span>
+              <div className="df-profile__panel__header-info">
+                <h2>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                    <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                  </svg>
+                  <span>
+                    {isForgotMode
+                      ? 'Password Recovery'
+                      : activeProfile.has_password
+                      ? 'Security & Password'
+                      : 'Set Account Password'}
+                  </span>
+                </h2>
+                <span className="panel-subtitle">
+                  {isForgotMode
+                    ? 'Verify your identity via 6-digit email OTP'
+                    : activeProfile.has_password
+                    ? 'Manage your credentials or reset via OTP'
+                    : 'Create a new password for your account'}
+                </span>
+              </div>
+
+              {activeProfile.has_password && (
+                <div className="df-profile__mode-toggle">
+                  <button
+                    type="button"
+                    className={`df-profile__mode-btn ${!isForgotMode ? 'active' : ''}`}
+                    onClick={() => {
+                      setIsForgotMode(false);
+                      setOtpStep('request');
+                      setOtpAlert({ type: '', text: '' });
+                      setPasswordAlert({ type: '', text: '' });
+                    }}
+                  >
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                      <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                    </svg>
+                    <span>Change</span>
+                  </button>
+                  <button
+                    type="button"
+                    className={`df-profile__mode-btn ${isForgotMode ? 'active' : ''}`}
+                    onClick={() => {
+                      setIsForgotMode(true);
+                      setOtpStep('request');
+                      setOtpAlert({ type: '', text: '' });
+                      setPasswordAlert({ type: '', text: '' });
+                    }}
+                  >
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
+                      <polyline points="22,6 12,13 2,6" />
+                    </svg>
+                    <span>Forgot (OTP)</span>
+                  </button>
+                </div>
+              )}
             </div>
 
             {passwordAlert.text && (
@@ -526,7 +661,7 @@ export default function Profile() {
               </div>
             )}
 
-            {!activeProfile.has_password && (
+            {!isForgotMode && !activeProfile.has_password && (
               <div className="df-profile__info-banner">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <circle cx="12" cy="12" r="10" />
@@ -539,19 +674,83 @@ export default function Profile() {
               </div>
             )}
 
-            <form className="df-profile__form" onSubmit={handleSubmitPassword(onSavePassword)} noValidate>
-              {/* Current Password - Only required if user already has a password */}
-              {activeProfile.has_password && (
+            {/* ================= STANDARD PASSWORD FORM ================= */}
+            {!isForgotMode && (
+              <form className="df-profile__form" onSubmit={handleSubmitPassword(onSavePassword)} noValidate>
+                {/* Current Password - Only required if user already has a password */}
+                {activeProfile.has_password && (
+                  <div className="form-group">
+                    <label htmlFor="current_password">
+                      <span>Current Password *</span>
+                      <button
+                        type="button"
+                        className="df-profile__badge-link"
+                        onClick={() => {
+                          setIsForgotMode(true);
+                          setOtpStep('request');
+                          setOtpAlert({ type: '', text: '' });
+                          setPasswordAlert({ type: '', text: '' });
+                        }}
+                      >
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <circle cx="12" cy="12" r="10" />
+                          <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
+                          <line x1="12" y1="17" x2="12.01" y2="17" />
+                        </svg>
+                        <span>Forgot? Reset via OTP</span>
+                      </button>
+                    </label>
+                    <div className="input-wrapper">
+                      <input
+                        id="current_password"
+                        type={showCurrentPassword ? 'text' : 'password'}
+                        autoComplete="current-password"
+                        placeholder="Enter current password"
+                        {...registerPassword('current_password', {
+                          required: activeProfile.has_password ? 'Current password is required' : false,
+                        })}
+                      />
+                      <svg className="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                        <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                      </svg>
+                      <button
+                        type="button"
+                        className="toggle-password"
+                        onClick={() => setShowCurrentPassword((prev) => !prev)}
+                        title={showCurrentPassword ? 'Hide password' : 'Show password'}
+                      >
+                        {showCurrentPassword ? (
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
+                            <line x1="1" y1="1" x2="23" y2="23" />
+                          </svg>
+                        ) : (
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                            <circle cx="12" cy="12" r="3" />
+                          </svg>
+                        )}
+                      </button>
+                    </div>
+                    {passwordErrors.current_password && (
+                      <span className="field-error">{passwordErrors.current_password.message}</span>
+                    )}
+                  </div>
+                )}
+
+                {/* New Password */}
                 <div className="form-group">
-                  <label htmlFor="current_password">Current Password *</label>
+                  <label htmlFor="new_password">New Password *</label>
                   <div className="input-wrapper">
                     <input
-                      id="current_password"
-                      type={showCurrentPassword ? 'text' : 'password'}
-                      autoComplete="current-password"
-                      placeholder="Enter current password"
-                      {...registerPassword('current_password', {
-                        required: activeProfile.has_password ? 'Current password is required' : false,
+                      id="new_password"
+                      type={showNewPassword ? 'text' : 'password'}
+                      autoComplete="new-password"
+                      placeholder="At least 6 characters"
+                      {...registerPassword('new_password', {
+                        required: 'New password is required',
+                        minLength: { value: 6, message: 'Password must be at least 6 characters' },
                       })}
                     />
                     <svg className="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -561,10 +760,10 @@ export default function Profile() {
                     <button
                       type="button"
                       className="toggle-password"
-                      onClick={() => setShowCurrentPassword((prev) => !prev)}
-                      title={showCurrentPassword ? 'Hide password' : 'Show password'}
+                      onClick={() => setShowNewPassword((prev) => !prev)}
+                      title={showNewPassword ? 'Hide password' : 'Show password'}
                     >
-                      {showCurrentPassword ? (
+                      {showNewPassword ? (
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                           <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
                           <line x1="1" y1="1" x2="23" y2="23" />
@@ -577,90 +776,280 @@ export default function Profile() {
                       )}
                     </button>
                   </div>
-                  {passwordErrors.current_password && (
-                    <span className="field-error">{passwordErrors.current_password.message}</span>
+                  {passwordErrors.new_password && (
+                    <span className="field-error">{passwordErrors.new_password.message}</span>
                   )}
                 </div>
-              )}
 
-              {/* New Password */}
-              <div className="form-group">
-                <label htmlFor="new_password">New Password *</label>
-                <div className="input-wrapper">
-                  <input
-                    id="new_password"
-                    type={showNewPassword ? 'text' : 'password'}
-                    autoComplete="new-password"
-                    placeholder="At least 6 characters"
-                    {...registerPassword('new_password', {
-                      required: 'New password is required',
-                      minLength: { value: 6, message: 'Password must be at least 6 characters' },
-                    })}
-                  />
-                  <svg className="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
-                    <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-                  </svg>
+                {/* Confirm New Password */}
+                <div className="form-group">
+                  <label htmlFor="confirm_password">Confirm New Password *</label>
+                  <div className="input-wrapper">
+                    <input
+                      id="confirm_password"
+                      type={showNewPassword ? 'text' : 'password'}
+                      autoComplete="new-password"
+                      placeholder="Re-type new password"
+                      {...registerPassword('confirm_password', {
+                        required: 'Please confirm your new password',
+                        validate: (value) =>
+                          value === newPasswordValue || 'Passwords do not match',
+                      })}
+                    />
+                    <svg className="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                      <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                    </svg>
+                  </div>
+                  {passwordErrors.confirm_password && (
+                    <span className="field-error">{passwordErrors.confirm_password.message}</span>
+                  )}
+                </div>
+
+                <button type="submit" className="df-profile__btn-primary" disabled={passwordSaving}>
+                  {passwordSaving ? (
+                    <>
+                      <div className="spinner" />
+                      <span>{activeProfile.has_password ? 'Updating Password...' : 'Setting Password...'}</span>
+                    </>
+                  ) : (
+                    <span>{activeProfile.has_password ? 'Update Password' : 'Set Account Password'}</span>
+                  )}
+                </button>
+              </form>
+            )}
+
+            {/* ================= FORGOT PASSWORD / OTP FLOW ================= */}
+            {isForgotMode && (
+              <div className="df-profile__otp-section">
+                <div className="otp-header">
+                  <div className="otp-title">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                    </svg>
+                    <span>Email OTP Verification</span>
+                    <span className="step-pill">
+                      {otpStep === 'request' ? 'Step 1 of 2' : 'Step 2 of 2'}
+                    </span>
+                  </div>
                   <button
                     type="button"
-                    className="toggle-password"
-                    onClick={() => setShowNewPassword((prev) => !prev)}
-                    title={showNewPassword ? 'Hide password' : 'Show password'}
+                    className="back-link"
+                    onClick={() => {
+                      setIsForgotMode(false);
+                      setOtpStep('request');
+                      setOtpAlert({ type: '', text: '' });
+                    }}
                   >
-                    {showNewPassword ? (
+                    ← Back to standard update
+                  </button>
+                </div>
+
+                {otpAlert.text && (
+                  <div className={`df-profile__alert df-profile__alert--${otpAlert.type}`}>
+                    {otpAlert.type === 'success' ? (
                       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
-                        <line x1="1" y1="1" x2="23" y2="23" />
+                        <polyline points="20 6 9 17 4 12" />
                       </svg>
                     ) : (
                       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
-                        <circle cx="12" cy="12" r="3" />
+                        <circle cx="12" cy="12" r="10" />
+                        <line x1="12" y1="8" x2="12" y2="12" />
+                        <line x1="12" y1="16" x2="12.01" y2="16" />
                       </svg>
                     )}
-                  </button>
-                </div>
-                {passwordErrors.new_password && (
-                  <span className="field-error">{passwordErrors.new_password.message}</span>
+                    <span>{otpAlert.text}</span>
+                  </div>
+                )}
+
+                {/* Step 1: Send OTP */}
+                {otpStep === 'request' && (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                    <p className="otp-desc">
+                      A secure 6-digit one-time verification code will be sent to your verified registered email address:{' '}
+                      <span className="email-chip">
+                        ✉️ {activeProfile.email}
+                      </span>
+                    </p>
+                    <div className="otp-actions-row">
+                      <button
+                        type="button"
+                        className="df-profile__btn-primary"
+                        onClick={handleRequestRecoveryOtp}
+                        disabled={otpLoading}
+                      >
+                        {otpLoading ? (
+                          <>
+                            <div className="spinner" />
+                            <span>Sending OTP Code...</span>
+                          </>
+                        ) : (
+                          <>
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: 16, height: 16 }}>
+                              <line x1="22" y1="2" x2="11" y2="13" />
+                              <polygon points="22 2 15 22 11 13 2 9 22 2" />
+                            </svg>
+                            <span>Send 6-Digit OTP to My Email</span>
+                          </>
+                        )}
+                      </button>
+                      <button
+                        type="button"
+                        className="df-profile__btn-secondary"
+                        onClick={() => setIsForgotMode(false)}
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Step 2: Verify OTP & Enter New Password */}
+                {otpStep === 'verify' && (
+                  <form
+                    className="df-profile__form"
+                    onSubmit={handleSubmitOtpReset(onVerifyAndResetPassword)}
+                    noValidate
+                  >
+                    <p className="otp-desc">
+                      Enter the 6-digit code sent to <span className="email-chip">✉️ {activeProfile.email}</span> along with your new password.
+                    </p>
+
+                    {/* OTP Field */}
+                    <div className="form-group">
+                      <label htmlFor="otp">
+                        <span>6-Digit Verification Code *</span>
+                        <button
+                          type="button"
+                          className="resend-btn"
+                          onClick={handleRequestRecoveryOtp}
+                          disabled={otpLoading}
+                        >
+                          {otpLoading ? 'Sending...' : '🔄 Resend Code'}
+                        </button>
+                      </label>
+                      <div className="input-wrapper">
+                        <input
+                          id="otp"
+                          type="text"
+                          maxLength={6}
+                          placeholder="123456"
+                          className="input-uppercase"
+                          style={{ letterSpacing: '0.3em', fontWeight: 700, fontSize: '1.05rem', textAlign: 'center' }}
+                          {...registerOtpReset('otp', {
+                            required: '6-digit OTP is required',
+                            minLength: { value: 6, message: 'OTP must be exactly 6 digits' },
+                            maxLength: { value: 6, message: 'OTP must be exactly 6 digits' },
+                            pattern: { value: /^[0-9]+$/, message: 'OTP must contain only numbers' },
+                          })}
+                        />
+                        <svg className="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                          <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                        </svg>
+                      </div>
+                      {otpErrors.otp && (
+                        <span className="field-error">{otpErrors.otp.message}</span>
+                      )}
+                    </div>
+
+                    {/* New Password */}
+                    <div className="form-group">
+                      <label htmlFor="otp_new_password">New Password *</label>
+                      <div className="input-wrapper">
+                        <input
+                          id="otp_new_password"
+                          type={showOtpPassword ? 'text' : 'password'}
+                          autoComplete="new-password"
+                          placeholder="At least 6 characters"
+                          {...registerOtpReset('new_password', {
+                            required: 'New password is required',
+                            minLength: { value: 6, message: 'Password must be at least 6 characters' },
+                          })}
+                        />
+                        <svg className="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                          <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                        </svg>
+                        <button
+                          type="button"
+                          className="toggle-password"
+                          onClick={() => setShowOtpPassword((prev) => !prev)}
+                          title={showOtpPassword ? 'Hide password' : 'Show password'}
+                        >
+                          {showOtpPassword ? (
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                              <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
+                              <line x1="1" y1="1" x2="23" y2="23" />
+                            </svg>
+                          ) : (
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                              <circle cx="12" cy="12" r="3" />
+                            </svg>
+                          )}
+                        </button>
+                      </div>
+                      {otpErrors.new_password && (
+                        <span className="field-error">{otpErrors.new_password.message}</span>
+                      )}
+                    </div>
+
+                    {/* Confirm New Password */}
+                    <div className="form-group">
+                      <label htmlFor="otp_confirm_password">Confirm New Password *</label>
+                      <div className="input-wrapper">
+                        <input
+                          id="otp_confirm_password"
+                          type={showOtpPassword ? 'text' : 'password'}
+                          autoComplete="new-password"
+                          placeholder="Re-type new password"
+                          {...registerOtpReset('confirm_password', {
+                            required: 'Please confirm your new password',
+                            validate: (value) =>
+                              value === otpNewPasswordValue || 'Passwords do not match',
+                          })}
+                        />
+                        <svg className="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                          <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                        </svg>
+                      </div>
+                      {otpErrors.confirm_password && (
+                        <span className="field-error">{otpErrors.confirm_password.message}</span>
+                      )}
+                    </div>
+
+                    <div className="otp-actions-row" style={{ marginTop: '0.5rem' }}>
+                      <button
+                        type="submit"
+                        className="df-profile__btn-primary"
+                        disabled={otpLoading}
+                      >
+                        {otpLoading ? (
+                          <>
+                            <div className="spinner" />
+                            <span>Verifying & Setting Password...</span>
+                          </>
+                        ) : (
+                          <span>Verify OTP & Set New Password</span>
+                        )}
+                      </button>
+                      <button
+                        type="button"
+                        className="df-profile__btn-secondary"
+                        onClick={() => {
+                          setIsForgotMode(false);
+                          setOtpStep('request');
+                        }}
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </form>
                 )}
               </div>
-
-              {/* Confirm New Password */}
-              <div className="form-group">
-                <label htmlFor="confirm_password">Confirm New Password *</label>
-                <div className="input-wrapper">
-                  <input
-                    id="confirm_password"
-                    type={showNewPassword ? 'text' : 'password'}
-                    autoComplete="new-password"
-                    placeholder="Re-type new password"
-                    {...registerPassword('confirm_password', {
-                      required: 'Please confirm your new password',
-                      validate: (value) =>
-                        value === newPasswordValue || 'Passwords do not match',
-                    })}
-                  />
-                  <svg className="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
-                    <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-                  </svg>
-                </div>
-                {passwordErrors.confirm_password && (
-                  <span className="field-error">{passwordErrors.confirm_password.message}</span>
-                )}
-              </div>
-
-              <button type="submit" className="df-profile__btn-primary" disabled={passwordSaving}>
-                {passwordSaving ? (
-                  <>
-                    <div className="spinner" />
-                    <span>{activeProfile.has_password ? 'Updating Password...' : 'Setting Password...'}</span>
-                  </>
-                ) : (
-                  <span>{activeProfile.has_password ? 'Update Password' : 'Set Account Password'}</span>
-                )}
-              </button>
-            </form>
+            )}
           </div>
         </div>
       </div>

@@ -4,15 +4,22 @@ import {
   GET_QUOTATIONS_KANBAN_SUMMARY,
   GET_QUOTATION_BY_ID,
   GET_QUOTATION_ITEMS,
+  COUNT_QUOTATIONS_TOTAL,
   CREATE_QUOTATION,
   UPDATE_QUOTATION,
   DELETE_QUOTATION_ITEMS,
   INSERT_QUOTATION_ITEM,
+  DELETE_APPROVAL_STEPS_BY_QUOTATION_ID,
+  DELETE_APPROVAL_REQUESTS_BY_QUOTATION_ID,
   CREATE_APPROVAL_REQUEST,
   CREATE_APPROVAL_STEP,
   INSERT_QUOTATION_AUDIT_LOG,
+  CHECK_ORDER_EXISTS_FOR_QUOTATION,
+  INSERT_CONFIRMED_ORDER,
+  INSERT_CONFIRMED_ORDER_ITEM,
 } from '../queries/quotation.query.js';
 import { GET_ACTIVE_APPROVAL_RULES } from '../queries/catalog.query.js';
+import { allocateStockGreedy } from './fulfillment.repository.js';
 
 export const getQuotationsListRepo = async ({ salesRepId = null, customerId = null, status = null, searchQuery = null } = {}) => {
   const client = await pool.connect();
@@ -84,7 +91,7 @@ export const getQuotationFullDetailRepo = async (quotationId) => {
  * Generate unique quotation number
  */
 async function generateQuotationNumber(client) {
-  const countRes = await client.query('SELECT COUNT(*)::INT AS count FROM quotations');
+  const countRes = await client.query(COUNT_QUOTATIONS_TOTAL);
   const count = (countRes.rows[0]?.count || 0) + 1;
   const year = new Date().getFullYear();
   return `QT-${year}-${String(count).padStart(4, '0')}`;
@@ -200,8 +207,8 @@ export const saveQuotationRepo = async ({
     const effectiveUserId = user_id || sales_rep_id || quotation?.sales_rep_id || 1;
 
     if (status === 'pending_approval') {
-      await client.query('DELETE FROM approval_steps WHERE approval_request_id IN (SELECT id FROM approval_requests WHERE quotation_id = $1)', [quotation.id]);
-      await client.query('DELETE FROM approval_requests WHERE quotation_id = $1', [quotation.id]);
+      await client.query(DELETE_APPROVAL_STEPS_BY_QUOTATION_ID, [quotation.id]);
+      await client.query(DELETE_APPROVAL_REQUESTS_BY_QUOTATION_ID, [quotation.id]);
 
       const appReqRes = await client.query(CREATE_APPROVAL_REQUEST, [
         quotation.id,
@@ -226,6 +233,51 @@ export const saveQuotationRepo = async ({
       }
       if (matchingRule.requires_finance) {
         await client.query(CREATE_APPROVAL_STEP, [approvalRequest.id, stepNum++, 'finance']);
+      }
+    }
+
+    // If confirmed, automatically ensure order and order items are generated with greedy stock deduction
+    if (status === 'confirmed') {
+      const existingOrder = await client.query(CHECK_ORDER_EXISTS_FOR_QUOTATION, [quotation.id]);
+      if (existingOrder.rows.length === 0) {
+        const countRes = await client.query(COUNT_QUOTATIONS_TOTAL);
+        const orderCount = (countRes.rows[0]?.count || 0) + 1;
+        const year = new Date().getFullYear();
+        const orderNumber = `ORD-${year}-${String(orderCount).padStart(4, '0')}`;
+
+        const orderRes = await client.query(INSERT_CONFIRMED_ORDER, [orderNumber, quotation.id, customer_id]);
+        const createdOrderId = orderRes.rows[0].id;
+
+        for (const insertedItem of insertedItems) {
+          const isSub = insertedItem.product_name_snapshot && (
+            insertedItem.product_name_snapshot.toLowerCase().includes('plan') ||
+            insertedItem.product_name_snapshot.toLowerCase().includes('sla') ||
+            insertedItem.product_name_snapshot.toLowerCase().includes('subscription') ||
+            insertedItem.product_name_snapshot.toLowerCase().includes('amc') ||
+            insertedItem.product_name_snapshot.toLowerCase().includes('care')
+          );
+          const lineType = isSub ? 'subscription' : 'one_time';
+
+          const oiRes = await client.query(INSERT_CONFIRMED_ORDER_ITEM, [
+            createdOrderId,
+            insertedItem.id,
+            insertedItem.product_variant_id,
+            lineType,
+            insertedItem.product_name_snapshot,
+            insertedItem.sku_snapshot,
+            insertedItem.quantity,
+            insertedItem.unit_price,
+            insertedItem.discount_percentage || 0,
+            insertedItem.discount_amount || 0,
+            insertedItem.tax_percentage || 0,
+            insertedItem.tax_amount || 0,
+            insertedItem.line_total,
+          ]);
+
+          if (!isSub && insertedItem.product_variant_id) {
+            await allocateStockGreedy(client, createdOrderId, oiRes.rows[0].id, insertedItem.product_variant_id, insertedItem.quantity);
+          }
+        }
       }
     }
 

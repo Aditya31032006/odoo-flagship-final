@@ -161,3 +161,9 @@ export const UPDATE_USER_PASSWORD_BY_ID = `
 export const FIND_ADMIN_USER = `
   SELECT id, email, role FROM users WHERE role = 'admin' LIMIT 1
 `;
+
+export const UPDATE_USER_MOBILE = `
+  UPDATE users 
+  SET mobile = $1, updated_at = CURRENT_TIMESTAMP 
+  WHERE id = $2
+`;

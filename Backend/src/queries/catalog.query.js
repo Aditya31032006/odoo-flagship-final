@@ -217,3 +217,65 @@ export const DELETE_PRODUCT_VARIANT_BY_ID = `
   RETURNING id;
 `;
 
+export const UPSERT_PRODUCT_CATEGORY = `
+  INSERT INTO product_categories (name) 
+  VALUES ($1) 
+  ON CONFLICT (name) DO UPDATE SET name = EXCLUDED.name 
+  RETURNING id;
+`;
+
+export const INSERT_PRODUCT = `
+  INSERT INTO products (name, category_id, description, unit, base_price, tax_percentage, is_active)
+  VALUES ($1, $2, $3, $4, $5, $6, $7)
+  RETURNING *;
+`;
+
+export const INSERT_PRODUCT_VARIANT = `
+  INSERT INTO product_variants (product_id, sku, variant_name, selling_price, is_active)
+  VALUES ($1, $2, $3, $4, $5)
+  RETURNING *;
+`;
+
+export const DELETE_PRODUCT_VARIANTS_EXCLUDING_IDS = `
+  DELETE FROM product_variants 
+  WHERE product_id = $1 AND id != ALL($2::int[]);
+`;
+
+export const DELETE_PRODUCT_VARIANTS_BY_PRODUCT_ID = `
+  DELETE FROM product_variants 
+  WHERE product_id = $1;
+`;
+
+export const UPDATE_PRODUCT_VARIANT_BY_ID = `
+  UPDATE product_variants 
+  SET variant_name = $1, selling_price = $2, sku = COALESCE($5, sku), is_active = TRUE
+  WHERE id = $3 AND product_id = $4;
+`;
+
+export const GET_ACTIVE_PRODUCT_VARIANTS_BY_PRODUCT_ID = `
+  SELECT * FROM product_variants 
+  WHERE product_id = $1 AND is_active = TRUE 
+  ORDER BY id ASC;
+`;
+
+export const SOFT_DELETE_PRODUCT_BY_ID = `
+  UPDATE products 
+  SET is_active = FALSE, updated_at = NOW() 
+  WHERE id = $1 
+  RETURNING id;
+`;
+
+export const SOFT_DELETE_PRODUCT_VARIANTS_BY_PRODUCT_ID = `
+  UPDATE product_variants 
+  SET is_active = FALSE 
+  WHERE product_id = $1;
+`;
+
+export const SOFT_DELETE_PRODUCT_VARIANT_BY_ID = `
+  UPDATE product_variants 
+  SET is_active = FALSE 
+  WHERE id = $1 
+  RETURNING id;
+`;
+
+

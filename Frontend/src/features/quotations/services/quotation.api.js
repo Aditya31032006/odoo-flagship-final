@@ -57,6 +57,11 @@ export const quotationApi = {
     const response = await apiClient.post(`/quotations/${id}/submit-approval`, payload);
     return response.data;
   },
+
+  payQuotation: async (id, payload = {}) => {
+    const response = await apiClient.post(`/quotations/${id}/pay`, payload);
+    return response.data;
+  },
 };
 
 export default quotationApi;

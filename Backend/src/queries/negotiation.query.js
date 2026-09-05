@@ -99,3 +99,55 @@ export const CREATE_ORDER_FROM_QUOTATION = `
   SET status = 'confirmed', updated_at = CURRENT_TIMESTAMP
   RETURNING *
 `;
+
+export const UPDATE_NEGOTIATION_STATUS_ACCEPTED = `
+  UPDATE quotation_negotiations 
+  SET status = 'accepted', updated_at = CURRENT_TIMESTAMP 
+  WHERE id = $1;
+`;
+
+export const COUNT_ORDERS_TOTAL = `
+  SELECT COUNT(*)::INT AS count FROM orders;
+`;
+
+export const GET_QUOTATION_ITEMS_ORDERED_BY_LINE = `
+  SELECT * FROM quotation_items WHERE quotation_id = $1 ORDER BY line_number ASC;
+`;
+
+export const INSERT_ORDER_ITEM_FROM_QUOTATION = `
+  INSERT INTO order_items (
+    order_id, quotation_item_id, product_variant_id, line_type,
+    product_name_snapshot, sku_snapshot, quantity, unit_price,
+    discount_percentage, discount_amount, tax_percentage, tax_amount, line_total
+  ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+  RETURNING id;
+`;
+
+export const GET_PRODUCT_ID_FROM_VARIANT = `
+  SELECT product_id FROM product_variants WHERE id = $1;
+`;
+
+export const FIND_SUBSCRIPTION_PLAN_BY_NAME = `
+  SELECT id, billing_cycle, price FROM subscription_plans WHERE name ILIKE $1 LIMIT 1;
+`;
+
+export const INSERT_DEFAULT_SUBSCRIPTION_PLAN = `
+  INSERT INTO subscription_plans (product_id, name, billing_cycle, price, allow_proration, allow_cancellation, allow_partial_refund)
+  VALUES ($1, $2, 'monthly', $3, true, true, true)
+  RETURNING id, billing_cycle;
+`;
+
+export const INSERT_SUBSCRIPTION_FROM_ORDER = `
+  INSERT INTO subscriptions (
+    order_item_id, customer_id, subscription_plan_id, quantity, unit_price,
+    billing_cycle, start_date, status
+  ) VALUES ($1, $2, $3, $4, $5, $6, CURRENT_DATE, 'active')
+  RETURNING id;
+`;
+
+export const INSERT_INITIAL_SUBSCRIPTION_BILLING_LINE = `
+  INSERT INTO subscription_billing_lines (
+    subscription_id, billing_period_start, billing_period_end, amount, is_prorated
+  ) VALUES ($1, CURRENT_DATE, CURRENT_DATE + INTERVAL '1 month', $2, false);
+`;
+

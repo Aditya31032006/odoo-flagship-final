@@ -59,7 +59,12 @@ export const GET_QUOTATIONS_LIST = `
       WHERE qn.quotation_id = q.id 
       ORDER BY qn.created_at DESC 
       LIMIT 1
-    ) AS counter_discount_percentage
+    ) AS counter_discount_percentage,
+    (
+      SELECT COALESCE(json_agg(json_build_object('id', dhf.id, 'flag_type', dhf.flag_type, 'detail', dhf.detail, 'action', dhf.action)), '[]'::json)
+      FROM deal_health_flags dhf 
+      WHERE dhf.quotation_id = q.id AND dhf.action <> 'resolved'
+    ) AS deal_health_flags
   FROM quotations q
   JOIN customers c ON q.customer_id = c.id
   JOIN users u ON q.sales_rep_id = u.id
@@ -156,6 +161,10 @@ export const GET_QUOTATION_ITEMS = `
   ORDER BY qi.line_number ASC
 `;
 
+export const COUNT_QUOTATIONS_TOTAL = `
+  SELECT COUNT(*)::INT AS count FROM quotations;
+`;
+
 export const CREATE_QUOTATION = `
   INSERT INTO quotations (
     quotation_number,
@@ -223,6 +232,15 @@ export const INSERT_QUOTATION_ITEM = `
   RETURNING *
 `;
 
+export const DELETE_APPROVAL_STEPS_BY_QUOTATION_ID = `
+  DELETE FROM approval_steps 
+  WHERE approval_request_id IN (SELECT id FROM approval_requests WHERE quotation_id = $1);
+`;
+
+export const DELETE_APPROVAL_REQUESTS_BY_QUOTATION_ID = `
+  DELETE FROM approval_requests WHERE quotation_id = $1;
+`;
+
 export const CREATE_APPROVAL_REQUEST = `
   INSERT INTO approval_requests (
     quotation_id,
@@ -255,4 +273,23 @@ export const INSERT_QUOTATION_AUDIT_LOG = `
   ) VALUES (
     $1, $2, $3, $4, $5
   )
+`;
+
+export const CHECK_ORDER_EXISTS_FOR_QUOTATION = `
+  SELECT id FROM orders WHERE quotation_id = $1 LIMIT 1;
+`;
+
+export const INSERT_CONFIRMED_ORDER = `
+  INSERT INTO orders (order_number, quotation_id, customer_id, status, created_at, updated_at)
+  VALUES ($1, $2, $3, 'confirmed', NOW(), NOW())
+  RETURNING id;
+`;
+
+export const INSERT_CONFIRMED_ORDER_ITEM = `
+  INSERT INTO order_items (
+    order_id, quotation_item_id, product_variant_id, line_type,
+    product_name_snapshot, sku_snapshot, quantity, unit_price,
+    discount_percentage, discount_amount, tax_percentage, tax_amount, line_total
+  ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+  RETURNING id;
 `;

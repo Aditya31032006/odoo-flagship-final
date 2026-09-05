@@ -160,3 +160,38 @@ export const GET_APPROVAL_REQUEST_STEPS = `
   WHERE ar.quotation_id = $1
   ORDER BY ast.step_number ASC;
 `;
+
+export const GET_LATEST_APPROVAL_REQUEST_FOR_QUOTATION = `
+  SELECT id FROM approval_requests 
+  WHERE quotation_id = $1 
+  ORDER BY requested_at DESC 
+  LIMIT 1;
+`;
+
+export const UPDATE_APPROVAL_REQUEST_STATUS = `
+  UPDATE approval_requests 
+  SET status = $1::approval_status_enum, completed_at = NOW() 
+  WHERE id = $2;
+`;
+
+export const UPDATE_PENDING_APPROVAL_STEP = `
+  UPDATE approval_steps 
+  SET status = $1::approval_status_enum, comments = $2, acted_at = NOW(), approver_user_id = $3
+  WHERE approval_request_id = $4 AND status = 'pending';
+`;
+
+export const INSERT_QUOTATION_AUDIT_LOG = `
+  INSERT INTO quotation_audit_logs (
+    quotation_id, user_id, action, reason, created_at
+  ) VALUES ($1, $2, $3::approval_action_enum, $4, NOW())
+  RETURNING *;
+`;
+
+export const UPDATE_QUOTATION_STATUS = `
+  UPDATE quotations 
+  SET status = $1::quotation_status_enum, updated_at = NOW() 
+  WHERE id = $2
+  RETURNING *;
+`;
+
+

@@ -7,6 +7,8 @@ const COLUMNS = [
   { id: 'approved', label: 'Approved', color: '#38bdf8' },
   { id: 'negotiating', label: 'Negotiation', color: '#c084fc' },
   { id: 'confirmed', label: 'Confirmed', color: '#34d399' },
+  { id: 'shipment', label: 'Shipment', color: '#3b82f6' },
+  { id: 'payment', label: 'Payment', color: '#eab308' },
 ];
 
 function formatCurrency(amount) {
@@ -19,7 +21,6 @@ export const QuotationKanban = ({
   summary = {},
   onSelectQuotation
 }) => {
-
   return (
     <div className="df-kanban-board">
       {COLUMNS.map((col) => {

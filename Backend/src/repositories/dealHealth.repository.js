@@ -8,6 +8,10 @@ import {
   GET_DEAL_HEALTH_SUMMARY_COUNTS,
   UPDATE_DEAL_HEALTH_FLAG_ACTION,
   INSERT_DEAL_HEALTH_FLAG,
+  FIND_STALLED_QUOTATIONS,
+  GET_AVERAGE_ITEM_DISCOUNT,
+  FIND_DISCOUNT_ANOMALIES,
+  FIND_DELIVERY_SLIPPAGE_DEALS,
 } from '../queries/dealHealth.query.js';
 
 export const getOrCreateDealHealthConfig = async () => {
@@ -43,22 +47,7 @@ export const runHealthCheckScan = async () => {
     const slippageDays = config.delivery_slippage_days || 3;
 
     // 1. Scan for Stalled Deals
-    const stalledQuotes = await client.query(`
-      SELECT 
-        q.id,
-        q.quotation_number,
-        q.updated_at,
-        EXTRACT(DAY FROM (CURRENT_TIMESTAMP - q.updated_at))::int AS idle_days
-      FROM quotations q
-      WHERE q.status IN ('draft', 'sent', 'negotiating', 'pending_approval')
-        AND q.updated_at <= CURRENT_TIMESTAMP - ($1 || ' days')::INTERVAL
-        AND NOT EXISTS (
-          SELECT 1 FROM deal_health_flags dhf 
-          WHERE dhf.quotation_id = q.id 
-            AND dhf.flag_type = 'stalled_deal' 
-            AND dhf.action <> 'resolved'
-        );
-    `, [stalledDays]);
+    const stalledQuotes = await client.query(FIND_STALLED_QUOTATIONS, [stalledDays]);
 
     for (const row of stalledQuotes.rows) {
       await client.query(INSERT_DEAL_HEALTH_FLAG, [
@@ -69,31 +58,11 @@ export const runHealthCheckScan = async () => {
     }
 
     // 2. Scan for Discount Anomalies
-    const avgDiscountRes = await client.query(`
-      SELECT COALESCE(AVG(discount_percentage), 8.0)::numeric(5,2) AS avg_discount 
-      FROM quotation_items 
-      WHERE discount_percentage > 0;
-    `);
+    const avgDiscountRes = await client.query(GET_AVERAGE_ITEM_DISCOUNT);
     const avgDiscount = parseFloat(avgDiscountRes.rows[0]?.avg_discount || 8.0);
     const thresholdDiscount = (avgDiscount * discountMultiplier).toFixed(1);
 
-    const discountAnomalies = await client.query(`
-      SELECT 
-        qi.quotation_id,
-        MAX(qi.discount_percentage)::numeric(5,2) AS max_discount,
-        MAX(qi.excess_discount_percentage)::numeric(5,2) AS max_excess
-      FROM quotation_items qi
-      JOIN quotations q ON qi.quotation_id = q.id
-      WHERE (qi.discount_percentage >= $1 OR qi.excess_discount_percentage > 0)
-        AND q.status NOT IN ('rejected', 'expired', 'cancelled')
-        AND NOT EXISTS (
-          SELECT 1 FROM deal_health_flags dhf 
-          WHERE dhf.quotation_id = qi.quotation_id 
-            AND dhf.flag_type = 'discount_anomaly' 
-            AND dhf.action <> 'resolved'
-        )
-      GROUP BY qi.quotation_id;
-    `, [thresholdDiscount]);
+    const discountAnomalies = await client.query(FIND_DISCOUNT_ANOMALIES, [thresholdDiscount]);
 
     for (const row of discountAnomalies.rows) {
       const detail = `Discount ${row.max_discount}% vs avg ${avgDiscount}%`;
@@ -105,25 +74,7 @@ export const runHealthCheckScan = async () => {
     }
 
     // 3. Scan for Delivery Slippage
-    const slippageRes = await client.query(`
-      SELECT 
-        o.quotation_id,
-        fs.id AS split_id,
-        fs.estimated_shipment_date,
-        EXTRACT(DAY FROM (CURRENT_DATE - fs.estimated_shipment_date))::int AS overdue_days
-      FROM fulfillment_splits fs
-      JOIN order_items oi ON fs.order_item_id = oi.id
-      JOIN orders o ON oi.order_id = o.id
-      WHERE fs.status IN ('pending', 'allocated', 'processing')
-        AND fs.estimated_shipment_date < CURRENT_DATE - ($1 || ' days')::INTERVAL
-        AND o.quotation_id IS NOT NULL
-        AND NOT EXISTS (
-          SELECT 1 FROM deal_health_flags dhf 
-          WHERE dhf.quotation_id = o.quotation_id 
-            AND dhf.flag_type = 'delivery_slippage' 
-            AND dhf.action <> 'resolved'
-        );
-    `, [slippageDays]);
+    const slippageRes = await client.query(FIND_DELIVERY_SLIPPAGE_DEALS, [slippageDays]);
 
     for (const row of slippageRes.rows) {
       const detail = `Shipment overdue by ${row.overdue_days || slippageDays} days`;
@@ -162,10 +113,8 @@ export const getDealHealthDashboardRepo = async (flagTypeFilter = null) => {
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
-    const [flagsRes, summaryRes] = await Promise.all([
-      client.query(flagsQuery, params),
-      client.query(GET_DEAL_HEALTH_SUMMARY_COUNTS),
-    ]);
+    const flagsRes = await client.query(flagsQuery, params);
+    const summaryRes = await client.query(GET_DEAL_HEALTH_SUMMARY_COUNTS);
     await client.query('COMMIT');
 
     return {

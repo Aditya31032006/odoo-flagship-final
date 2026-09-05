@@ -10,6 +10,11 @@ import {
   UPDATE_SUBSCRIPTION_CONFIG,
   CANCEL_SUBSCRIPTION,
   CREATE_SUBSCRIPTION_BILLING_LINE,
+  GET_SUBSCRIPTIONS_BY_STATUS,
+  GET_FIRST_PRODUCT_ID,
+  GET_FIRST_PRODUCT_CATEGORY_ID,
+  INSERT_PRODUCT_CATEGORY,
+  INSERT_PRODUCT_WITH_CATEGORY,
 } from '../queries/subscription.query.js';
 
 export const getSubscriptionsListRepo = async (statusFilter = null) => {
@@ -17,55 +22,15 @@ export const getSubscriptionsListRepo = async (statusFilter = null) => {
   const params = [];
 
   if (statusFilter && statusFilter !== 'all') {
-    query = `
-      SELECT 
-        s.id,
-        s.order_item_id,
-        s.customer_id,
-        s.subscription_plan_id,
-        s.quantity,
-        s.unit_price,
-        s.billing_cycle,
-        s.start_date,
-        s.end_date,
-        s.status,
-        s.created_at,
-        s.updated_at,
-        c.company_name AS customer_name,
-        c.email AS customer_email,
-        sp.name AS plan_name,
-        sp.price AS plan_price,
-        sp.allow_proration,
-        sp.allow_cancellation,
-        sp.allow_partial_refund,
-        COALESCE(
-          (
-            SELECT sbl.billing_period_end
-            FROM subscription_billing_lines sbl
-            WHERE sbl.subscription_id = s.id
-              AND sbl.billing_period_end >= CURRENT_DATE
-            ORDER BY sbl.billing_period_end ASC
-            LIMIT 1
-          ),
-          s.end_date,
-          s.start_date + INTERVAL '1 month'
-        ) AS next_bill_date
-      FROM subscriptions s
-      JOIN customers c ON s.customer_id = c.id
-      JOIN subscription_plans sp ON s.subscription_plan_id = sp.id
-      WHERE s.status = $1
-      ORDER BY s.created_at DESC;
-    `;
+    query = GET_SUBSCRIPTIONS_BY_STATUS;
     params.push(statusFilter);
   }
 
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
-    const [subscriptionsRes, statusCountsRes] = await Promise.all([
-      client.query(query, params),
-      client.query(GET_SUBSCRIPTION_STATUS_COUNTS),
-    ]);
+    const subscriptionsRes = await client.query(query, params);
+    const statusCountsRes = await client.query(GET_SUBSCRIPTION_STATUS_COUNTS);
     await client.query('COMMIT');
 
     return {
@@ -100,11 +65,9 @@ export const getSubscriptionDetailRepo = async (subscriptionId) => {
     const subscription = subRes.rows[0];
     const orderId = subscription.order_id;
 
-    const [oneTimeRes, billingLinesRes, allPlansRes] = await Promise.all([
-      orderId ? client.query(GET_ORIGINATING_ORDER_ONE_TIME_ITEMS, [orderId]) : { rows: [] },
-      client.query(GET_SUBSCRIPTION_BILLING_LINES, [subscriptionId]),
-      client.query(GET_ALL_SUBSCRIPTION_PLANS),
-    ]);
+    const oneTimeRes = orderId ? await client.query(GET_ORIGINATING_ORDER_ONE_TIME_ITEMS, [orderId]) : { rows: [] };
+    const billingLinesRes = await client.query(GET_SUBSCRIPTION_BILLING_LINES, [subscriptionId]);
+    const allPlansRes = await client.query(GET_ALL_SUBSCRIPTION_PLANS);
     await client.query('COMMIT');
 
     return {
@@ -153,21 +116,19 @@ export const createSubscriptionPlanRepo = async ({
 
     let targetProductId = product_id;
     if (!targetProductId) {
-      const prodRes = await client.query(`SELECT id FROM products LIMIT 1;`);
+      const prodRes = await client.query(GET_FIRST_PRODUCT_ID);
       if (prodRes.rows.length > 0) {
         targetProductId = prodRes.rows[0].id;
       } else {
-        const catRes = await client.query(`SELECT id FROM product_categories LIMIT 1;`);
+        const catRes = await client.query(GET_FIRST_PRODUCT_CATEGORY_ID);
         let catId;
         if (catRes.rows.length > 0) {
           catId = catRes.rows[0].id;
         } else {
-          const newCat = await client.query(`INSERT INTO product_categories (name) VALUES ('General') RETURNING id;`);
+          const newCat = await client.query(INSERT_PRODUCT_CATEGORY, ['General']);
           catId = newCat.rows[0].id;
         }
-        const newP = await client.query(`
-          INSERT INTO products (name, category_id, base_price) VALUES ($1, $2, $3) RETURNING id;
-        `, [name, catId, price]);
+        const newP = await client.query(INSERT_PRODUCT_WITH_CATEGORY, [name, catId, price]);
         targetProductId = newP.rows[0].id;
       }
     }

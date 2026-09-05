@@ -14,6 +14,9 @@ import {
   GET_INVOICE_META_CUSTOMERS,
   GET_INVOICE_META_PRODUCTS,
   GET_INVOICE_META_ORDERS,
+  GET_UNPAID_INVOICES,
+  GET_PAID_INVOICES,
+  COUNT_TOTAL_INVOICES,
 } from '../queries/invoice.query.js';
 
 export const getInvoicesListRepo = async (statusFilter = null) => {
@@ -21,68 +24,16 @@ export const getInvoicesListRepo = async (statusFilter = null) => {
   const params = [];
 
   if (statusFilter === 'unpaid') {
-    query = `
-      SELECT 
-        inv.id,
-        inv.invoice_number,
-        inv.order_id,
-        inv.customer_id,
-        inv.status,
-        inv.invoice_date,
-        inv.due_date,
-        inv.subtotal,
-        inv.discount_total,
-        inv.tax_total,
-        inv.grand_total,
-        inv.paid_amount,
-        (inv.grand_total - inv.paid_amount) AS balance_due,
-        inv.created_at,
-        inv.updated_at,
-        c.company_name AS customer_name,
-        c.email AS customer_email,
-        o.order_number
-      FROM invoices inv
-      JOIN customers c ON inv.customer_id = c.id
-      LEFT JOIN orders o ON inv.order_id = o.id
-      WHERE inv.status IN ('draft', 'issued', 'partially_paid') AND inv.paid_amount < inv.grand_total
-      ORDER BY inv.invoice_date DESC, inv.id DESC;
-    `;
+    query = GET_UNPAID_INVOICES;
   } else if (statusFilter === 'paid') {
-    query = `
-      SELECT 
-        inv.id,
-        inv.invoice_number,
-        inv.order_id,
-        inv.customer_id,
-        inv.status,
-        inv.invoice_date,
-        inv.due_date,
-        inv.subtotal,
-        inv.discount_total,
-        inv.tax_total,
-        inv.grand_total,
-        inv.paid_amount,
-        (inv.grand_total - inv.paid_amount) AS balance_due,
-        inv.created_at,
-        inv.updated_at,
-        c.company_name AS customer_name,
-        c.email AS customer_email,
-        o.order_number
-      FROM invoices inv
-      JOIN customers c ON inv.customer_id = c.id
-      LEFT JOIN orders o ON inv.order_id = o.id
-      WHERE inv.status = 'paid' OR inv.paid_amount >= inv.grand_total
-      ORDER BY inv.invoice_date DESC, inv.id DESC;
-    `;
+    query = GET_PAID_INVOICES;
   }
 
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
-    const [invoicesRes, statusCountsRes] = await Promise.all([
-      client.query(query, params),
-      client.query(GET_INVOICE_STATUS_COUNTS),
-    ]);
+    const invoicesRes = await client.query(query, params);
+    const statusCountsRes = await client.query(GET_INVOICE_STATUS_COUNTS);
     await client.query('COMMIT');
 
     return {
@@ -107,11 +58,9 @@ export const getInvoiceMetaRepo = async () => {
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
-    const [customersRes, productsRes, ordersRes] = await Promise.all([
-      client.query(GET_INVOICE_META_CUSTOMERS),
-      client.query(GET_INVOICE_META_PRODUCTS),
-      client.query(GET_INVOICE_META_ORDERS),
-    ]);
+    const customersRes = await client.query(GET_INVOICE_META_CUSTOMERS);
+    const productsRes = await client.query(GET_INVOICE_META_PRODUCTS);
+    const ordersRes = await client.query(GET_INVOICE_META_ORDERS);
     await client.query('COMMIT');
 
     return {
@@ -142,12 +91,10 @@ export const getInvoiceDetailRepo = async (invoiceId) => {
     const orderId = invoice.order_id;
     const customerId = invoice.customer_id;
 
-    const [itemsRes, paymentsRes, reconRes, relatedRes] = await Promise.all([
-      client.query(GET_INVOICE_ITEMS_BY_INVOICE_ID, [invoiceId]),
-      client.query(GET_PAYMENTS_BY_INVOICE_ID, [invoiceId]),
-      orderId ? client.query(GET_DELIVERY_RECONCILIATION_BY_ORDER_ID, [orderId]) : { rows: [] },
-      customerId ? client.query(GET_RELATED_INVOICES_FOR_CUSTOMER, [customerId]) : { rows: [] },
-    ]);
+    const itemsRes = await client.query(GET_INVOICE_ITEMS_BY_INVOICE_ID, [invoiceId]);
+    const paymentsRes = await client.query(GET_PAYMENTS_BY_INVOICE_ID, [invoiceId]);
+    const reconRes = orderId ? await client.query(GET_DELIVERY_RECONCILIATION_BY_ORDER_ID, [orderId]) : { rows: [] };
+    const relatedRes = customerId ? await client.query(GET_RELATED_INVOICES_FOR_CUSTOMER, [customerId]) : { rows: [] };
 
     const items = itemsRes.rows;
     const payments = paymentsRes.rows;
@@ -197,7 +144,7 @@ export const createInvoiceRepo = async ({
     await client.query('BEGIN');
 
     // 1. Generate unique invoice number
-    const countRes = await client.query('SELECT COUNT(*)::INT AS count FROM invoices');
+    const countRes = await client.query(COUNT_TOTAL_INVOICES);
     const invCount = (countRes.rows[0]?.count || 0) + 1;
     const invoiceNumber = `INV-${String(invCount + 1040).padStart(4, '0')}`;
 
