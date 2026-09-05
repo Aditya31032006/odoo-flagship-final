@@ -240,7 +240,7 @@ export default function Profile() {
     return (
       <div className="df-profile">
         <div className="df-profile__container">
-          <div style={{ textAlign: 'center', padding: '3rem 0', color: '#94a3b8' }}>
+          <div style={{ textAlign: 'center', padding: '3rem 0', color: '#71717a' }}>
             Loading your profile information...
           </div>
         </div>
@@ -469,8 +469,8 @@ export default function Profile() {
               {/* Organization Section (if applicable) */}
               {hasCompany && (
                 <>
-                  <div style={{ margin: '0.5rem 0 0 0', borderTop: '1px solid rgba(255, 255, 255, 0.08)', paddingTop: '0.75rem' }}>
-                    <span style={{ fontSize: '0.75rem', fontWeight: 600, color: '#38bdf8', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                  <div className="df-profile__section-divider">
+                    <span>
                       🏢 Organization & Company Profile
                     </span>
                   </div>

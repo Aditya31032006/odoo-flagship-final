@@ -3,34 +3,32 @@
 
 // Auth-specific mixin for eliminating scrollbars cleanly
 @mixin no-scrollbar {
-  scrollbar-width: none; // Firefox
-  -ms-overflow-style: none; // IE/Edge
+  scrollbar-width: none;
+  -ms-overflow-style: none;
   &::-webkit-scrollbar {
-    display: none; // Chrome/Safari/Brave
+    display: none;
     width: 0;
     height: 0;
   }
 }
 
-// Glassmorphic card surface with glowing ambient border
-@mixin auth-glass-card($max-width: 460px) {
+// Light editorial sharp card surface
+@mixin auth-glass-card($max-width: 480px) {
   position: relative;
   z-index: 1;
   width: 100%;
   max-width: $max-width;
-  background: rgba(15, 23, 42, 0.88);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: vars.$border-radius-lg;
-  box-shadow: 0 16px 36px -10px rgba(0, 0, 0, 0.65), 0 0 0 1px rgba(255, 255, 255, 0.06);
-  padding: 1.5rem 1.75rem;
-  color: #ffffff;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: vars.$radius-sm;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+  padding: 1.75rem 2rem;
+  color: vars.$text-primary;
   box-sizing: border-box;
 }
 
-// Ambient decorative background glowing orb
-@mixin ambient-orb($size, $top: null, $bottom: null, $left: null, $right: null, $color: rgba(37, 99, 235, 0.18)) {
+// Ambient subtle decorative background
+@mixin ambient-orb($size, $top: null, $bottom: null, $left: null, $right: null, $color: rgba(37, 99, 235, 0.04)) {
   content: '';
   position: absolute;
   top: $top;
@@ -39,40 +37,82 @@
   right: $right;
   width: $size;
   height: $size;
-  border-radius: vars.$border-radius-full;
+  border-radius: vars.$radius-sm;
   background: $color;
-  filter: blur(90px);
   pointer-events: none;
   z-index: 0;
 }
 
-// Gradient Primary Action Button
+// Primary Action Button (Matches Website Button System in buttons.scss)
 @mixin auth-gradient-btn($height: 40px) {
   @include mixins.flex-center;
   gap: 0.5rem;
   width: 100%;
   height: $height;
-  font-size: 0.825rem;
-  font-weight: vars.$font-weight-semibold;
+  font-size: 0.875rem;
+  font-weight: 600;
   color: #ffffff;
-  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  border-radius: vars.$border-radius-md;
+  background-image: linear-gradient(to right, #3f3f46 50%, #18181b 50%);
+  background-size: 200% 100%;
+  background-position: right center;
+  border: 1px solid #18181b;
+  border-radius: vars.$radius-sm;
   cursor: pointer;
-  box-shadow: 0 3px 10px rgba(37, 99, 235, 0.3);
-  transition: all vars.$transition-fast;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  transition: background-position 0.24s cubic-bezier(0.4, 0, 0.2, 1),
+              color 0.18s ease,
+              border-color 0.18s ease;
+  font-family: inherit;
 
   &:hover:not(:disabled) {
-    background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
-    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.35);
+    background-position: left center;
+    border-color: #3f3f46;
+    color: #ffffff;
   }
 
   &:active:not(:disabled) {
-    background: #1d4ed8;
+    background-image: linear-gradient(to right, #09090b 50%, #09090b 50%);
   }
 
   &:disabled {
-    opacity: 0.65;
+    opacity: 0.45;
+    cursor: not-allowed;
+    background-position: right center;
+  }
+}
+
+// Secondary / OAuth Action Button (Matches Website Button System in buttons.scss)
+@mixin auth-secondary-btn($height: 40px) {
+  @include mixins.flex-center;
+  gap: 0.65rem;
+  width: 100%;
+  height: $height;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #18181b;
+  background-image: linear-gradient(to right, #f4f4f5 50%, #ffffff 50%);
+  background-size: 200% 100%;
+  background-position: right center;
+  border: 1px solid #e4e4e7;
+  border-radius: vars.$radius-sm;
+  cursor: pointer;
+  transition: background-position 0.24s cubic-bezier(0.4, 0, 0.2, 1),
+              border-color 0.18s ease,
+              color 0.18s ease;
+  font-family: inherit;
+
+  &:hover:not(:disabled) {
+    background-position: left center;
+    border-color: #d4d4d8;
+    color: #09090b;
+  }
+
+  &:active:not(:disabled) {
+    background-image: linear-gradient(to right, #e4e4e7 50%, #e4e4e7 50%);
+  }
+
+  &:disabled {
+    opacity: 0.45;
     cursor: not-allowed;
   }
 }
