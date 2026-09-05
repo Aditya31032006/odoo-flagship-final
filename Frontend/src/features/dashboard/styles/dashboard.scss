@@ -1,20 +1,46 @@
 // ============================================================
 // DEALFLOW360 - MODERN LIGHT-THEME SALES DASHBOARD SCSS
+// Glassmorphism & Frosted Translucent Aesthetic
 // ============================================================
 @use '../../../shared/styles/variables' as vars;
 @use '../../../shared/styles/mixins' as mix;
 
 .df-dashboard {
   min-height: calc(100vh - 76px);
-  background-color: vars.$bg-app;
-  background-image: 
-    radial-gradient(at 0% 0%, rgba(59, 130, 246, 0.04) 0px, transparent 50%),
-    radial-gradient(at 100% 0%, rgba(99, 102, 241, 0.04) 0px, transparent 50%),
-    radial-gradient(at 50% 100%, rgba(241, 245, 249, 0.6) 0px, transparent 50%);
+  background-color: #f8fafc;
+  position: relative;
+  overflow: hidden;
   color: vars.$text-primary;
   padding: 1.5rem 2rem 3.5rem 2rem;
   font-family: vars.$font-family-base;
   box-sizing: border-box;
+
+  // Ambient Glass Background Glow Orbs
+  &::before {
+    content: '';
+    position: absolute;
+    top: -80px;
+    left: 8%;
+    width: 480px;
+    height: 480px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(59, 130, 246, 0.12) 0%, rgba(248, 250, 252, 0) 70%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  &::after {
+    content: '';
+    position: absolute;
+    top: 240px;
+    right: 5%;
+    width: 540px;
+    height: 540px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(168, 85, 247, 0.09) 0%, rgba(248, 250, 252, 0) 70%);
+    pointer-events: none;
+    z-index: 0;
+  }
 
   @media (max-width: 768px) {
     padding: 1rem 1rem 2.5rem 1rem;
@@ -25,6 +51,8 @@
     margin: 0 auto;
     width: 100%;
     box-sizing: border-box;
+    position: relative;
+    z-index: 1;
   }
 
   // Header Section
@@ -57,10 +85,11 @@
         letter-spacing: 0.05em;
         padding: 0.25rem 0.65rem;
         border-radius: vars.$radius-full;
-        background: vars.$primary-50;
+        background: rgba(239, 246, 255, 0.85);
         color: vars.$primary-700;
-        border: 1px solid vars.$primary-200;
+        border: 1px solid rgba(191, 219, 254, 0.8);
         box-shadow: 0 1px 3px rgba(37, 99, 235, 0.08);
+        backdrop-filter: blur(8px);
       }
     }
 
@@ -88,13 +117,15 @@
     flex-wrap: wrap;
   }
 
-  // Recent Activity Section
+  // Recent Activity Section (Frosted Glass Card)
   &__activity-card {
-    background: #ffffff;
-    border: 1px solid rgba(226, 232, 240, 0.9);
-    border-radius: 16px;
+    background: rgba(255, 255, 255, 0.68);
+    backdrop-filter: blur(24px) saturate(180%);
+    -webkit-backdrop-filter: blur(24px) saturate(180%);
+    border: 1px solid rgba(255, 255, 255, 0.85);
+    border-radius: 20px;
     padding: 1.75rem 2rem;
-    box-shadow: 0 4px 20px -4px rgba(15, 23, 42, 0.05), 0 2px 6px -2px rgba(15, 23, 42, 0.02);
+    box-shadow: 0 12px 32px 0 rgba(31, 38, 135, 0.06), 0 2px 6px -2px rgba(15, 23, 42, 0.02), inset 0 0 0 1px rgba(255, 255, 255, 0.6);
 
     h2 {
       font-size: 1.25rem;
@@ -114,19 +145,22 @@
   }
 }
 
-// KPI Stats Card Sub-Component (Light Theme)
+// KPI Stats Card Sub-Component (Frosted Glass Card)
 .df-kpi-card {
-  background: #ffffff;
-  border: 1px solid rgba(226, 232, 240, 0.9);
-  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.68);
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.85);
+  border-radius: 20px;
   padding: 1.5rem 1.75rem;
-  box-shadow: 0 4px 20px -4px rgba(15, 23, 42, 0.05), 0 2px 6px -2px rgba(15, 23, 42, 0.02);
+  box-shadow: 0 12px 32px 0 rgba(31, 38, 135, 0.06), 0 2px 6px -2px rgba(15, 23, 42, 0.02), inset 0 0 0 1px rgba(255, 255, 255, 0.6);
   transition: all vars.$transition-spring;
   text-decoration: none;
   display: block;
   position: relative;
   overflow: hidden;
 
+  // Top Accent Border on Hover
   &::before {
     content: '';
     position: absolute;
@@ -139,9 +173,10 @@
   }
 
   &:hover {
-    transform: translateY(-3px);
-    border-color: rgba(203, 213, 225, 0.95);
-    box-shadow: 0 12px 28px -6px rgba(15, 23, 42, 0.08), 0 4px 8px -2px rgba(15, 23, 42, 0.04);
+    transform: translateY(-4px);
+    background: rgba(255, 255, 255, 0.82);
+    border-color: rgba(255, 255, 255, 0.95);
+    box-shadow: 0 18px 40px 0 rgba(31, 38, 135, 0.1), inset 0 0 0 1px rgba(255, 255, 255, 0.9);
 
     &::before {
       background: var(--kpi-accent, #{vars.$primary-500});
@@ -151,19 +186,34 @@
   &--amber {
     --kpi-accent: #f59e0b;
     .df-kpi-card__count { color: #d97706; }
-    .df-kpi-card__icon-wrapper { background: #fef3c7; color: #d97706; }
+    .df-kpi-card__icon-wrapper {
+      background: rgba(254, 243, 199, 0.8);
+      color: #d97706;
+      border: 1px solid rgba(253, 230, 138, 0.8);
+      backdrop-filter: blur(8px);
+    }
   }
 
   &--blue {
     --kpi-accent: #3b82f6;
     .df-kpi-card__count { color: #2563eb; }
-    .df-kpi-card__icon-wrapper { background: #eff6ff; color: #2563eb; }
+    .df-kpi-card__icon-wrapper {
+      background: rgba(239, 246, 255, 0.8);
+      color: #2563eb;
+      border: 1px solid rgba(191, 219, 254, 0.8);
+      backdrop-filter: blur(8px);
+    }
   }
 
   &--rose {
     --kpi-accent: #f43f5e;
     .df-kpi-card__count { color: #e11d48; }
-    .df-kpi-card__icon-wrapper { background: #ffe4e6; color: #e11d48; }
+    .df-kpi-card__icon-wrapper {
+      background: rgba(255, 228, 230, 0.8);
+      color: #e11d48;
+      border: 1px solid rgba(254, 205, 211, 0.8);
+      backdrop-filter: blur(8px);
+    }
   }
 
   &__top {
@@ -180,16 +230,16 @@
   }
 
   &__icon-wrapper {
-    width: 38px;
-    height: 38px;
-    border-radius: 10px;
+    width: 40px;
+    height: 40px;
+    border-radius: 12px;
     display: flex;
     align-items: center;
     justify-content: center;
 
     svg {
-      width: 19px;
-      height: 19px;
+      width: 20px;
+      height: 20px;
     }
   }
 
@@ -200,7 +250,7 @@
   }
 
   &__count {
-    font-size: 2.25rem;
+    font-size: 2.35rem;
     font-weight: 700;
     line-height: 1;
     letter-spacing: -0.03em;
@@ -215,7 +265,7 @@
   &__footer {
     margin-top: 1.25rem;
     padding-top: 0.75rem;
-    border-top: 1px solid vars.$slate-100;
+    border-top: 1px solid rgba(226, 232, 240, 0.6);
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -238,11 +288,11 @@
   }
 
   &:hover .view-link svg {
-    transform: translateX(2px);
+    transform: translateX(3px);
   }
 }
 
-// Recent Activity Timeline Sub-Component (Light Theme)
+// Recent Activity Timeline Sub-Component (Translucent Glass Items)
 .df-activity-feed {
   list-style: none;
   padding: 0;
@@ -263,15 +313,17 @@
     align-items: flex-start;
     gap: 1rem;
     padding: 0.875rem 1.125rem;
-    background: rgba(248, 250, 252, 0.9);
-    border: 1px solid vars.$slate-200;
-    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.55);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(226, 232, 240, 0.7);
+    border-radius: 12px;
     transition: all vars.$transition-fast;
 
     &:hover {
-      background: #ffffff;
-      border-color: vars.$slate-300;
-      box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
+      background: rgba(255, 255, 255, 0.9);
+      border-color: rgba(203, 213, 225, 0.9);
+      box-shadow: 0 4px 16px rgba(15, 23, 42, 0.05);
+      transform: translateX(2px);
     }
   }
 
@@ -282,11 +334,11 @@
     background: vars.$primary-500;
     margin-top: 0.45rem;
     flex-shrink: 0;
-    box-shadow: 0 0 6px rgba(59, 130, 246, 0.4);
+    box-shadow: 0 0 8px rgba(59, 130, 246, 0.5);
 
-    &--approved { background: #10b981; box-shadow: 0 0 6px rgba(16, 185, 129, 0.4); }
-    &--rejected { background: #ef4444; box-shadow: 0 0 6px rgba(239, 68, 68, 0.4); }
-    &--submitted { background: #f59e0b; box-shadow: 0 0 6px rgba(245, 158, 11, 0.4); }
+    &--approved { background: #10b981; box-shadow: 0 0 8px rgba(16, 185, 129, 0.5); }
+    &--rejected { background: #ef4444; box-shadow: 0 0 8px rgba(239, 68, 68, 0.5); }
+    &--submitted { background: #f59e0b; box-shadow: 0 0 8px rgba(245, 158, 11, 0.5); }
   }
 
   &__content {
