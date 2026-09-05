@@ -3,6 +3,7 @@ import { useForm } from 'react-hook-form';
 import useAuth from '../../auth/hook/useAuth.js';
 import negotiationApi from '../services/negotiation.api.js';
 import quotationApi from '../services/quotation.api.js';
+import { useToast } from '../../../shared/context/ToastContext.jsx';
 import '../styles/negotiation.scss';
 
 export const NegotiationPanel = memo(({
@@ -12,6 +13,7 @@ export const NegotiationPanel = memo(({
   onQuotationUpdated,
 }) => {
   const { user } = useAuth();
+  const { toast, confirm } = useToast();
   const isCustomer = user?.role === 'customer';
 
   const [negotiation, setNegotiation] = useState(null);
@@ -96,9 +98,9 @@ export const NegotiationPanel = memo(({
       setShowCounterForm(false);
       resetCounter();
       if (onQuotationUpdated) onQuotationUpdated();
-      alert('Counter-offer submitted successfully to your sales representative!');
+      toast.success('Counter-offer submitted successfully to your sales representative!');
     } catch (err) {
-      alert(err.customMessage || 'Failed to submit counter-offer');
+      toast.error(err.customMessage || 'Failed to submit counter-offer');
     } finally {
       setSubmitting(false);
     }
@@ -119,7 +121,7 @@ export const NegotiationPanel = memo(({
       resetChat({ message: '', quotation_item_id: '' });
       if (onQuotationUpdated) onQuotationUpdated();
     } catch (err) {
-      alert(err.customMessage || 'Failed to send message');
+      toast.error(err.customMessage || 'Failed to send message');
     } finally {
       setSubmitting(false);
     }
@@ -127,18 +129,22 @@ export const NegotiationPanel = memo(({
 
   // Accept quotation & convert to order
   const handleAcceptDeal = async () => {
-    if (!window.confirm('Are you sure you want to accept this quotation and confirm the order?')) {
-      return;
-    }
+    const ok = await confirm({
+      title: 'Accept Quotation & Confirm Deal',
+      message: 'Are you sure you want to accept this quotation and confirm the order?',
+      confirmText: 'Accept Quotation',
+      type: 'info',
+    });
+    if (!ok) return;
 
     setSubmitting(true);
     try {
       await negotiationApi.acceptQuotation(quotationId);
       await loadNegotiation();
       if (onQuotationUpdated) onQuotationUpdated();
-      alert('Quotation successfully accepted and converted into a confirmed order!');
+      toast.success('Quotation successfully accepted and converted into a confirmed order!');
     } catch (err) {
-      alert(err.customMessage || 'Failed to accept quotation');
+      toast.error(err.customMessage || 'Failed to accept quotation');
     } finally {
       setSubmitting(false);
     }
@@ -146,17 +152,21 @@ export const NegotiationPanel = memo(({
 
   // Pay quotation when in shipment stage
   const handlePayQuotation = async () => {
-    if (!window.confirm(`Proceed to payment of ₹${Number(quotation?.grand_total || 0).toLocaleString('en-IN')} for this order?`)) {
-      return;
-    }
+    const ok = await confirm({
+      title: 'Proceed to Payment',
+      message: `Proceed to payment of ₹${Number(quotation?.grand_total || 0).toLocaleString('en-IN')} for this order?`,
+      confirmText: 'Pay Now',
+      type: 'info',
+    });
+    if (!ok) return;
 
     setSubmitting(true);
     try {
       await quotationApi.payQuotation(quotationId);
       if (onQuotationUpdated) onQuotationUpdated();
-      alert('Payment successful! Order moved to payment stage.');
+      toast.success('Payment successful! Order moved to payment stage.');
     } catch (err) {
-      alert(err.customMessage || 'Failed to complete payment');
+      toast.error(err.customMessage || 'Failed to complete payment');
     } finally {
       setSubmitting(false);
     }

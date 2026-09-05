@@ -1,9 +1,10 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router';
 import { useSelector } from 'react-redux';
 import { useForm } from 'react-hook-form';
 import { dealHealthApi } from '../services/dealHealth.api.js';
 import PermissionGate from '../../../shared/components/PermissionGate.jsx';
+import { useToast } from '../../../shared/context/ToastContext.jsx';
 import '../styles/dealHealth.scss';
 
 const formatDate = (dateStr) => {
@@ -186,10 +187,10 @@ const DealHealthDashboard = () => {
         setFlags(res.data.flags || []);
         if (res.data.summary) setSummary(res.data.summary);
       }
-      alert('Deal health automated scan completed!');
+      toast.success('Deal health automated scan completed!');
     } catch (err) {
       console.error('Failed to run scan:', err);
-      alert('Failed to trigger scan');
+      toast.error('Failed to trigger scan');
     } finally {
       setIsScanning(false);
     }
@@ -201,10 +202,11 @@ const DealHealthDashboard = () => {
         action: actionType,
         detail: actionDetail,
       });
+      toast.success('Action recorded successfully');
       fetchDashboard(selectedFilter);
     } catch (err) {
       console.error('Failed to update action:', err);
-      alert('Failed to update action');
+      toast.error('Failed to update action');
     }
   };
 
@@ -217,11 +219,11 @@ const DealHealthDashboard = () => {
         delivery_slippage_days: parseInt(formData.delivery_slippage_days, 10),
       });
       setIsConfigModalOpen(false);
-      alert('Deal health thresholds updated successfully!');
+      toast.success('Deal health thresholds updated successfully!');
       fetchDashboard(selectedFilter);
     } catch (err) {
       console.error('Failed to save config:', err);
-      alert('Failed to update thresholds');
+      toast.error('Failed to update thresholds');
     } finally {
       setIsSavingConfig(false);
     }

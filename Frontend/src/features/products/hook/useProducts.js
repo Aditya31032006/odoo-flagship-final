@@ -2,9 +2,11 @@ import { useState, useEffect, useCallback } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchProductSummary, fetchAllProducts } from '../products.slice.js';
 import { productsApi } from '../services/products.api.js';
+import { useToast } from '../../../shared/context/ToastContext.jsx';
 
 export const useProducts = ({ id = null, isEditingExisting = false, autoFetch = true } = {}) => {
   const dispatch = useDispatch();
+  const { toast, confirm } = useToast();
   const { summary, productsList, isLoading: isCatalogLoading, error: catalogError } = useSelector(
     (state) => state.products
   );
@@ -32,67 +34,57 @@ export const useProducts = ({ id = null, isEditingExisting = false, autoFetch = 
     }
   }, [autoFetch, id, loadCatalog]);
 
-  // 2. Detail / Form Data Loading
+  // 2. Product Detail loading
   const loadProductData = useCallback(
-    async (resetFormCallback) => {
+    async (productId) => {
+      if (!productId || productId === 'new') return;
       try {
-        const cats = await productsApi.getCategories();
-        setCategories(cats || []);
-
-        if (isEditingExisting && id) {
-          setIsLoadingDetail(true);
-          const p = await productsApi.getProductDetail(id);
-          if (p) {
-            if (resetFormCallback) {
-              resetFormCallback({
-                name: p.name || '',
-                category_id: p.category_id || (cats?.[0]?.id || ''),
-                base_price: p.base_price || '',
-                unit: p.unit || 'Each',
-                description: p.description || '',
-                tax_percentage: p.tax_percentage || '0',
-                is_subscription: p.unit === 'Recurring',
-                recurring_cycle: 'Monthly',
-                quantity_on_hand: '10',
-              });
-            }
-
-            if (p.variants && p.variants.length > 0) {
-              setVariants(
-                p.variants.map((v, i) => {
-                  let attribute = v.variant_name || 'Standard';
-                  let values = '';
-                  if (attribute.includes(':')) {
-                    const colonIdx = attribute.indexOf(':');
-                    values = attribute.substring(colonIdx + 1).trim();
-                    attribute = attribute.substring(0, colonIdx).trim();
-                  }
-                  const baseNum = Number(p.base_price) || 0;
-                  const sellNum = Number(v.selling_price) || baseNum;
-                  const diff = sellNum - baseNum;
-                  const extraPrice = diff > 0 ? `+${diff}` : diff < 0 ? `${diff}` : '0';
-
-                  return {
-                    id: v.variant_id || v.id || i + 1,
-                    sku: v.sku || '',
-                    attribute,
-                    values,
-                    extra_price: extraPrice,
-                    isEditing: false,
-                  };
-                })
-              );
-            }
+        setIsLoadingDetail(true);
+        setFormError(null);
+        const data = await productsApi.getProductDetail(productId);
+        if (data) {
+          if (data.categories) setCategories(data.categories);
+          if (data.variants) {
+            setVariants(
+              data.variants.map((v) => ({
+                id: v.id,
+                sku: v.sku,
+                attribute: v.variant_name?.split(':')[0]?.trim() || '',
+                values: v.variant_name?.split(':')[1]?.trim() || '',
+                extra_price: v.selling_price || '0',
+                isEditing: false,
+                isNew: false,
+              }))
+            );
+          }
+          if (data.pricelists) {
+            setPricelists(
+              data.pricelists.map((p) => ({
+                id: p.id,
+                tier: p.tier_name || 'Silver',
+                currency: p.currency || 'INR',
+                price_rule: p.rule_description || '',
+                isEditing: false,
+                isNew: false,
+              }))
+            );
           }
         }
+        return data;
       } catch (err) {
-        setFormError(err.message || 'Failed to load product information');
+        setFormError(err.message || 'Failed to load product details');
       } finally {
         setIsLoadingDetail(false);
       }
     },
-    [id, isEditingExisting]
+    []
   );
+
+  useEffect(() => {
+    if (isEditingExisting && id) {
+      loadProductData(id);
+    }
+  }, [id, isEditingExisting, loadProductData]);
 
   // 3. Variant operations
   const addVariant = () => {
@@ -129,7 +121,7 @@ export const useProducts = ({ id = null, isEditingExisting = false, autoFetch = 
   const saveVariantRow = (index) => {
     const v = variants[index];
     if (!v.attribute.trim()) {
-      alert('Attribute name is required');
+      toast.error('Attribute name is required');
       return false;
     }
     setVariants((prev) => {
@@ -142,7 +134,13 @@ export const useProducts = ({ id = null, isEditingExisting = false, autoFetch = 
 
   const deleteVariant = async (index) => {
     const v = variants[index];
-    if (window.confirm(`Are you sure you want to delete the variant attribute "${v.attribute || 'this entry'}"?`)) {
+    const ok = await confirm({
+      title: 'Delete Variant Attribute',
+      message: `Are you sure you want to delete the variant attribute "${v.attribute || 'this entry'}"?`,
+      confirmText: 'Delete',
+      type: 'danger',
+    });
+    if (ok) {
       if (v.id && typeof v.id === 'number' && v.id < 1000000000000 && isEditingExisting) {
         try {
           await productsApi.deleteVariant(v.id);
@@ -151,6 +149,7 @@ export const useProducts = ({ id = null, isEditingExisting = false, autoFetch = 
         }
       }
       setVariants((prev) => prev.filter((_, i) => i !== index));
+      toast.success('Variant removed');
     }
   };
 
@@ -188,7 +187,7 @@ export const useProducts = ({ id = null, isEditingExisting = false, autoFetch = 
   const savePricelistRow = (index) => {
     const pl = pricelists[index];
     if (!pl.price_rule.trim()) {
-      alert('Price rule description is required');
+      toast.error('Price rule description is required');
       return false;
     }
     setPricelists((prev) => {
@@ -199,10 +198,17 @@ export const useProducts = ({ id = null, isEditingExisting = false, autoFetch = 
     return true;
   };
 
-  const deletePricelist = (index) => {
+  const deletePricelist = async (index) => {
     const pl = pricelists[index];
-    if (window.confirm(`Delete pricelist rule for "${pl.tier}" tier?`)) {
+    const ok = await confirm({
+      title: 'Delete Pricelist Rule',
+      message: `Delete pricelist rule for "${pl.tier}" tier?`,
+      confirmText: 'Delete',
+      type: 'danger',
+    });
+    if (ok) {
       setPricelists((prev) => prev.filter((_, i) => i !== index));
+      toast.success('Pricelist rule removed');
     }
   };
 
@@ -244,15 +250,18 @@ export const useProducts = ({ id = null, isEditingExisting = false, autoFetch = 
       if (isEditingExisting) {
         await productsApi.updateProduct(id, payload);
         setSuccessMsg('Product updated successfully!');
+        toast.success('Product updated successfully!');
         dispatch(fetchAllProducts());
         return { success: true, isUpdate: true };
       } else {
         const created = await productsApi.createProduct(payload);
+        toast.success('Product created successfully!');
         dispatch(fetchAllProducts());
         return { success: true, isUpdate: false, product: created };
       }
     } catch (err) {
       setFormError(err.message || 'Failed to save product');
+      toast.error(err.message || 'Failed to save product');
       return { success: false, error: err.message };
     } finally {
       setIsSaving(false);
@@ -260,17 +269,25 @@ export const useProducts = ({ id = null, isEditingExisting = false, autoFetch = 
   };
 
   const deleteProduct = async (productName) => {
-    if (!window.confirm(`Are you sure you want to delete product "${productName}"? This action cannot be undone.`)) {
+    const ok = await confirm({
+      title: 'Delete Product SKU',
+      message: `Are you sure you want to delete product "${productName}"? This action cannot be undone.`,
+      confirmText: 'Delete Product',
+      type: 'danger',
+    });
+    if (!ok) {
       return { cancelled: true };
     }
 
     try {
       setIsDeleting(true);
       await productsApi.deleteProduct(id);
+      toast.success(`Product "${productName}" deleted successfully`);
       dispatch(fetchAllProducts());
       return { success: true };
     } catch (err) {
       setFormError(err.message || 'Failed to delete product');
+      toast.error(err.message || 'Failed to delete product');
       return { success: false, error: err.message };
     } finally {
       setIsDeleting(false);

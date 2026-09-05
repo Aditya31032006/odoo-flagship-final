@@ -4,6 +4,9 @@ import { useForm } from 'react-hook-form';
 import { invoiceApi } from '../services/invoice.api.js';
 import InvoicePrintModal from '../components/InvoicePrintModal.jsx';
 import PermissionGate from '../../../shared/components/PermissionGate.jsx';
+import BackButton from '../../../shared/components/BackButton.jsx';
+import { useToast } from '../../../shared/context/ToastContext.jsx';
+import useAuth from '../../auth/hook/useAuth.js';
 import '../styles/invoices.scss';
 
 const formatDate = (dateStr) => {
@@ -60,32 +63,28 @@ const RecordPaymentModal = React.memo(({ isOpen, onClose, balanceDue, onRecordPa
               <input
                 type="number"
                 step="0.01"
-                max={balanceDue}
-                {...register('amount', {
-                  required: 'Payment amount is required',
-                  min: { value: 0.01, message: 'Amount must be greater than zero' },
-                  max: { value: balanceDue, message: `Amount cannot exceed balance due of ₹${balanceDue}` },
-                })}
+                min="0.01"
+                {...register('amount', { required: 'Payment amount is required', min: 0.01 })}
               />
               {errors.amount && <span style={{ color: '#fb7185', fontSize: '0.75rem' }}>{errors.amount.message}</span>}
             </div>
 
             <div className="df-sub-modal__field">
-              <label>Payment Method</label>
-              <select {...register('paymentMethod', { required: true })}>
-                <option value="bank_transfer">Bank Transfer</option>
-                <option value="upi">UPI</option>
-                <option value="card">Card</option>
-                <option value="cash">Cash</option>
-                <option value="online">Online Payment</option>
+              <label>Payment Mode / Instrument</label>
+              <select {...register('paymentMethod')}>
+                <option value="bank_transfer">Direct Bank Transfer / NEFT</option>
+                <option value="upi">UPI / Instant QR</option>
+                <option value="credit_card">Corporate Credit Card</option>
+                <option value="cheque">Company Cheque</option>
+                <option value="cash">Cash Settlement</option>
               </select>
             </div>
 
             <div className="df-sub-modal__field">
-              <label>Transaction Reference / Cheque #</label>
+              <label>Transaction / Reference ID</label>
               <input
                 type="text"
-                placeholder="e.g. TXN-99482104"
+                placeholder="e.g. TXN-99882312 or CHQ-00412"
                 {...register('transactionReference')}
               />
             </div>
@@ -104,7 +103,7 @@ const RecordPaymentModal = React.memo(({ isOpen, onClose, balanceDue, onRecordPa
               className="df-sub-modal__btn-submit"
               disabled={isSubmitting}
             >
-              {isSubmitting ? 'Recording...' : 'Submit Payment'}
+              {isSubmitting ? 'Recording...' : 'Record Payment'}
             </button>
           </div>
         </form>
@@ -113,9 +112,12 @@ const RecordPaymentModal = React.memo(({ isOpen, onClose, balanceDue, onRecordPa
   );
 });
 
-const InvoiceDetail = () => {
+export const InvoiceDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { toast } = useToast();
+  const { user } = useAuth();
+  const isCustomer = user?.role === 'customer';
 
   const [detailData, setDetailData] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -152,7 +154,7 @@ const InvoiceDetail = () => {
 
   const handlePaymentSubmit = async (formData) => {
     if (!formData.amount || parseFloat(formData.amount) <= 0) {
-      alert('Please enter a valid payment amount');
+      toast.error('Please enter a valid payment amount');
       return;
     }
 
@@ -165,11 +167,11 @@ const InvoiceDetail = () => {
       });
 
       setIsPaymentModalOpen(false);
-      alert('Payment recorded successfully in database!');
+      toast.success('Payment recorded successfully in database!');
       fetchDetail();
     } catch (err) {
       console.error('Failed to record payment:', err);
-      alert(err.response?.data?.message || 'Failed to record payment');
+      toast.error(err.response?.data?.message || 'Failed to record payment');
     } finally {
       setIsSubmittingPayment(false);
     }
@@ -194,13 +196,10 @@ const InvoiceDetail = () => {
       <div className="df-invoices">
         <div className="df-invoices__container">
           <div className="df-invoices__header">
-            <button
-              type="button"
-              className="df-invoices__back-btn"
-              onClick={() => navigate('/invoices')}
-            >
-              ← Back to Invoices
-            </button>
+            <BackButton
+              to={isCustomer ? "/my_invoices" : "/invoices"}
+              label={isCustomer ? "Back to My Invoices" : "Back to Invoices"}
+            />
           </div>
           <div className="df-invoices__empty">{error || 'Invoice not found'}</div>
         </div>
@@ -223,19 +222,18 @@ const InvoiceDetail = () => {
   return (
     <div className="df-invoices">
       <div className="df-invoices__container">
+        {/* Uniform Back Navigation placed in Left Top Corner */}
+        <BackButton
+          to={isCustomer ? "/my_invoices" : "/invoices"}
+          label={isCustomer ? "Back to My Invoices" : "Back to Invoices"}
+        />
+
         {/* Page Header matching Wireframe #13 */}
         <div className="df-invoices__header">
           <div className="df-invoices__title-row">
             <h1 className="df-invoices__title">
               Invoice Detail: {invoice.invoice_number} ({invoice.customer_name})
             </h1>
-            <button
-              type="button"
-              className="df-invoices__back-btn"
-              onClick={() => navigate('/invoices')}
-            >
-              ← Back to Invoices
-            </button>
           </div>
           <p className="df-invoices__subtitle">
             Opened by clicking a row on the Invoices list

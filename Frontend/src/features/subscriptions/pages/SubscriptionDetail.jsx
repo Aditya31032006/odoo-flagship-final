@@ -3,6 +3,8 @@ import { useParams, useNavigate } from 'react-router';
 import { useForm } from 'react-hook-form';
 import { subscriptionApi } from '../services/subscription.api.js';
 import PermissionGate from '../../../shared/components/PermissionGate.jsx';
+import BackButton from '../../../shared/components/BackButton.jsx';
+import { useToast } from '../../../shared/context/ToastContext.jsx';
 import '../styles/subscriptions.scss';
 
 const formatCycle = (cycle) => {
@@ -29,11 +31,11 @@ const formatCurrency = (val) => {
 const ModifySubscriptionModal = React.memo(({ isOpen, onClose, subscription, availablePlans, onSave, isSubmitting }) => {
   const { register, handleSubmit, setValue, formState: { errors } } = useForm({
     defaultValues: {
-      subscription_plan_id: subscription?.subscription_plan_id || '',
+      subscription_plan_id: subscription?.plan_id || '',
       billing_cycle: subscription?.billing_cycle || 'monthly',
       unit_price: subscription?.unit_price || '',
       quantity: subscription?.quantity || 1,
-    }
+    },
   });
 
   if (!isOpen) return null;
@@ -67,26 +69,22 @@ const ModifySubscriptionModal = React.memo(({ isOpen, onClose, subscription, ava
             </div>
 
             <div className="df-sub-modal__field">
-              <label>Select Plan</label>
-              <select
-                {...register('subscription_plan_id', { required: 'Plan is required' })}
-                onChange={handlePlanChange}
-              >
+              <label>Subscription Master Plan</label>
+              <select {...register('subscription_plan_id', { required: 'Plan is required' })} onChange={handlePlanChange}>
                 {availablePlans.map((plan) => (
                   <option key={plan.id} value={plan.id}>
                     {plan.name} — {formatCycle(plan.billing_cycle)} ({formatCurrency(plan.price)})
                   </option>
                 ))}
               </select>
-              {errors.subscription_plan_id && <span style={{ color: '#fb7185', fontSize: '0.75rem' }}>{errors.subscription_plan_id.message}</span>}
             </div>
 
             <div className="df-sub-modal__field">
-              <label>Billing Cycle</label>
+              <label>Billing Cadence / Cycle</label>
               <select {...register('billing_cycle', { required: true })}>
-                <option value="monthly">Monthly</option>
-                <option value="quarterly">Quarterly</option>
-                <option value="yearly">Yearly</option>
+                <option value="monthly">Monthly Recurring</option>
+                <option value="quarterly">Quarterly Recurring</option>
+                <option value="yearly">Yearly Recurring</option>
               </select>
             </div>
 
@@ -109,12 +107,6 @@ const ModifySubscriptionModal = React.memo(({ isOpen, onClose, subscription, ava
               />
               {errors.quantity && <span style={{ color: '#fb7185', fontSize: '0.75rem' }}>{errors.quantity.message}</span>}
             </div>
-
-            {subscription.allow_proration && (
-              <p style={{ color: '#38bdf8', fontSize: '0.8rem', margin: 0 }}>
-                ℹ Proration policy enabled: Mid-cycle changes will generate an updated proration billing line.
-              </p>
-            )}
           </div>
 
           <div className="df-sub-modal__footer">
@@ -138,7 +130,7 @@ const CancelSubscriptionModal = React.memo(({ isOpen, onClose, subscription, onC
       reason: 'Customer requested cancellation',
       is_prorated: Boolean(subscription?.allow_proration),
       credit_amount: (cyclePrice / 2).toFixed(2),
-    }
+    },
   });
 
   const isProrated = watch('is_prorated');
@@ -149,70 +141,67 @@ const CancelSubscriptionModal = React.memo(({ isOpen, onClose, subscription, onC
     <div className="df-sub-modal">
       <div className="df-sub-modal__content">
         <div className="df-sub-modal__header">
-          <h3>Cancel Subscription Confirmation</h3>
+          <h3>Cancel Subscription & Issue Credit</h3>
           <button type="button" className="df-sub-modal__close-btn" onClick={onClose}>
             ✕
           </button>
         </div>
         <form onSubmit={handleSubmit(onConfirm)}>
           <div className="df-sub-modal__body">
-            <p style={{ color: '#cbd5e1', fontSize: '0.875rem', lineHeight: 1.5, margin: 0 }}>
-              Are you sure you want to cancel the recurring subscription for{' '}
-              <strong>{subscription.customer_name}</strong>?
-            </p>
-
-            <div style={{ background: '#1e293b', padding: '0.75rem', borderRadius: '0.5rem', border: '1px solid #334155', fontSize: '0.8125rem' }}>
-              <div style={{ color: '#94a3b8' }}>Plan Policy:</div>
-              <div style={{ color: subscription.allow_cancellation ? '#4ade80' : '#fb7185' }}>
-                • Cancellation: {subscription.allow_cancellation ? 'Permitted' : 'Not Permitted'}
+            <div style={{ background: '#1e293b', padding: '0.875rem', borderRadius: '0.5rem', border: '1px solid #334155' }}>
+              <div style={{ fontSize: '0.875rem', color: '#f8fafc', fontWeight: 600 }}>
+                {subscription.plan_name} — {subscription.customer_name}
               </div>
-              <div style={{ color: subscription.allow_partial_refund ? '#4ade80' : '#fbbf24' }}>
-                • Partial Refund / Credit Note: {subscription.allow_partial_refund ? 'Supported' : 'Disallowed'}
+              <div style={{ fontSize: '0.75rem', color: '#94a3b8' }}>
+                Cycle Price: {formatCurrency(subscription.unit_price)} / {subscription.billing_cycle}
               </div>
             </div>
 
             <div className="df-sub-modal__field">
-              <label>Cancellation Reason</label>
+              <label>Reason for Cancellation</label>
               <textarea
-                rows="2"
+                rows={3}
+                placeholder="Specify reason for contract termination..."
                 {...register('reason', { required: 'Reason is required' })}
               />
               {errors.reason && <span style={{ color: '#fb7185', fontSize: '0.75rem' }}>{errors.reason.message}</span>}
             </div>
 
-            {subscription.allow_partial_refund !== false && (
-              <>
-                <div className="df-sub-modal__field">
-                  <label className="checkbox-row">
-                    <input type="checkbox" {...register('is_prorated')} />
-                    <span>Issue prorated credit note for unused period</span>
-                  </label>
-                </div>
+            <div className="df-sub-modal__field" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <input
+                type="checkbox"
+                id="is_prorated"
+                {...register('is_prorated')}
+              />
+              <label htmlFor="is_prorated" style={{ margin: 0, cursor: 'pointer' }}>
+                Calculate Unused Days Proration Credit Note
+              </label>
+            </div>
 
-                {isProrated && (
-                  <div className="df-sub-modal__field">
-                    <label>Prorated Credit Amount (₹)</label>
-                    <input
-                      type="number"
-                      step="0.01"
-                      {...register('credit_amount', { min: 0 })}
-                    />
-                  </div>
-                )}
-              </>
+            {isProrated && (
+              <div className="df-sub-modal__field">
+                <label>Prorated Credit Note Amount (₹)</label>
+                <input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  {...register('credit_amount', { required: 'Credit amount is required' })}
+                />
+              </div>
             )}
           </div>
 
           <div className="df-sub-modal__footer">
             <button type="button" className="df-sub-modal__btn-cancel" onClick={onClose}>
-              Keep Subscription
+              Keep Active
             </button>
             <button
               type="submit"
-              className="df-sub-modal__btn-submit df-sub-modal__btn-submit--danger"
+              className="df-sub-modal__btn-submit"
+              style={{ background: '#dc2626', borderColor: '#b91c1c' }}
               disabled={isSubmitting}
             >
-              {isSubmitting ? 'Cancelling...' : 'Confirm Cancellation'}
+              {isSubmitting ? 'Cancelling...' : 'Confirm Termination'}
             </button>
           </div>
         </form>
@@ -221,19 +210,18 @@ const CancelSubscriptionModal = React.memo(({ isOpen, onClose, subscription, onC
   );
 });
 
-const SubscriptionDetail = () => {
+export const SubscriptionDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { toast } = useToast();
 
   const [detailData, setDetailData] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Modals
   const [isModifyModalOpen, setIsModifyModalOpen] = useState(false);
-  const [isSubmittingModify, setIsSubmittingModify] = useState(false);
-
   const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
+  const [isSubmittingModify, setIsSubmittingModify] = useState(false);
   const [isSubmittingCancel, setIsSubmittingCancel] = useState(false);
 
   const fetchDetail = useCallback(async () => {
@@ -243,10 +231,12 @@ const SubscriptionDetail = () => {
       const data = await subscriptionApi.getSubscriptionDetail(id);
       if (data) {
         setDetailData(data);
+      } else {
+        setError('Subscription not found');
       }
     } catch (err) {
       console.error('Failed to load subscription detail:', err);
-      setError('Subscription details could not be loaded.');
+      setError('Subscription details could not be retrieved.');
     } finally {
       setIsLoading(false);
     }
@@ -266,11 +256,11 @@ const SubscriptionDetail = () => {
         quantity: parseInt(formData.quantity, 10),
       });
       setIsModifyModalOpen(false);
-      alert('Subscription configuration updated successfully in PostgreSQL database!');
+      toast.success('Subscription configuration updated successfully in PostgreSQL database!');
       fetchDetail();
     } catch (err) {
       console.error('Failed to modify subscription:', err);
-      alert(err.response?.data?.message || 'Failed to modify subscription');
+      toast.error(err.response?.data?.message || 'Failed to modify subscription');
     } finally {
       setIsSubmittingModify(false);
     }
@@ -281,11 +271,11 @@ const SubscriptionDetail = () => {
       setIsSubmittingCancel(true);
       await subscriptionApi.cancelSubscription(id, formData);
       setIsCancelModalOpen(false);
-      alert('Subscription has been cancelled and credit note schedule recorded.');
+      toast.success('Subscription has been cancelled and credit note schedule recorded.');
       fetchDetail();
     } catch (err) {
       console.error('Failed to cancel subscription:', err);
-      alert(err.response?.data?.message || 'Failed to cancel subscription');
+      toast.error(err.response?.data?.message || 'Failed to cancel subscription');
     } finally {
       setIsSubmittingCancel(false);
     }
@@ -306,13 +296,7 @@ const SubscriptionDetail = () => {
       <div className="df-subscriptions">
         <div className="df-subscriptions__container">
           <div className="df-subscriptions__header">
-            <button
-              type="button"
-              className="df-subscriptions__back-btn"
-              onClick={() => navigate('/subscriptions')}
-            >
-              ← Back to Subscriptions
-            </button>
+            <BackButton to="/subscriptions" label="Back to Subscriptions" />
           </div>
           <div className="df-subscriptions__empty">{error || 'Subscription not found'}</div>
         </div>
@@ -326,19 +310,15 @@ const SubscriptionDetail = () => {
   return (
     <div className="df-subscriptions">
       <div className="df-subscriptions__container">
+        {/* Uniform Back Navigation placed in Left Top Corner */}
+        <BackButton to="/subscriptions" label="Back to Subscriptions" />
+
         {/* Page Header */}
         <div className="df-subscriptions__header">
           <div className="df-subscriptions__title-row">
             <h1 className="df-subscriptions__title">
               Billing Detail: {subscription.customer_name || 'Customer'} - {subscription.plan_name || 'Plan'}
             </h1>
-            <button
-              type="button"
-              className="df-subscriptions__back-btn"
-              onClick={() => navigate('/subscriptions')}
-            >
-              ← Back to Subscriptions
-            </button>
           </div>
           <p className="df-subscriptions__subtitle">
             Opened by clicking a row on the Subscriptions list

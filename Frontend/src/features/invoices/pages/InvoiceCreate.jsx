@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { invoiceApi } from '../services/invoice.api.js';
+import BackButton from '../../../shared/components/BackButton.jsx';
+import { useToast } from '../../../shared/context/ToastContext.jsx';
 import '../styles/invoices.scss';
 
 const formatCurrency = (val) => {
@@ -12,6 +14,7 @@ const formatCurrency = (val) => {
 
 const InvoiceCreate = () => {
   const navigate = useNavigate();
+  const { toast } = useToast();
 
   const [meta, setMeta] = useState({ customers: [], products: [], orders: [] });
   const [isLoadingMeta, setIsLoadingMeta] = useState(true);
@@ -59,73 +62,44 @@ const InvoiceCreate = () => {
         const metaData = await invoiceApi.getMeta();
         if (metaData) {
           setMeta(metaData);
-          const defaultCustId = metaData.customers?.length > 0 ? metaData.customers[0].id : '';
-          const firstP = metaData.products?.length > 0 ? metaData.products[0] : null;
-
-          reset({
-            customerId: defaultCustId,
-            orderId: '',
-            dueDate: new Date(Date.now() + 15 * 86400000).toISOString().split('T')[0],
-            items: firstP
-              ? [
-                  {
-                    product_variant_id: firstP.variant_id,
-                    product_name: firstP.product_name,
-                    sku: firstP.sku,
-                    quantity: 1,
-                    unit_price: parseFloat(firstP.selling_price) || 0,
-                    tax_percentage: parseFloat(firstP.tax_percentage) || 18,
-                  },
-                ]
-              : [
-                  {
-                    product_variant_id: '',
-                    product_name: '',
-                    sku: '',
-                    quantity: 1,
-                    unit_price: 0,
-                    tax_percentage: 18,
-                  },
-                ],
-          });
         }
       } catch (err) {
-        console.error('Failed to load invoice metadata:', err);
-        setError('Failed to fetch customers and products from database.');
+        console.error('Failed to load invoice creation metadata:', err);
+        setError('Failed to load customers and products metadata.');
       } finally {
         setIsLoadingMeta(false);
       }
     };
-
     fetchMeta();
-  }, [reset]);
+  }, []);
 
-  const handleProductSelect = (index, variantId) => {
-    const selectedProd = meta.products.find((p) => String(p.variant_id) === String(variantId));
-    if (!selectedProd) return;
-
-    setValue(`items.${index}.product_variant_id`, variantId);
-    setValue(`items.${index}.product_name`, selectedProd.product_name);
-    setValue(`items.${index}.sku`, selectedProd.sku);
-    setValue(`items.${index}.unit_price`, parseFloat(selectedProd.selling_price) || 0);
-    setValue(`items.${index}.tax_percentage`, parseFloat(selectedProd.tax_percentage) || 18);
+  const handleProductSelect = (index, productVariantId) => {
+    const foundProduct = meta.products.find((p) => String(p.id) === String(productVariantId));
+    if (foundProduct) {
+      setValue(`items.${index}.product_variant_id`, foundProduct.id);
+      setValue(`items.${index}.product_name`, foundProduct.name);
+      setValue(`items.${index}.sku`, foundProduct.sku || foundProduct.name);
+      setValue(`items.${index}.unit_price`, parseFloat(foundProduct.base_price) || 0);
+      setValue(`items.${index}.tax_percentage`, parseFloat(foundProduct.tax_percentage) || 18);
+    }
   };
 
   const handleAddItem = () => {
     const firstP = meta.products[0] || {};
     append({
-      product_variant_id: firstP.variant_id || '',
-      product_name: firstP.product_name || '',
+      product_variant_id: firstP.id || '',
+      product_name: firstP.name || '',
       sku: firstP.sku || '',
       quantity: 1,
-      unit_price: parseFloat(firstP.selling_price) || 0,
+      unit_price: parseFloat(firstP.base_price) || 0,
       tax_percentage: parseFloat(firstP.tax_percentage) || 18,
     });
   };
 
-  // Calculate dynamic totals from watched form values
   const subtotal = watchedItems.reduce((sum, it) => {
-    return sum + (parseInt(it?.quantity, 10) || 1) * (parseFloat(it?.unit_price) || 0);
+    const qty = parseInt(it?.quantity, 10) || 1;
+    const price = parseFloat(it?.unit_price) || 0;
+    return sum + qty * price;
   }, 0);
 
   const taxTotal = watchedItems.reduce((sum, it) => {
@@ -137,11 +111,11 @@ const InvoiceCreate = () => {
 
   const onFormSubmit = async (formData) => {
     if (!formData.customerId) {
-      alert('Please select a customer');
+      toast.error('Please select a customer');
       return;
     }
     if (!formData.items || formData.items.length === 0) {
-      alert('Please add at least one line item');
+      toast.error('Please add at least one line item');
       return;
     }
 
@@ -154,7 +128,7 @@ const InvoiceCreate = () => {
         items: formData.items,
       });
 
-      alert('Invoice created successfully in database!');
+      toast.success('Invoice created successfully in database!');
       if (res.data?.invoice?.id) {
         navigate(`/invoices/${res.data.invoice.id}`);
       } else {
@@ -162,7 +136,7 @@ const InvoiceCreate = () => {
       }
     } catch (err) {
       console.error('Failed to create invoice:', err);
-      alert(err.response?.data?.message || 'Failed to create invoice');
+      toast.error(err.response?.data?.message || 'Failed to create invoice');
     } finally {
       setIsSubmitting(false);
     }
@@ -181,7 +155,8 @@ const InvoiceCreate = () => {
   return (
     <div className="df-invoices">
       <div className="df-invoices__container">
-        {/* Header */}
+        <BackButton to="/invoices" label="Back to Invoices" />
+
         <div className="df-invoices__header">
           <div className="df-invoices__title-row">
             <div>
@@ -190,13 +165,6 @@ const InvoiceCreate = () => {
                 Generate one-time and recurring invoices with live customer and product catalog
               </p>
             </div>
-            <button
-              type="button"
-              className="df-invoices__back-btn"
-              onClick={() => navigate('/invoices')}
-            >
-              ← Back to Invoices
-            </button>
           </div>
         </div>
 

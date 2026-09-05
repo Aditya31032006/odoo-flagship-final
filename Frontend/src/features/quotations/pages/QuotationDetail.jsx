@@ -1,5 +1,5 @@
 import React from 'react';
-import { useParams, useNavigate, Link } from 'react-router';
+import { useParams, useNavigate } from 'react-router';
 import useQuotationForm from '../hook/useQuotationForm.js';
 import useAuth from '../../auth/hook/useAuth.js';
 import QuotationLineItemsTable from '../components/QuotationLineItemsTable.jsx';
@@ -7,6 +7,8 @@ import DiscountAlertBanner from '../components/DiscountAlertBanner.jsx';
 import UpsellSuggestionsWidget from '../components/UpsellSuggestionsWidget.jsx';
 import NegotiationPanel from '../components/NegotiationPanel.jsx';
 import quotationApi from '../services/quotation.api.js';
+import BackButton from '../../../shared/components/BackButton.jsx';
+import { useToast } from '../../../shared/context/ToastContext.jsx';
 import '../styles/quotationDetail.scss';
 
 function formatCurrency(val) {
@@ -17,6 +19,7 @@ export const QuotationDetail = ({ isNew = false }) => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { toast, confirm } = useToast();
   const isCustomer = user?.role === 'customer';
   const targetId = isNew ? 'new' : id;
 
@@ -56,6 +59,7 @@ export const QuotationDetail = ({ isNew = false }) => {
   const handleSaveDraft = async () => {
     const res = await saveDraft();
     if (res) {
+      toast.success('Quotation draft saved successfully!');
       setTimeout(() => {
         navigate('/quotations');
       }, 1000);
@@ -65,6 +69,7 @@ export const QuotationDetail = ({ isNew = false }) => {
   const handleSubmitApproval = async () => {
     const res = await submitForApproval();
     if (res) {
+      toast.success('Quotation submitted for approval!');
       setTimeout(() => {
         navigate('/quotations');
       }, 1200);
@@ -87,13 +92,11 @@ export const QuotationDetail = ({ isNew = false }) => {
   return (
     <div className="df-quotation-detail">
       <div className="df-quotation-detail__container">
-        {/* Navigation & Header matching Wireframe #4 */}
-        <Link to="/quotations" className="df-quotation-detail__back-link">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <polyline points="15 18 9 12 15 6" />
-          </svg>
-          Back to Quotations List
-        </Link>
+        {/* Uniform Back Navigation placed in Left Top Corner */}
+        <BackButton
+          to={isCustomer ? "/my_quotations" : "/quotations"}
+          label={isCustomer ? "Back to My Quotations" : "Back to Quotations"}
+        />
 
         <header className="df-quotation-detail__header">
           <div className="df-quotation-detail__title-group">
@@ -278,12 +281,21 @@ export const QuotationDetail = ({ isNew = false }) => {
                     boxShadow: '0 4px 14px rgba(16, 185, 129, 0.4)',
                   }}
                   onClick={async () => {
-                    if (window.confirm(`Confirm payment of ${formatCurrency(calculatedTotals.grandTotal)}?`)) {
+                    const confirmed = await confirm({
+                      title: 'Confirm Payment',
+                      message: `Confirm payment of ${formatCurrency(calculatedTotals.grandTotal)} for quotation ${quotationNumber}?`,
+                      confirmText: 'Pay Now',
+                      type: 'info',
+                    });
+                    if (confirmed) {
                       try {
                         await quotationApi.payQuotation(id);
-                        window.location.reload();
+                        toast.success('Payment recorded successfully!');
+                        setTimeout(() => {
+                          window.location.reload();
+                        }, 800);
                       } catch (err) {
-                        alert(err.customMessage || 'Payment failed');
+                        toast.error(err.customMessage || 'Payment failed');
                       }
                     }
                   }}

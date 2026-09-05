@@ -5,6 +5,7 @@ import quotationApi from '../services/quotation.api.js';
 import negotiationApi from '../services/negotiation.api.js';
 import { useDebounce } from '../../../shared/hooks/useDebounce.js';
 import NegotiationPanel from '../components/NegotiationPanel.jsx';
+import { useToast } from '../../../shared/context/ToastContext.jsx';
 import '../styles/myQuotations.scss';
 
 function formatCurrency(amount) {
@@ -13,6 +14,7 @@ function formatCurrency(amount) {
 
 export default function MyQuotations() {
   const { user } = useAuth();
+  const { toast, confirm } = useToast();
   const [searchParams] = useSearchParams();
   const actionParam = searchParams.get('action');
   const quoteIdParam = searchParams.get('quoteId');
@@ -302,13 +304,19 @@ export default function MyQuotations() {
                     }}
                     onClick={async (e) => {
                       e.stopPropagation();
-                      if (window.confirm(`Proceed to payment of ${formatCurrency(quote.grand_total)} for ${quote.quotation_number}?`)) {
+                      const ok = await confirm({
+                        title: 'Confirm Payment',
+                        message: `Proceed to payment of ${formatCurrency(quote.grand_total)} for quotation ${quote.quotation_number}?`,
+                        confirmText: 'Pay Now',
+                        type: 'info',
+                      });
+                      if (ok) {
                         try {
                           await quotationApi.payQuotation(quote.id);
                           await fetchCompanyQuotations();
-                          alert('Payment recorded successfully!');
+                          toast.success('Payment recorded successfully!');
                         } catch (err) {
-                          alert(err.customMessage || 'Payment failed');
+                          toast.error(err.customMessage || 'Payment failed');
                         }
                       }
                     }}

@@ -4,6 +4,7 @@ import { useSelector } from 'react-redux';
 import { useForm } from 'react-hook-form';
 import { subscriptionApi } from '../services/subscription.api.js';
 import PermissionGate from '../../../shared/components/PermissionGate.jsx';
+import { useToast } from '../../../shared/context/ToastContext.jsx';
 import '../styles/subscriptions.scss';
 
 const formatCycle = (cycle) => {
@@ -22,13 +23,15 @@ const formatDate = (dateStr, status) => {
   }
 };
 
-const SubscriptionsList = () => {
+export const SubscriptionsList = () => {
   const navigate = useNavigate();
+  const { toast } = useToast();
   const user = useSelector((state) => state.auth?.user);
 
   const [subscriptions, setSubscriptions] = useState([]);
-  const [statusCounts, setStatusCounts] = useState({ active_count: 0, paused_count: 0, cancelled_count: 0, total_count: 0 });
+  const [statusCounts, setStatusCounts] = useState({});
   const [selectedFilter, setSelectedFilter] = useState('all');
+  const [searchQuery, setSearchQuery] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -59,11 +62,11 @@ const SubscriptionsList = () => {
       const data = await subscriptionApi.getSubscriptions(filter);
       if (data) {
         setSubscriptions(data.subscriptions || []);
-        setStatusCounts(data.statusCounts || { active_count: 0, paused_count: 0, cancelled_count: 0, total_count: 0 });
+        setStatusCounts(data.statusCounts || {});
       }
     } catch (err) {
-      console.error('Failed to fetch subscriptions:', err);
-      setError('Unable to load subscriptions. Please check your connection.');
+      console.error('Failed to load subscriptions:', err);
+      setError('Subscriptions could not be loaded from database.');
     } finally {
       setIsLoading(false);
     }
@@ -73,19 +76,19 @@ const SubscriptionsList = () => {
     fetchSubscriptions(selectedFilter);
   }, [fetchSubscriptions, selectedFilter]);
 
-  const handleFilterClick = (status) => {
-    setSelectedFilter((prev) => (prev === status ? 'all' : status));
+  const handleFilterClick = (filter) => {
+    setSelectedFilter(filter);
   };
 
   const handleRowClick = (subId) => {
     navigate(`/subscriptions/${subId}`);
   };
 
-  const onCreatePlanSubmit = async (formData) => {
+  const handlePlanSubmit = async (formData) => {
     try {
       setIsSubmittingPlan(true);
       await subscriptionApi.createPlan({
-        name: formData.name.trim(),
+        name: formData.name,
         billing_cycle: formData.billing_cycle,
         price: parseFloat(formData.price),
         allow_proration: Boolean(formData.allow_proration),
@@ -95,11 +98,11 @@ const SubscriptionsList = () => {
 
       setIsPlanModalOpen(false);
       resetPlanForm();
-      alert('Subscription plan created successfully!');
+      toast.success('Subscription plan created successfully!');
       fetchSubscriptions(selectedFilter);
     } catch (err) {
       console.error('Failed to create plan:', err);
-      alert(err.response?.data?.message || 'Failed to create plan');
+      toast.error(err.response?.data?.message || 'Failed to create plan');
     } finally {
       setIsSubmittingPlan(false);
     }

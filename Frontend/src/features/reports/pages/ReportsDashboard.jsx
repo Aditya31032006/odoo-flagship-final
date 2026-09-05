@@ -8,10 +8,12 @@ import ApprovalBottleneckChart from '../components/ApprovalBottleneckChart.jsx';
 import ProductUpsellMatrix from '../components/ProductUpsellMatrix.jsx';
 import SalesRepLeaderboard from '../components/SalesRepLeaderboard.jsx';
 import ReportPrintModal from '../components/ReportPrintModal.jsx';
+import { useToast } from '../../../shared/context/ToastContext.jsx';
 import '../styles/reports.scss';
 
 function ReportsDashboard() {
   const { user } = useAuth();
+  const { toast } = useToast();
   const [analytics, setAnalytics] = useState(null);
   const [filterMeta, setFilterMeta] = useState({ sales_reps: [], categories: [] });
   const [loading, setLoading] = useState(true);
@@ -26,43 +28,30 @@ function ReportsDashboard() {
     category_id: 'all',
   });
 
-  // Fetch Filter Dropdown Metadata once on mount
-  useEffect(() => {
-    async function loadMeta() {
-      try {
-        const meta = await getReportFilterMeta();
-        setFilterMeta(meta || { sales_reps: [], categories: [] });
-      } catch (err) {
-        console.error('Error fetching filter metadata:', err);
-      }
-    }
-    loadMeta();
-  }, []);
-
-  // Fetch Analytics data whenever filters change
-  const fetchAnalytics = useCallback(async () => {
-    setLoading(true);
-    setError(null);
+  const fetchData = useCallback(async () => {
     try {
-      const data = await getReportAnalytics(filters);
-      setAnalytics(data);
+      setLoading(true);
+      setError(null);
+      const [analyticsData, metaData] = await Promise.all([
+        getReportAnalytics(filters),
+        getReportFilterMeta(),
+      ]);
+      setAnalytics(analyticsData);
+      if (metaData) setFilterMeta(metaData);
     } catch (err) {
-      console.error('Error loading report analytics:', err);
-      setError(err.response?.data?.message || 'Failed to load report analytics. Please try again.');
+      console.error('Error fetching reporting data:', err);
+      setError('Unable to load reporting analytics. Please try again later.');
     } finally {
       setLoading(false);
     }
   }, [filters]);
 
   useEffect(() => {
-    fetchAnalytics();
-  }, [fetchAnalytics]);
+    fetchData();
+  }, [fetchData]);
 
-  const handleFilterChange = (key, value) => {
-    setFilters((prev) => ({
-      ...prev,
-      [key]: value,
-    }));
+  const handleFilterChange = (newFilters) => {
+    setFilters(newFilters);
   };
 
   const handleOpenPrintModal = () => {
@@ -76,9 +65,10 @@ function ReportsDashboard() {
   const handleExportCSV = async () => {
     try {
       await downloadReportCSV(filters);
+      toast.success('CSV report download started successfully!');
     } catch (err) {
       console.error('Error exporting CSV report:', err);
-      alert('Failed to download CSV report. Please try again.');
+      toast.error('Failed to download CSV report. Please try again.');
     }
   };
 
