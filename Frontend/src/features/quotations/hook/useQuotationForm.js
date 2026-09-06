@@ -1,8 +1,10 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { catalogApi } from '../services/catalog.api.js';
 import { quotationApi } from '../services/quotation.api.js';
 
 export const useQuotationForm = ({ quotationId = null } = {}) => {
+  const queryClient = useQueryClient();
   // Catalog lookups
   const [customers, setCustomers] = useState([]);
   const [priceLists, setPriceLists] = useState([]);
@@ -451,6 +453,9 @@ export const useQuotationForm = ({ quotationId = null } = {}) => {
         result = await quotationApi.createQuotation(payload);
       }
 
+      queryClient.invalidateQueries({ queryKey: ['quotations'] });
+      queryClient.invalidateQueries({ queryKey: ['my_quotations'] });
+
       setSuccessMessage('Quotation saved and filed to customer successfully!');
       setStatus('pending_approval');
       return result;
@@ -503,6 +508,9 @@ export const useQuotationForm = ({ quotationId = null } = {}) => {
 
       const targetId = quotationId && quotationId !== 'new' ? quotationId : 'new';
       const result = await quotationApi.submitForApproval(targetId, payload);
+
+      queryClient.invalidateQueries({ queryKey: ['quotations'] });
+      queryClient.invalidateQueries({ queryKey: ['my_quotations'] });
 
       const isApproved = !calculatedTotals.hasExcess;
       setSuccessMessage(

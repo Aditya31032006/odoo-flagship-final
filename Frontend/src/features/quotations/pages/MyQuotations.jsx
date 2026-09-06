@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useSearchParams } from 'react-router';
+import { useQueryClient } from '@tanstack/react-query';
 import useAuth from '../../auth/hook/useAuth.js';
 import useRazorpay from '../../payments/hook/useRazorpay.js';
+import useMyQuotations from '../hook/useMyQuotations.js';
 import quotationApi from '../services/quotation.api.js';
 import negotiationApi from '../services/negotiation.api.js';
 import { useDebounce } from '../../../shared/hooks/useDebounce.js';
-import { useInfiniteScroll } from '../../../shared/hooks/useInfiniteScroll.js';
 import InfiniteScrollSentinel from '../../../shared/components/InfiniteScrollSentinel.jsx';
 import NegotiationPanel from '../components/NegotiationPanel.jsx';
 import { useToast } from '../../../shared/context/ToastContext.jsx';
@@ -16,6 +17,7 @@ function formatCurrency(amount) {
 }
 
 export default function MyQuotations() {
+  const queryClient = useQueryClient();
   const { user } = useAuth();
   const { toast, confirm } = useToast();
   const { initiatePayment: initiateRazorpayPayment, isProcessing: isPayingWithRazorpay } = useRazorpay();
@@ -33,30 +35,18 @@ export default function MyQuotations() {
   const [loadingDetail, setLoadingDetail] = useState(false);
   const [actionAlert, setActionAlert] = useState(null);
 
-  // Infinite scroll hook for customer quotations
+  // 5-Minute Cached TanStack Query hook for customer quotations
   const {
-    items: quotations,
+    quotations,
     loadingInitial,
     loadingMore,
     hasMore,
     totalCount,
     sentinelRef,
     refetch,
-  } = useInfiniteScroll({
-    fetchFunction: async (page, limit) => {
-      const res = await quotationApi.getQuotations({
-        view: 'list',
-        page,
-        limit,
-        status: selectedStatus !== 'all' ? selectedStatus : undefined,
-        search: debouncedSearch || undefined,
-      });
-      return {
-        data: res?.data || [],
-        pagination: res?.pagination,
-      };
-    },
-    dependencies: [debouncedSearch, selectedStatus],
+  } = useMyQuotations({
+    status: selectedStatus,
+    search: debouncedSearch,
     limit: 10,
   });
 
@@ -300,6 +290,8 @@ export default function MyQuotations() {
                         initiateRazorpayPayment({
                           quotationId: quote.id,
                           onSuccess: () => {
+                            queryClient.invalidateQueries({ queryKey: ['my_quotations'] });
+                            queryClient.invalidateQueries({ queryKey: ['quotations'] });
                             refetch();
                           },
                         });
@@ -384,6 +376,8 @@ export default function MyQuotations() {
                   quotation={quoteDetail}
                   quotationItems={quoteDetail.items || []}
                   onQuotationUpdated={() => {
+                    queryClient.invalidateQueries({ queryKey: ['my_quotations'] });
+                    queryClient.invalidateQueries({ queryKey: ['quotations'] });
                     refetch();
                     openQuoteDetail(selectedQuote);
                   }}
