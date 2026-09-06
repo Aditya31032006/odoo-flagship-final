@@ -205,7 +205,7 @@ export const DiscountRulesSetup = () => {
           </div>
 
           {/* 3. Approval Chain Rules Card matching Wireframe #18 */}
-          <div className="df-discount-rules__panel">
+          {/* <div className="df-discount-rules__panel">
             <span className="df-discount-rules__panel-label">Governance & Approval Rules</span>
             <div className="df-discount-rules__table-container df-discount-rules__table-container--wide">
               <table className="df-discount-rules__table">
@@ -243,7 +243,7 @@ export const DiscountRulesSetup = () => {
                 </tbody>
               </table>
             </div>
-          </div>
+          </div> */}
 
           {/* Save Configuration Button matching Wireframe #18 */}
           <div className="df-discount-rules__actions">

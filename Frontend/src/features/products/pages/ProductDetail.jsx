@@ -4,11 +4,13 @@ import { useForm } from 'react-hook-form';
 import useProducts from '../hook/useProducts.js';
 import PermissionGate from '../../../shared/components/PermissionGate.jsx';
 import BackButton from '../../../shared/components/BackButton.jsx';
+import { useToast } from '../../../shared/context/ToastContext.jsx';
 import '../styles/productDetail.scss';
 
 export const ProductDetail = ({ isNew = false }) => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { toast } = useToast();
   const isEditingExisting = Boolean(id && id !== 'new' && !isNew);
 
   const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
@@ -101,6 +103,34 @@ export const ProductDetail = ({ isNew = false }) => {
     }
   };
 
+  const onFormError = (formErrors) => {
+    const errorKeys = Object.keys(formErrors);
+    if (errorKeys.length === 0) return;
+
+    const values = watch();
+    const isAllEmpty = !values.name?.trim() && !values.category_id && (!values.base_price || String(values.base_price).trim() === '');
+
+    if (isAllEmpty) {
+      toast.error('All required fields are empty. Please fill in Product Name, Category, and Price.');
+      return;
+    }
+
+    if (errorKeys.length > 1) {
+      const fieldNames = errorKeys
+        .map((k) => {
+          if (k === 'name') return 'Product Name';
+          if (k === 'category_id') return 'Category';
+          if (k === 'base_price') return 'Price';
+          return k;
+        })
+        .join(', ');
+      toast.error(`Please complete all required fields: ${fieldNames}`);
+    } else {
+      const firstError = formErrors[errorKeys[0]];
+      toast.error(firstError?.message || 'Please fill in the required field');
+    }
+  };
+
   const onDeleteClick = async () => {
     const res = await deleteProduct(productName || 'Product');
     if (res?.success) {
@@ -170,7 +200,7 @@ export const ProductDetail = ({ isNew = false }) => {
         )}
 
         {/* React Hook Form */}
-        <form onSubmit={handleSubmit(onFormSubmit)} noValidate>
+        <form onSubmit={handleSubmit(onFormSubmit, onFormError)} noValidate>
           {/* Section: General Info matching Wireframe #17 */}
           <div className="df-product-detail__panel">
             <h3>General Info</h3>
@@ -861,6 +891,7 @@ export const ProductDetail = ({ isNew = false }) => {
                   e.preventDefault();
                   if (!newCategoryName.trim()) {
                     setCategoryModalError('Please enter a category name');
+                    toast.error('Please enter a category name');
                     return;
                   }
                   setIsSubmittingCategory(true);
