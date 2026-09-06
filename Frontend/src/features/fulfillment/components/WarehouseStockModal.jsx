@@ -35,9 +35,9 @@ export const WarehouseStockModal = ({
     if (isOpen) {
       if (initialData) {
         reset({
-          warehouse_id: initialData.warehouse_id || '',
+          warehouse_id: initialData.warehouse_id ? String(initialData.warehouse_id) : '',
           new_warehouse_name: '',
-          product_variant_id: initialData.product_variant_id || '',
+          product_variant_id: initialData.product_variant_id ? String(initialData.product_variant_id) : '',
           quantity_on_hand: initialData.in_stock != null ? initialData.in_stock : 10,
           quantity_reserved: initialData.reserved != null ? initialData.reserved : 0,
           lead_time_days: initialData.lead_time_days != null ? initialData.lead_time_days : 2,

@@ -126,19 +126,26 @@ export const FulfillmentList = () => {
     setStockModal({ isOpen: true, initialData: null });
   };
 
-  const handleOpenEditStock = (e, item) => {
-    e.stopPropagation();
+  const handleOpenEditStock = (eOrItem, maybeItem) => {
+    if (eOrItem && typeof eOrItem.stopPropagation === 'function') {
+      eOrItem.stopPropagation();
+    }
+    const item = maybeItem || (eOrItem && typeof eOrItem.stopPropagation !== 'function' ? eOrItem : null);
     setStockModal({ isOpen: true, initialData: item });
   };
 
-  const handleOpenDeleteStock = (e, item) => {
-    e.stopPropagation();
+  const handleOpenDeleteStock = (eOrItem, maybeItem) => {
+    if (eOrItem && typeof eOrItem.stopPropagation === 'function') {
+      eOrItem.stopPropagation();
+    }
+    const item = maybeItem || (eOrItem && typeof eOrItem.stopPropagation !== 'function' ? eOrItem : null);
+    if (!item) return;
     setDeleteModal({
       isOpen: true,
       type: 'stock',
       id: item.stock_id,
       title: 'Delete Warehouse Stock',
-      message: `Are you sure you want to remove stock for "${item.product_name}" at "${item.warehouse_name}"?`,
+      message: `Are you sure you want to remove stock for "${item.product_name || 'this item'}" at "${item.warehouse_name || 'warehouse'}"?`,
     });
   };
 
@@ -160,19 +167,26 @@ export const FulfillmentList = () => {
     setOrderModal({ isOpen: true, initialData: null });
   };
 
-  const handleOpenEditOrder = (e, order) => {
-    e.stopPropagation();
+  const handleOpenEditOrder = (eOrOrder, maybeOrder) => {
+    if (eOrOrder && typeof eOrOrder.stopPropagation === 'function') {
+      eOrOrder.stopPropagation();
+    }
+    const order = maybeOrder || (eOrOrder && typeof eOrOrder.stopPropagation !== 'function' ? eOrOrder : null);
     setOrderModal({ isOpen: true, initialData: order });
   };
 
-  const handleOpenDeleteOrder = (e, order) => {
-    e.stopPropagation();
+  const handleOpenDeleteOrder = (eOrOrder, maybeOrder) => {
+    if (eOrOrder && typeof eOrOrder.stopPropagation === 'function') {
+      eOrOrder.stopPropagation();
+    }
+    const order = maybeOrder || (eOrOrder && typeof eOrOrder.stopPropagation !== 'function' ? eOrOrder : null);
+    if (!order) return;
     setDeleteModal({
       isOpen: true,
       type: 'order',
       id: order.order_id,
       title: 'Delete Order',
-      message: `Are you sure you want to delete order "${order.order_number}" (${order.customer_name})? This will also remove associated fulfillment splits and backorders.`,
+      message: `Are you sure you want to delete order "${order.order_number || ''}" (${order.customer_name || ''})? This will also remove associated fulfillment splits and backorders.`,
     });
   };
 
@@ -515,8 +529,8 @@ export const FulfillmentList = () => {
           onClose={() => setSelectedWarehouseId(null)}
           warehouseName={selectedWarehouseGroup.warehouse_name}
           items={selectedWarehouseGroup.items}
-          onEditItem={(item) => handleOpenEditStock(null, item)}
-          onDeleteItem={(item) => handleOpenDeleteStock(null, item)}
+          onEditItem={(item) => handleOpenEditStock(item)}
+          onDeleteItem={(item) => handleOpenDeleteStock(item)}
         />
       )}
 
