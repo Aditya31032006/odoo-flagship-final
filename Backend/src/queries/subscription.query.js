@@ -191,6 +191,24 @@ export const CANCEL_SUBSCRIPTION = `
   RETURNING *;
 `;
 
+export const PAUSE_SUBSCRIPTION = `
+  UPDATE subscriptions
+  SET 
+    status = 'paused',
+    updated_at = CURRENT_TIMESTAMP
+  WHERE id = $1 AND status = 'active'
+  RETURNING *;
+`;
+
+export const RESUME_SUBSCRIPTION = `
+  UPDATE subscriptions
+  SET 
+    status = 'active',
+    updated_at = CURRENT_TIMESTAMP
+  WHERE id = $1 AND status = 'paused'
+  RETURNING *;
+`;
+
 export const CREATE_SUBSCRIPTION_BILLING_LINE = `
   INSERT INTO subscription_billing_lines (
     subscription_id,
@@ -201,6 +219,10 @@ export const CREATE_SUBSCRIPTION_BILLING_LINE = `
     credit_note_required
   )
   VALUES ($1, $2, $3, $4, $5, $6)
+  ON CONFLICT (subscription_id, billing_period_start, billing_period_end, credit_note_required)
+  DO UPDATE SET
+    amount = EXCLUDED.amount,
+    is_prorated = EXCLUDED.is_prorated
   RETURNING *;
 `;
 

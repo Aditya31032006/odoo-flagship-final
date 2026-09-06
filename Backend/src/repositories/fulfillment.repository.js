@@ -61,8 +61,8 @@ export const getFulfillmentListRepo = async ({ search = null, limit = null, offs
     let ordersQuery = GET_ORDERS_AWAITING_FULFILLMENT;
     const ordersParams = [search ? search.trim() : null];
 
-    if (limit !== null && offset !== null) {
-      ordersParams.push(limit, offset);
+    if (limit !== null && offset !== null && !isNaN(Number(limit)) && !isNaN(Number(offset))) {
+      ordersParams.push(Math.max(1, Number(limit)), Math.max(0, Number(offset)));
       ordersQuery += ` LIMIT $2 OFFSET $3`;
     }
 

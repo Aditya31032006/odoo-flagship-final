@@ -5,8 +5,8 @@ export const fetchFulfillmentList = createAsyncThunk(
   'fulfillment/fetchList',
   async (_, { rejectWithValue }) => {
     try {
-      const data = await fulfillmentApi.getList();
-      return data;
+      const res = await fulfillmentApi.getList();
+      return res?.data || res;
     } catch (err) {
       return rejectWithValue(
         err.response?.data?.message || err.message || 'Failed to load fulfillment list'
@@ -220,8 +220,9 @@ export const fulfillmentSlice = createSlice({
       .addCase(fetchFulfillmentList.fulfilled, (state, action) => {
         state.isLoadingList = false;
         state.isInitialized = true;
-        state.stock = action.payload?.stock || [];
-        state.orders = action.payload?.orders || [];
+        const payload = action.payload?.data || action.payload;
+        state.stock = payload?.stock || [];
+        state.orders = payload?.orders || [];
       })
       .addCase(fetchFulfillmentList.rejected, (state, action) => {
         state.isLoadingList = false;

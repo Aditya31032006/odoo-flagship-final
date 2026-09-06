@@ -5,6 +5,8 @@ import {
   createSubscriptionPlanRepo,
   updateSubscriptionConfigRepo,
   cancelSubscriptionRepo,
+  pauseSubscriptionRepo,
+  resumeSubscriptionRepo,
 } from '../repositories/subscription.repository.js';
 import { parsePaginationParams, buildPaginationMeta } from '../utils/pagination.util.js';
 
@@ -134,6 +136,48 @@ export const cancelSubscription = async (req, res, next) => {
       success: true,
       message: 'Subscription cancelled successfully',
       data: cancelled,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const pauseSubscription = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const paused = await pauseSubscriptionRepo(id);
+    if (!paused) {
+      return res.status(400).json({
+        success: false,
+        message: 'Only active subscriptions can be paused',
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: 'Subscription paused successfully',
+      data: paused,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const resumeSubscription = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const resumed = await resumeSubscriptionRepo(id);
+    if (!resumed) {
+      return res.status(400).json({
+        success: false,
+        message: 'Only paused subscriptions can be resumed',
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: 'Subscription resumed successfully',
+      data: resumed,
     });
   } catch (error) {
     next(error);

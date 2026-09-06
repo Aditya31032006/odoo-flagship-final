@@ -48,4 +48,14 @@ export const subscriptionApi = {
     const res = await apiClient.post(`/subscriptions/${id}/cancel`, payload);
     return res.data;
   },
+
+  pauseSubscription: async (id) => {
+    const res = await apiClient.post(`/subscriptions/${id}/pause`);
+    return res.data;
+  },
+
+  resumeSubscription: async (id) => {
+    const res = await apiClient.post(`/subscriptions/${id}/resume`);
+    return res.data;
+  },
 };

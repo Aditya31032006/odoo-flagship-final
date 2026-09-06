@@ -223,6 +223,7 @@ export const SubscriptionDetail = () => {
   const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
   const [isSubmittingModify, setIsSubmittingModify] = useState(false);
   const [isSubmittingCancel, setIsSubmittingCancel] = useState(false);
+  const [isSubmittingStatus, setIsSubmittingStatus] = useState(false);
 
   const fetchDetail = useCallback(async () => {
     try {
@@ -281,6 +282,34 @@ export const SubscriptionDetail = () => {
     }
   };
 
+  const handlePauseSubscription = async () => {
+    try {
+      setIsSubmittingStatus(true);
+      await subscriptionApi.pauseSubscription(id);
+      toast.success('Subscription paused successfully.');
+      fetchDetail();
+    } catch (err) {
+      console.error('Failed to pause subscription:', err);
+      toast.error(err.response?.data?.message || err.customMessage || 'Failed to pause subscription');
+    } finally {
+      setIsSubmittingStatus(false);
+    }
+  };
+
+  const handleResumeSubscription = async () => {
+    try {
+      setIsSubmittingStatus(true);
+      await subscriptionApi.resumeSubscription(id);
+      toast.success('Subscription resumed successfully.');
+      fetchDetail();
+    } catch (err) {
+      console.error('Failed to resume subscription:', err);
+      toast.error(err.response?.data?.message || err.customMessage || 'Failed to resume subscription');
+    } finally {
+      setIsSubmittingStatus(false);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="df-subscriptions">
@@ -306,6 +335,8 @@ export const SubscriptionDetail = () => {
 
   const { subscription, oneTimeLines = [], billingLines = [], availablePlans = [] } = detailData;
   const isCancelled = subscription.status === 'cancelled';
+  const isPaused = subscription.status === 'paused';
+  const isActive = subscription.status === 'active';
 
   return (
     <div className="df-subscriptions">
@@ -444,8 +475,8 @@ export const SubscriptionDetail = () => {
                       <td>
                         {formatDate(b.billing_period_start)} – {formatDate(b.billing_period_end)}
                       </td>
-                      <td style={{ color: Number(b.amount) < 0 ? '#fb7185' : 'inherit' }}>
-                        {formatCurrency(b.amount)}
+                      <td style={{ color: Number(b.amount) < 0 || b.credit_note_required ? '#fb7185' : 'inherit' }}>
+                        {b.credit_note_required ? `- ${formatCurrency(b.amount)}` : formatCurrency(b.amount)}
                       </td>
                       <td>
                         {b.is_prorated ? (
@@ -485,6 +516,29 @@ export const SubscriptionDetail = () => {
             >
               Modify Subscription
             </button>
+
+            {isActive && (
+              <button
+                type="button"
+                className="df-subscriptions__btn-pause"
+                onClick={handlePauseSubscription}
+                disabled={isSubmittingStatus}
+              >
+                {isSubmittingStatus ? 'Pausing...' : 'Pause Subscription'}
+              </button>
+            )}
+
+            {isPaused && (
+              <button
+                type="button"
+                className="df-subscriptions__btn-resume"
+                onClick={handleResumeSubscription}
+                disabled={isSubmittingStatus}
+              >
+                {isSubmittingStatus ? 'Resuming...' : 'Resume Subscription'}
+              </button>
+            )}
+
             <button
               type="button"
               className="df-subscriptions__btn-cancel"

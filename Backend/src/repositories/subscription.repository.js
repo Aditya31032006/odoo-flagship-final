@@ -9,6 +9,8 @@ import {
   CREATE_SUBSCRIPTION_PLAN,
   UPDATE_SUBSCRIPTION_CONFIG,
   CANCEL_SUBSCRIPTION,
+  PAUSE_SUBSCRIPTION,
+  RESUME_SUBSCRIPTION,
   CREATE_SUBSCRIPTION_BILLING_LINE,
   GET_SUBSCRIPTIONS_BY_STATUS,
   GET_FIRST_PRODUCT_ID,
@@ -269,11 +271,24 @@ export const cancelSubscriptionRepo = async (id, { reason, is_prorated = false, 
     // 3. If proration / credit note is applicable, record line in subscription_billing_lines
     if (is_prorated && Number(credit_amount) > 0) {
       const today = new Date().toISOString().split('T')[0];
+      let periodEnd = null;
+      if (currentSub.next_bill_date) {
+        const nextDateStr = new Date(currentSub.next_bill_date).toISOString().split('T')[0];
+        if (nextDateStr > today) {
+          periodEnd = nextDateStr;
+        }
+      }
+      if (!periodEnd) {
+        const tomorrow = new Date();
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        periodEnd = tomorrow.toISOString().split('T')[0];
+      }
+
       await client.query(CREATE_SUBSCRIPTION_BILLING_LINE, [
         id,
         today,
-        today,
-        -Math.abs(Number(credit_amount)),
+        periodEnd,
+        Math.abs(Number(credit_amount)), // strictly non-negative per subscription_billing_lines_amount_check
         true, // is_prorated
         true, // credit_note_required
       ]);
@@ -288,4 +303,14 @@ export const cancelSubscriptionRepo = async (id, { reason, is_prorated = false, 
   } finally {
     client.release();
   }
+};
+
+export const pauseSubscriptionRepo = async (id) => {
+  const result = await pool.query(PAUSE_SUBSCRIPTION, [id]);
+  return result.rows[0] || null;
+};
+
+export const resumeSubscriptionRepo = async (id) => {
+  const result = await pool.query(RESUME_SUBSCRIPTION, [id]);
+  return result.rows[0] || null;
 };
