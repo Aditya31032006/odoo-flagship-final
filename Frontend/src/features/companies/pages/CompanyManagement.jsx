@@ -25,12 +25,14 @@ export function CompanyManagement() {
     createdCredentials,
     setCreatedCredentials,
     feedbackMessage,
+    counts,
     handleCreateCompany,
     handleToggleStatus,
   } = useCompany();
 
-  const activeCount = companies.filter((c) => c.is_active).length;
-  const inactiveCount = totalCount - activeCount;
+  const totalOrganizations = counts?.total_count ?? totalCount;
+  const activeCount = counts?.active_count ?? companies.filter((c) => c.is_active).length;
+  const inactiveCount = counts?.inactive_count ?? 0;
 
   return (
     <div className="df-company">
@@ -85,7 +87,7 @@ export function CompanyManagement() {
           <div className="metric-card">
             <div className="metric-card-icon metric-card-icon--total">🏢</div>
             <div className="metric-card-info">
-              <span className="metric-card-val">{totalCount}</span>
+              <span className="metric-card-val">{totalOrganizations}</span>
               <span className="metric-card-label">Total Organizations</span>
             </div>
           </div>
@@ -132,7 +134,7 @@ export function CompanyManagement() {
               className={filterStatus === 'all' ? 'active' : ''}
               onClick={() => setFilterStatus('all')}
             >
-              All ({totalCount})
+              All ({totalOrganizations})
             </button>
             <button
               type="button"

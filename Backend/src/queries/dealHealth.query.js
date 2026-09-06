@@ -51,7 +51,7 @@ export const GET_ALL_DEAL_HEALTH_FLAGS = `
   JOIN customers c ON q.customer_id = c.id
   LEFT JOIN users u ON q.sales_rep_id = u.id
   LEFT JOIN users ru ON dhf.resolved_by_user_id = ru.id
-  WHERE q.status NOT IN ('payment')
+  WHERE q.status::TEXT NOT IN ('payment')
     AND NOT EXISTS (
       SELECT 1 FROM orders ord 
       JOIN invoices inv ON inv.order_id = ord.id 
@@ -90,7 +90,7 @@ export const GET_DEAL_HEALTH_FLAGS_BY_TYPE = `
   LEFT JOIN users u ON q.sales_rep_id = u.id
   LEFT JOIN users ru ON dhf.resolved_by_user_id = ru.id
   WHERE dhf.flag_type = $1
-    AND q.status NOT IN ('payment')
+    AND q.status::TEXT NOT IN ('payment')
     AND NOT EXISTS (
       SELECT 1 FROM orders ord 
       JOIN invoices inv ON inv.order_id = ord.id 
@@ -114,7 +114,7 @@ export const GET_DEAL_HEALTH_SUMMARY_COUNTS = `
     COUNT(*)::int AS total_all_flags
   FROM deal_health_flags dhf
   JOIN quotations q ON dhf.quotation_id = q.id
-  WHERE q.status NOT IN ('payment')
+  WHERE q.status::TEXT NOT IN ('payment')
     AND NOT EXISTS (
       SELECT 1 FROM orders ord 
       JOIN invoices inv ON inv.order_id = ord.id 
@@ -151,7 +151,7 @@ export const FIND_STALLED_QUOTATIONS = `
     q.updated_at,
     EXTRACT(DAY FROM (CURRENT_TIMESTAMP - q.updated_at))::int AS idle_days
   FROM quotations q
-  WHERE q.status IN ('draft', 'sent', 'negotiating', 'pending_approval')
+  WHERE q.status::TEXT IN ('draft', 'sent', 'negotiating', 'pending_approval')
     AND q.updated_at <= CURRENT_TIMESTAMP - ($1 || ' days')::INTERVAL
     AND NOT EXISTS (
       SELECT 1 FROM deal_health_flags dhf 
@@ -175,7 +175,7 @@ export const FIND_DISCOUNT_ANOMALIES = `
   FROM quotation_items qi
   JOIN quotations q ON qi.quotation_id = q.id
   WHERE (qi.discount_percentage >= $1 OR qi.excess_discount_percentage > 0)
-    AND q.status NOT IN ('rejected', 'expired', 'cancelled', 'payment')
+    AND q.status::TEXT NOT IN ('rejected', 'expired', 'cancelled', 'payment')
     AND NOT EXISTS (
       SELECT 1 FROM orders ord 
       JOIN invoices inv ON inv.order_id = ord.id 
@@ -195,7 +195,7 @@ export const FIND_DELIVERY_SLIPPAGE_DEALS = `
     o.quotation_id,
     fs.id AS split_id,
     fs.estimated_shipment_date,
-    EXTRACT(DAY FROM (CURRENT_DATE - fs.estimated_shipment_date))::int AS overdue_days
+    (CURRENT_DATE - fs.estimated_shipment_date)::int AS overdue_days
   FROM fulfillment_splits fs
   JOIN order_items oi ON fs.order_item_id = oi.id
   JOIN orders o ON oi.order_id = o.id
@@ -203,7 +203,7 @@ export const FIND_DELIVERY_SLIPPAGE_DEALS = `
   WHERE fs.status IN ('pending', 'allocated', 'processing')
     AND fs.estimated_shipment_date < CURRENT_DATE - ($1 || ' days')::INTERVAL
     AND o.quotation_id IS NOT NULL
-    AND q.status NOT IN ('payment')
+    AND q.status::TEXT NOT IN ('payment')
     AND NOT EXISTS (
       SELECT 1 FROM orders ord 
       JOIN invoices inv ON inv.order_id = ord.id 

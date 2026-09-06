@@ -25,6 +25,7 @@ export const ApprovalsList = () => {
     fetchFunction: async (page, limit) => {
       const res = await approvalsApi.getApprovalsList({
         search: debouncedSearch || undefined,
+        status: selectedFilter !== 'all' ? selectedFilter : undefined,
         page,
         limit,
       });
@@ -36,8 +37,8 @@ export const ApprovalsList = () => {
         pagination: res?.pagination,
       };
     },
-    dependencies: [debouncedSearch],
-    limit: 10,
+    dependencies: [debouncedSearch, selectedFilter],
+    limit: 15,
   });
 
   const handleFilterClick = (filter) => {

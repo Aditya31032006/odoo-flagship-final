@@ -55,8 +55,21 @@ export const listCompaniesWithPrimaryUserRepo = async ({ search = null, status =
     query += ` LIMIT $${queryParams.length - 1} OFFSET $${queryParams.length}`;
   }
 
-  const result = await pool.query(query, queryParams);
-  return result.rows;
+  const [result, countsRes] = await Promise.all([
+    pool.query(query, queryParams),
+    pool.query(`
+      SELECT 
+        COUNT(*)::INT AS total_count,
+        COUNT(*) FILTER (WHERE is_active = true)::INT AS active_count,
+        COUNT(*) FILTER (WHERE is_active = false)::INT AS inactive_count
+      FROM customers;
+    `)
+  ]);
+
+  return {
+    companies: result.rows,
+    counts: countsRes.rows[0] || { total_count: 0, active_count: 0, inactive_count: 0 }
+  };
 };
 
 /**
