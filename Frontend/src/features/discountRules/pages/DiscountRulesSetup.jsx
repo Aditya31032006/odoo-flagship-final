@@ -204,47 +204,6 @@ export const DiscountRulesSetup = () => {
             </div>
           </div>
 
-          {/* 3. Approval Chain Rules Card matching Wireframe #18 */}
-          {/* <div className="df-discount-rules__panel">
-            <span className="df-discount-rules__panel-label">Governance & Approval Rules</span>
-            <div className="df-discount-rules__table-container df-discount-rules__table-container--wide">
-              <table className="df-discount-rules__table">
-                <thead>
-                  <tr>
-                    <th>Discount range</th>
-                    <th>Max Discount / Approval Chain</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {approvalRules.length === 0 ? (
-                    <tr>
-                      <td colSpan="2">No approval rules found.</td>
-                    </tr>
-                  ) : (
-                    approvalRules.map((rule, idx) => {
-                      const condition = getConditionTitle(rule);
-                      const chain = getApprovalChainDisplay(rule);
-
-                      return (
-                        <tr key={rule.id}>
-                          <td>
-                            <div className="df-discount-rules__item-title">{condition.title}</div>
-                            <div className="df-discount-rules__item-desc">{condition.desc}</div>
-                          </td>
-                          <td>
-                            <span className={`df-discount-rules__chain-badge ${chain.modifier}`}>
-                              {chain.label}
-                            </span>
-                          </td>
-                        </tr>
-                      );
-                    })
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </div> */}
-
           {/* Save Configuration Button matching Wireframe #18 */}
           <div className="df-discount-rules__actions">
             <button
