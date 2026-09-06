@@ -58,7 +58,11 @@ export const useQuotationForm = ({ quotationId = null } = {}) => {
             setCustomerId(quote.customer_id);
             const foundCust = custList.find((c) => String(c.id) === String(quote.customer_id));
             setSelectedCustomer(foundCust || null);
-            setPriceListId(quote.price_list_id || '');
+            const targetTierId = quote.tier_id || foundCust?.tier_id || 1;
+            const matchingPl = plList.find((pl) => String(pl.id) === String(quote.price_list_id)) ||
+                               plList.find((pl) => String(pl.tier_id) === String(targetTierId)) ||
+                               plList[0];
+            setPriceListId(matchingPl ? matchingPl.id : '');
             setStatus(quote.status || 'draft');
             if (quote.valid_until) {
               setValidUntil(new Date(quote.valid_until).toISOString().split('T')[0]);
@@ -71,6 +75,12 @@ export const useQuotationForm = ({ quotationId = null } = {}) => {
                 }))
               );
             }
+          }
+        } else {
+          // Default to Bronze Tier Price List for new quotes
+          const defaultPl = plList.find((pl) => String(pl.tier_id) === '1') || plList[0];
+          if (defaultPl) {
+            setPriceListId(defaultPl.id);
           }
         }
       } catch (err) {
@@ -86,19 +96,18 @@ export const useQuotationForm = ({ quotationId = null } = {}) => {
     };
   }, [quotationId]);
 
-  // 2. When Customer is selected, resolve their tier & tier maximum discount
+  // 2. When Customer is selected, resolve their tier & auto-select matching Price List
   const handleCustomerChange = useCallback(
     (newCustId) => {
       setCustomerId(newCustId);
       const cust = customers.find((c) => String(c.id) === String(newCustId));
       setSelectedCustomer(cust || null);
 
-      // Auto-match price list for customer tier if available
-      if (cust?.tier_id) {
-        const matchingPl = priceLists.find((pl) => String(pl.tier_id) === String(cust.tier_id));
-        if (matchingPl) {
-          setPriceListId(matchingPl.id);
-        }
+      // Auto-match price list for customer tier (Gold -> Gold, Silver -> Silver, Bronze -> Bronze)
+      const targetTierId = cust?.tier_id || 1;
+      const matchingPl = priceLists.find((pl) => String(pl.tier_id) === String(targetTierId)) || priceLists[0];
+      if (matchingPl) {
+        setPriceListId(matchingPl.id);
       }
     },
     [customers, priceLists]
@@ -225,7 +234,14 @@ export const useQuotationForm = ({ quotationId = null } = {}) => {
   );
 
   // Recalculate all lines when customer's tier or priceList changes
-  const tierMaxDiscount = selectedCustomer?.tier_max_discount != null ? Number(selectedCustomer.tier_max_discount) : 0;
+  const activePriceList = priceLists.find((pl) => String(pl.id) === String(priceListId));
+  const activeTierId = selectedCustomer?.tier_id || activePriceList?.tier_id || 1;
+  const tierMaxDiscount = useMemo(() => {
+    if (selectedCustomer?.tier_max_discount != null) return Number(selectedCustomer.tier_max_discount);
+    if (String(activeTierId) === '3') return 15;
+    if (String(activeTierId) === '2') return 10;
+    return 5;
+  }, [selectedCustomer, activeTierId]);
 
   // Add a new product variant line
   const addProductLine = useCallback(
@@ -411,10 +427,12 @@ export const useQuotationForm = ({ quotationId = null } = {}) => {
         discount_percentage: Math.min(100, Math.max(0, Number(it.discount_percentage) || 0)),
       }));
 
+      const resolvedTierId = selectedCustomer?.tier_id || activePriceList?.tier_id || 1;
+
       const payload = {
         customer_id: customerId,
-        tier_id: selectedCustomer?.tier_id || null,
-        price_list_id: priceListId || null,
+        tier_id: resolvedTierId,
+        price_list_id: priceListId ? Number(priceListId) : (activePriceList?.id ? Number(activePriceList.id) : null),
         status: status && status !== 'draft' ? status : 'pending_approval',
         blended_risk_score: calculatedTotals.blendedRiskScore,
         risk_level: calculatedTotals.riskLevel,
@@ -466,10 +484,12 @@ export const useQuotationForm = ({ quotationId = null } = {}) => {
         discount_percentage: Math.min(100, Math.max(0, Number(it.discount_percentage) || 0)),
       }));
 
+      const resolvedTierId = selectedCustomer?.tier_id || activePriceList?.tier_id || 1;
+
       const payload = {
         customer_id: customerId,
-        tier_id: selectedCustomer?.tier_id || null,
-        price_list_id: priceListId || null,
+        tier_id: resolvedTierId,
+        price_list_id: priceListId ? Number(priceListId) : (activePriceList?.id ? Number(activePriceList.id) : null),
         blended_risk_score: calculatedTotals.blendedRiskScore,
         risk_level: calculatedTotals.riskLevel,
         subtotal: calculatedTotals.subtotal,

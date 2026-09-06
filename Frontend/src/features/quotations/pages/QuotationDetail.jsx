@@ -258,7 +258,6 @@ export const QuotationDetail = ({ isNew = false }) => {
               value={priceListId}
               onChange={(e) => setPriceListId(e.target.value)}
             >
-              <option value="">Default Catalog Standard Pricing</option>
               {priceLists.map((pl) => (
                 <option key={pl.id} value={pl.id}>
                   {pl.name} ({pl.currency})
