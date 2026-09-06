@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
+import gsap from 'gsap';
 import QuotationCard from './QuotationCard.jsx';
 
 const COLUMNS = [
@@ -21,8 +22,52 @@ export const QuotationKanban = ({
   summary = {},
   onSelectQuotation
 }) => {
+  const boardRef = useRef(null);
+
+  useEffect(() => {
+    if (!boardRef.current) return;
+    const ctx = gsap.context(() => {
+      // Columns enter with smooth stagger
+      gsap.fromTo(
+        '.df-kanban-column',
+        {
+          opacity: 0,
+          y: 22,
+        },
+        {
+          opacity: 1,
+          y: 0,
+          duration: 0.5,
+          stagger: 0.05,
+          ease: 'power3.out',
+          clearProps: 'opacity,transform',
+        }
+      );
+
+      // Quotation cards cascade in
+      gsap.fromTo(
+        '.df-quote-card',
+        {
+          opacity: 0,
+          y: 16,
+        },
+        {
+          opacity: 1,
+          y: 0,
+          duration: 0.45,
+          delay: 0.08,
+          stagger: 0.035,
+          ease: 'power2.out',
+          clearProps: 'opacity,transform',
+        }
+      );
+    }, boardRef);
+
+    return () => ctx.revert();
+  }, [kanbanData]);
+
   return (
-    <div className="df-kanban-board">
+    <div className="df-kanban-board" ref={boardRef}>
       {COLUMNS.map((col) => {
         const cards = kanbanData[col.id] || [];
         const colTotal = summary[col.id]?.totalAmount ?? cards.reduce((sum, item) => sum + Number(item.grand_total || 0), 0);

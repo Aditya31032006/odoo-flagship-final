@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
+import gsap from 'gsap';
 
 function formatCurrency(amount) {
   if (amount == null) return '₹0';
@@ -15,6 +16,31 @@ function formatDate(dateString) {
 }
 
 export const QuotationTable = ({ quotations = [], onSelectQuotation }) => {
+  const tableRef = useRef(null);
+
+  useEffect(() => {
+    if (!tableRef.current) return;
+    const ctx = gsap.context(() => {
+      gsap.fromTo(
+        '.df-quotations-table tbody tr',
+        {
+          opacity: 0,
+          y: 14,
+        },
+        {
+          opacity: 1,
+          y: 0,
+          duration: 0.35,
+          stagger: 0.03,
+          ease: 'power2.out',
+          clearProps: 'opacity,transform',
+        }
+      );
+    }, tableRef);
+
+    return () => ctx.revert();
+  }, [quotations]);
+
   if (!quotations || quotations.length === 0) {
     return (
       <div className="df-quotations__empty-table">
@@ -24,7 +50,7 @@ export const QuotationTable = ({ quotations = [], onSelectQuotation }) => {
   }
 
   return (
-    <div className="df-quotations-table-wrapper">
+    <div className="df-quotations-table-wrapper" ref={tableRef}>
       <table className="df-quotations-table">
         <thead>
           <tr>

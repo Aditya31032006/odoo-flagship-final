@@ -1,5 +1,6 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Link, useNavigate } from 'react-router';
+import gsap from 'gsap';
 import useQuotations from '../hook/useQuotations.js';
 import useAuth from '../../auth/hook/useAuth.js';
 import { useDebounce } from '../../../shared/hooks/useDebounce.js';
@@ -100,12 +101,37 @@ export const QuotationsList = () => {
     (q) => !isFinance || (q.risk_level || '').toLowerCase() === 'high' || Number(q.blended_risk_score || 0) > 5.00
   );
 
+  const containerRef = useRef(null);
+
+  useEffect(() => {
+    if (!containerRef.current) return;
+    const ctx = gsap.context(() => {
+      gsap.fromTo(
+        '.gsap-stagger-field',
+        {
+          opacity: 0,
+          y: 18,
+        },
+        {
+          opacity: 1,
+          y: 0,
+          duration: 0.5,
+          stagger: 0.06,
+          ease: 'power3.out',
+          clearProps: 'opacity,transform',
+        }
+      );
+    }, containerRef);
+
+    return () => ctx.revert();
+  }, []);
+
   return (
-    <div className="df-quotations">
+    <div className="df-quotations" ref={containerRef}>
       <div className="df-quotations__container">
         {/* Header matching Wireframe #3 */}
         <header className="df-quotations__header">
-          <div className="df-quotations__title-group">
+          <div className="df-quotations__title-group gsap-stagger-field">
             <h1>Quotations ({viewMode === 'list' ? 'List View' : 'Kanban Pipeline'})</h1>
             <p>
               {viewMode === 'list'
@@ -114,7 +140,7 @@ export const QuotationsList = () => {
             </p>
           </div>
 
-          <div className="df-quotations__header-actions">
+          <div className="df-quotations__header-actions gsap-stagger-field">
             <Link to="/quotations/new" className="df-btn-primary df-quotations__btn-primary">
               <svg
                 width="16"
@@ -135,7 +161,7 @@ export const QuotationsList = () => {
 
         {/* Filter and Search Bar matching Wireframe #3 */}
         <div className="df-quotations__controls">
-          <div className="df-quotations__search-box">
+          <div className="df-quotations__search-box gsap-stagger-field">
             <svg
               width="15"
               height="15"
@@ -168,7 +194,7 @@ export const QuotationsList = () => {
           </div>
 
           <div className="df-quotations__view-actions">
-            <div className="df-quotations__status-filter">
+            <div className="df-quotations__status-filter gsap-stagger-field">
               <select
                 value={selectedStatus}
                 onChange={(e) => setStatus(e.target.value)}
@@ -187,7 +213,7 @@ export const QuotationsList = () => {
 
             <button
               type="button"
-              className="df-btn-secondary df-quotations__view-toggle"
+              className="df-btn-secondary df-quotations__view-toggle gsap-stagger-field"
               onClick={() => toggleViewMode(viewMode === 'kanban' ? 'list' : 'kanban')}
             >
               {viewMode === 'kanban' ? (

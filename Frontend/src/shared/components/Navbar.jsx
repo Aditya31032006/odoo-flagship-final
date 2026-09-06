@@ -240,14 +240,14 @@ function getInitials(name) {
 
 function formatRole(role) {
   const roleMap = {
-    sales_rep: 'Sales Rep',
-    sales_manager: 'Sales Mgr',
+    sales_rep: 'Sales Representative',
+    sales_manager: 'Sales Manager',
     finance: 'Finance',
     operations: 'Operations',
     admin: 'Admin',
     customer: 'Customer',
   };
-  return roleMap[role] || role || 'Sales Ops';
+  return roleMap[role] || (role ? role.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase()) : 'User');
 }
 
 const AUTH_ROUTES = ['/login', '/forgot-password'];

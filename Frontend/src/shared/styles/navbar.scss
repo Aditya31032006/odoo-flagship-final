@@ -265,6 +265,8 @@
     border: 1px solid #e5e7eb;
     border-radius: vars.$radius-sm;
     cursor: pointer;
+    white-space: nowrap;
+    flex-shrink: 0;
     transition: color 0.15s ease, background-color 0.15s ease, border-color 0.15s ease;
 
     &:hover {
@@ -295,6 +297,7 @@
     font-size: 0.8125rem;
     font-weight: 600;
     color: #18181b;
+    white-space: nowrap;
   }
 
   &__profile-arrow {
