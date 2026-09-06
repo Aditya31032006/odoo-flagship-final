@@ -1,9 +1,11 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import { useForm } from 'react-hook-form';
 import useAuth from '../../auth/hook/useAuth.js';
 import invoiceApi from '../services/invoice.api.js';
 import InvoicePrintModal from '../components/InvoicePrintModal.jsx';
 import { useDebounce } from '../../../shared/hooks/useDebounce.js';
+import { useInfiniteScroll } from '../../../shared/hooks/useInfiniteScroll.js';
+import InfiniteScrollSentinel from '../../../shared/components/InfiniteScrollSentinel.jsx';
 import '../styles/myInvoices.scss';
 
 function formatCurrency(amount) {
@@ -12,8 +14,6 @@ function formatCurrency(amount) {
 
 export default function MyInvoices() {
   const { user } = useAuth();
-  const [invoices, setInvoices] = useState([]);
-  const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const debouncedSearch = useDebounce(searchQuery, 300);
   const [selectedStatus, setSelectedStatus] = useState('all');
@@ -40,23 +40,30 @@ export default function MyInvoices() {
     },
   });
 
-  // Fetch company invoices
-  const fetchCompanyInvoices = useCallback(async () => {
-    setLoading(true);
-    try {
-      const res = await invoiceApi.getInvoices();
-      const list = res?.invoices || (Array.isArray(res?.data) ? res.data : Array.isArray(res) ? res : []);
-      setInvoices(list);
-    } catch (err) {
-      console.error('Failed to load customer invoices:', err);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    fetchCompanyInvoices();
-  }, [fetchCompanyInvoices]);
+  const {
+    items: invoices,
+    loadingInitial,
+    loadingMore,
+    hasMore,
+    totalCount,
+    sentinelRef,
+    refetch,
+  } = useInfiniteScroll({
+    fetchFunction: async (page, limit) => {
+      const res = await invoiceApi.getInvoices({
+        status: selectedStatus !== 'all' ? selectedStatus : undefined,
+        search: debouncedSearch || undefined,
+        page,
+        limit,
+      });
+      return {
+        data: res?.invoices || (Array.isArray(res?.data) ? res.data : Array.isArray(res) ? res : []),
+        pagination: res?.pagination,
+      };
+    },
+    dependencies: [selectedStatus, debouncedSearch],
+    limit: 10,
+  });
 
   // Open invoice detail modal
   const openInvoiceDetail = async (inv) => {
@@ -101,7 +108,7 @@ export default function MyInvoices() {
         message: `✅ Payment of ${formatCurrency(data.amount)} recorded successfully!`,
       });
 
-      await fetchCompanyInvoices();
+      refetch();
       const updatedDetail = await invoiceApi.getInvoiceById(selectedInvoice.id);
       setInvoiceDetail(updatedDetail);
     } catch (err) {
@@ -114,27 +121,6 @@ export default function MyInvoices() {
       setIsProcessingPayment(false);
     }
   };
-
-  // Filter list
-  const filteredInvoices = useMemo(() => {
-    return invoices.filter((inv) => {
-      const query = debouncedSearch.trim().toLowerCase();
-      const matchesSearch =
-        !query ||
-        inv.invoice_number?.toLowerCase().includes(query) ||
-        inv.order_number?.toLowerCase().includes(query);
-
-      const isPaid = inv.status === 'paid' || parseFloat(inv.paid_amount) >= parseFloat(inv.grand_total);
-      let matchesStatus = true;
-      if (selectedStatus === 'unpaid') {
-        matchesStatus = !isPaid;
-      } else if (selectedStatus === 'paid') {
-        matchesStatus = isPaid;
-      }
-
-      return matchesSearch && matchesStatus;
-    });
-  }, [invoices, debouncedSearch, selectedStatus]);
 
   // Aggregate statistics
   const totalBilled = invoices.reduce((acc, i) => acc + (parseFloat(i.grand_total) || 0), 0);
@@ -212,7 +198,7 @@ export default function MyInvoices() {
 
         <div className="status-filters">
           {[
-            { id: 'all', label: `All Invoices (${invoices.length})` },
+            { id: 'all', label: `All Invoices (${totalCount ?? invoices.length})` },
             { id: 'unpaid', label: 'Unpaid / Due' },
             { id: 'paid', label: 'Paid & Settled' },
           ].map((st) => (
@@ -229,83 +215,94 @@ export default function MyInvoices() {
       </div>
 
       {/* Invoices Cards Grid */}
-      {loading ? (
+      {loadingInitial ? (
         <div className="df-my-invoices__empty">
           <p>Loading your company invoices...</p>
         </div>
-      ) : filteredInvoices.length === 0 ? (
+      ) : invoices.length === 0 ? (
         <div className="df-my-invoices__empty">
           <h3>No invoices found</h3>
           <p>There are currently no invoices matching your search or filter criteria.</p>
         </div>
       ) : (
-        <div className="df-my-invoices__grid">
-          {filteredInvoices.map((inv) => {
-            const isPaid = inv.status === 'paid' || parseFloat(inv.paid_amount) >= parseFloat(inv.grand_total);
-            const balance = Math.max(0, (parseFloat(inv.grand_total) || 0) - (parseFloat(inv.paid_amount) || 0));
+        <>
+          <div className="df-my-invoices__grid">
+            {invoices.map((inv) => {
+              const isPaid = inv.status === 'paid' || parseFloat(inv.paid_amount) >= parseFloat(inv.grand_total);
+              const balance = Math.max(0, (parseFloat(inv.grand_total) || 0) - (parseFloat(inv.paid_amount) || 0));
 
-            return (
-              <div
-                key={inv.id}
-                className="df-my-invoices__card"
-                onClick={() => openInvoiceDetail(inv)}
-              >
-                <div className="card-top">
-                  <span className="inv-code">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <rect x="3" y="4" width="18" height="16" rx="2" />
-                      <line x1="7" y1="8" x2="17" y2="8" />
-                      <line x1="7" y1="12" x2="17" y2="12" />
-                      <line x1="7" y1="16" x2="12" y2="16" />
-                    </svg>
-                    {inv.invoice_number}
-                  </span>
-                  <span className={`status-tag status-tag--${isPaid ? 'paid' : inv.status || 'issued'}`}>
-                    {isPaid ? '✓ Paid' : inv.status === 'partially_paid' ? 'Partially Paid' : 'Issued'}
-                  </span>
-                </div>
+              return (
+                <div
+                  key={inv.id}
+                  className="df-my-invoices__card"
+                  onClick={() => openInvoiceDetail(inv)}
+                >
+                  <div className="card-top">
+                    <span className="inv-code">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <rect x="3" y="4" width="18" height="16" rx="2" />
+                        <line x1="7" y1="8" x2="17" y2="8" />
+                        <line x1="7" y1="12" x2="17" y2="12" />
+                        <line x1="7" y1="16" x2="12" y2="16" />
+                      </svg>
+                      {inv.invoice_number}
+                    </span>
+                    <span className={`status-tag status-tag--${isPaid ? 'paid' : inv.status || 'issued'}`}>
+                      {isPaid ? '✓ Paid' : inv.status === 'partially_paid' ? 'Partially Paid' : 'Issued'}
+                    </span>
+                  </div>
 
-                <div className="card-middle">
-                  <div className="amount-display">{formatCurrency(inv.grand_total)}</div>
-                  {!isPaid && balance > 0 && (
-                    <div className="balance-due-text">
-                      Balance Due: {formatCurrency(balance)}
+                  <div className="card-middle">
+                    <div className="amount-display">{formatCurrency(inv.grand_total)}</div>
+                    {!isPaid && balance > 0 && (
+                      <div className="balance-due-text">
+                        Balance Due: {formatCurrency(balance)}
+                      </div>
+                    )}
+                    <div className="meta-row">
+                      <span>Date: {inv.invoice_date ? new Date(inv.invoice_date).toLocaleDateString() : '—'}</span>
+                      <span>Due: {inv.due_date ? new Date(inv.due_date).toLocaleDateString() : '—'}</span>
                     </div>
-                  )}
-                  <div className="meta-row">
-                    <span>Date: {inv.invoice_date ? new Date(inv.invoice_date).toLocaleDateString() : '—'}</span>
-                    <span>Due: {inv.due_date ? new Date(inv.due_date).toLocaleDateString() : '—'}</span>
+                  </div>
+
+                  <div className="card-bottom">
+                    <span className="order-ref">
+                      {inv.order_number ? `Order: ${inv.order_number}` : 'Direct Invoice'}
+                    </span>
+                    {!isPaid && balance > 0 ? (
+                      <button
+                        type="button"
+                        className="btn-view-inv btn-pay-now"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          openInvoiceDetail(inv);
+                        }}
+                      >
+                        💳 Pay Now
+                      </button>
+                    ) : (
+                      <button type="button" className="btn-view-inv">
+                        View Details
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" width="12" height="12">
+                          <polyline points="9 18 15 12 9 6" />
+                        </svg>
+                      </button>
+                    )}
                   </div>
                 </div>
+              );
+            })}
+          </div>
 
-                <div className="card-bottom">
-                  <span className="order-ref">
-                    {inv.order_number ? `Order: ${inv.order_number}` : 'Direct Invoice'}
-                  </span>
-                  {!isPaid && balance > 0 ? (
-                    <button
-                      type="button"
-                      className="btn-view-inv btn-pay-now"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        openInvoiceDetail(inv);
-                      }}
-                    >
-                      💳 Pay Now
-                    </button>
-                  ) : (
-                    <button type="button" className="btn-view-inv">
-                      View Details
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" width="12" height="12">
-                        <polyline points="9 18 15 12 9 6" />
-                      </svg>
-                    </button>
-                  )}
-                </div>
-              </div>
-            );
-          })}
-        </div>
+          <InfiniteScrollSentinel
+            sentinelRef={sentinelRef}
+            loading={loadingMore}
+            hasMore={hasMore}
+            count={invoices.length}
+            total={totalCount}
+            itemName="invoices"
+          />
+        </>
       )}
 
       {/* Invoice Detail & Payment Modal */}

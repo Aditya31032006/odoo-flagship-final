@@ -11,9 +11,9 @@ const apiClient = axios.create({
 });
 
 export const fulfillmentApi = {
-  getList: async () => {
-    const res = await apiClient.get('/fulfillment');
-    return res.data?.data;
+  getList: async (params = {}) => {
+    const res = await apiClient.get('/fulfillment', { params });
+    return res.data;
   },
 
   getMeta: async () => {

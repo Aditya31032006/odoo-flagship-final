@@ -1,8 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router';
 import useQuotations from '../hook/useQuotations.js';
 import useAuth from '../../auth/hook/useAuth.js';
 import { useDebounce } from '../../../shared/hooks/useDebounce.js';
+import useInfiniteScroll from '../../../shared/hooks/useInfiniteScroll.js';
+import InfiniteScrollSentinel from '../../../shared/components/InfiniteScrollSentinel.jsx';
+import { quotationApi } from '../services/quotation.api.js';
 import QuotationKanban from '../components/QuotationKanban.jsx';
 import QuotationTable from '../components/QuotationTable.jsx';
 import '../styles/quotations.scss';
@@ -15,17 +18,14 @@ export const QuotationsList = () => {
   const {
     viewMode,
     kanbanData,
-    listData,
     summary,
-    totalCount,
     searchQuery,
     selectedStatus,
     toggleViewMode,
     setSearch,
     setStatus,
-    refresh,
     isLoading,
-  } = useQuotations();
+  } = useQuotations(true);
 
   const [localSearch, setLocalSearch] = useState(searchQuery || '');
   const debouncedSearch = useDebounce(localSearch, 350);
@@ -64,12 +64,41 @@ export const QuotationsList = () => {
     return filtered;
   }, [kanbanData, isFinance]);
 
-  // Flatten all quotations for Table View if listData is not separately populated
-  const allQuotations = (
-    listData && listData.length > 0
-      ? listData
-      : Object.values(displayKanbanData).flat()
-  ).filter((q) => !isFinance || (q.risk_level || '').toLowerCase() === 'high' || Number(q.blended_risk_score || 0) > 5.00);
+  // Infinite scroll pagination fetcher for List / Table view
+  const fetchQuotationsPage = useCallback(
+    async (page, limit) => {
+      const res = await quotationApi.getQuotations({
+        view: 'list',
+        status: selectedStatus || '',
+        search: debouncedSearch || '',
+        page,
+        limit,
+      });
+      return {
+        data: res?.data || [],
+        pagination: res?.pagination || { total: res?.totalCount || 0 },
+      };
+    },
+    [selectedStatus, debouncedSearch]
+  );
+
+  const {
+    items: paginatedQuotations,
+    loadingInitial,
+    loadingMore,
+    hasMore,
+    total: paginatedTotal,
+    sentinelRef,
+  } = useInfiniteScroll({
+    fetchFunction: fetchQuotationsPage,
+    dependencies: [selectedStatus, debouncedSearch],
+    limit: 10,
+    enabled: viewMode === 'list',
+  });
+
+  const filteredList = paginatedQuotations.filter(
+    (q) => !isFinance || (q.risk_level || '').toLowerCase() === 'high' || Number(q.blended_risk_score || 0) > 5.00
+  );
 
   return (
     <div className="df-quotations">
@@ -77,13 +106,19 @@ export const QuotationsList = () => {
         {/* Header matching Wireframe #3 */}
         <header className="df-quotations__header">
           <div className="df-quotations__title-group">
-            <h1>Quotations (List)</h1>
-            <p>Every quotation in the system, one row per quotation, click a row to open it</p>
+            <h1>Quotations ({viewMode === 'list' ? 'List View' : 'Kanban Pipeline'})</h1>
+            <p>
+              {viewMode === 'list'
+                ? `Showing ${filteredList.length} of ${paginatedTotal || filteredList.length} quotations`
+                : 'Interactive drag & drop deal governance stages'}
+            </p>
           </div>
 
           <div className="df-quotations__header-actions">
             <Link to="/quotations/new" className="df-btn-primary df-quotations__btn-primary">
               <svg
+                width="16"
+                height="16"
                 viewBox="0 0 24 24"
                 fill="none"
                 stroke="currentColor"
@@ -98,57 +133,68 @@ export const QuotationsList = () => {
           </div>
         </header>
 
-        {/* Search & Controls Toolbar */}
-        <div className="df-quotations__toolbar">
-          <div className="df-quotations__search-group">
-            <div className="df-quotations__search-input-wrapper">
-              <svg
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
+        {/* Filter and Search Bar matching Wireframe #3 */}
+        <div className="df-quotations__controls">
+          <div className="df-quotations__search-box">
+            <svg
+              width="15"
+              height="15"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              className="df-quotations__search-icon"
+            >
+              <circle cx="11" cy="11" r="8" />
+              <line x1="21" y1="21" x2="16.65" y2="16.65" />
+            </svg>
+            <input
+              type="text"
+              placeholder="Search by quote #, customer, sales rep..."
+              value={localSearch}
+              onChange={(e) => setLocalSearch(e.target.value)}
+              onKeyDown={handleKeyDown}
+            />
+            {localSearch && (
+              <button
+                type="button"
+                className="df-quotations__search-clear"
+                onClick={handleClearSearch}
+                title="Clear search"
               >
-                <circle cx="11" cy="11" r="8" />
-                <line x1="21" x2="16.65" y1="21" y2="16.65" />
-              </svg>
-              <input
-                type="text"
-                placeholder="Search by customer, quote #, or sales rep..."
-                value={localSearch}
-                onChange={(e) => setLocalSearch(e.target.value)}
-                onKeyDown={handleKeyDown}
-              />
-              {localSearch && (
-                <button
-                  type="button"
-                  onClick={handleClearSearch}
-                  title="Clear search"
-                  style={{
-                    background: 'transparent',
-                    border: 'none',
-                    color: '#94a3b8',
-                    cursor: 'pointer',
-                    fontSize: '14px',
-                    padding: '0 6px',
-                  }}
-                >
-                  ✕
-                </button>
-              )}
-            </div>
+                ✕
+              </button>
+            )}
           </div>
 
-          <div className="df-quotations__controls-group">
+          <div className="df-quotations__view-actions">
+            <div className="df-quotations__status-filter">
+              <select
+                value={selectedStatus}
+                onChange={(e) => setStatus(e.target.value)}
+                className="df-quotations__select"
+              >
+                <option value="">All Stages</option>
+                <option value="draft">Draft</option>
+                <option value="pending_approval">Pending Approval</option>
+                <option value="approved">Approved</option>
+                <option value="negotiating">Negotiating</option>
+                <option value="confirmed">Confirmed</option>
+                <option value="shipment">Shipment / Fulfillment</option>
+                <option value="payment">Payment / Invoiced</option>
+              </select>
+            </div>
+
             <button
-              className="df-quotations__toggle-view-btn"
-              onClick={() => toggleViewMode(viewMode === 'kanban' ? 'table' : 'kanban')}
-              title="Switch view layout"
+              type="button"
+              className="df-btn-secondary df-quotations__view-toggle"
+              onClick={() => toggleViewMode(viewMode === 'kanban' ? 'list' : 'kanban')}
             >
               {viewMode === 'kanban' ? (
                 <>
                   <svg
+                    width="15"
+                    height="15"
                     viewBox="0 0 24 24"
                     fill="none"
                     stroke="currentColor"
@@ -168,6 +214,8 @@ export const QuotationsList = () => {
               ) : (
                 <>
                   <svg
+                    width="15"
+                    height="15"
                     viewBox="0 0 24 24"
                     fill="none"
                     stroke="currentColor"
@@ -193,10 +241,26 @@ export const QuotationsList = () => {
             onSelectQuotation={handleSelectQuote}
           />
         ) : (
-          <QuotationTable
-            quotations={allQuotations}
-            onSelectQuotation={handleSelectQuote}
-          />
+          <div className="df-quotations__table-container">
+            {loadingInitial ? (
+              <div style={{ padding: '3.5rem', textAlign: 'center', color: '#6b7280' }}>
+                <p>Loading quotations...</p>
+              </div>
+            ) : (
+              <>
+                <QuotationTable
+                  quotations={filteredList}
+                  onSelectQuotation={handleSelectQuote}
+                />
+                <InfiniteScrollSentinel
+                  sentinelRef={sentinelRef}
+                  loadingMore={loadingMore}
+                  hasMore={hasMore}
+                  itemsCount={filteredList.length}
+                />
+              </>
+            )}
+          </div>
         )}
       </div>
     </div>

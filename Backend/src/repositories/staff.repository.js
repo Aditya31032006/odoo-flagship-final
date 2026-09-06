@@ -8,16 +8,61 @@ import {
     DELETE_STAFF_USER
 } from '../queries/staff.query.js';
 
-export const listStaffRepo = async () => {
+export const listStaffRepo = async ({ search, role, status, limit, offset } = {}) => {
     const client = await pool.connect();
     try {
-        await client.query("BEGIN");
-        const result = await client.query(LIST_STAFF_MEMBERS);
-        await client.query("COMMIT");
+        const conditions = ["role != 'customer'"];
+        const values = [];
+        let paramIndex = 1;
+
+        if (search) {
+            conditions.push(`(name ILIKE $${paramIndex} OR email ILIKE $${paramIndex} OR mobile ILIKE $${paramIndex})`);
+            values.push(`%${search}%`);
+            paramIndex++;
+        }
+
+        if (role && role !== 'all') {
+            conditions.push(`role = $${paramIndex}`);
+            values.push(role);
+            paramIndex++;
+        }
+
+        if (status && status !== 'all') {
+            const isActive = status === 'active' || status === true || status === 'true';
+            conditions.push(`is_active = $${paramIndex}`);
+            values.push(isActive);
+            paramIndex++;
+        }
+
+        const whereClause = `WHERE ${conditions.join(' AND ')}`;
+
+        let paginationClause = '';
+        if (limit !== undefined && offset !== undefined) {
+            paginationClause = `LIMIT $${paramIndex} OFFSET $${paramIndex + 1}`;
+            values.push(limit, offset);
+        }
+
+        const query = `
+            SELECT 
+                id, 
+                name, 
+                email, 
+                mobile, 
+                role, 
+                is_active, 
+                created_at, 
+                updated_at,
+                COUNT(*) OVER()::INT AS total_count
+            FROM users
+            ${whereClause}
+            ORDER BY created_at DESC
+            ${paginationClause}
+        `;
+
+        const result = await client.query(query, values);
         return result.rows;
     } catch (error) {
         console.error("Error in listStaffRepo:", error);
-        await client.query("ROLLBACK");
         throw error;
     } finally {
         client.release();

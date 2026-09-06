@@ -1,10 +1,24 @@
 import { pool } from '../config/database.js';
 
 /**
- * Lists all client companies with their primary contact person details and metrics
+ * Lists client companies with their primary contact person details, metrics, and pagination
  */
-export const listCompaniesWithPrimaryUserRepo = async () => {
-  const query = `
+export const listCompaniesWithPrimaryUserRepo = async ({ search = null, status = null, limit = null, offset = null } = {}) => {
+  let whereConditions = [];
+  let queryParams = [];
+
+  if (status === 'active') {
+    whereConditions.push(`c.is_active = true`);
+  } else if (status === 'inactive') {
+    whereConditions.push(`c.is_active = false`);
+  }
+
+  if (search && search.trim()) {
+    queryParams.push(`%${search.trim()}%`);
+    whereConditions.push(`(c.company_name ILIKE $${queryParams.length} OR c.gst_number ILIKE $${queryParams.length} OR u.name ILIKE $${queryParams.length} OR u.email ILIKE $${queryParams.length} OR c.email ILIKE $${queryParams.length})`);
+  }
+
+  let query = `
     SELECT 
       c.id,
       c.company_name,
@@ -15,6 +29,7 @@ export const listCompaniesWithPrimaryUserRepo = async () => {
       c.shipping_address,
       c.is_active,
       c.created_at,
+      COUNT(*) OVER()::INT AS total_count,
       u.id AS primary_user_id,
       u.name AS primary_contact_name,
       u.email AS primary_contact_email,
@@ -27,10 +42,20 @@ export const listCompaniesWithPrimaryUserRepo = async () => {
     LEFT JOIN users u ON cu.user_id = u.id
     LEFT JOIN quotations q ON c.id = q.customer_id
     LEFT JOIN invoices i ON c.id = i.customer_id
-    GROUP BY c.id, u.id
-    ORDER BY c.created_at DESC;
   `;
-  const result = await pool.query(query);
+
+  if (whereConditions.length > 0) {
+    query += ` WHERE ${whereConditions.join(' AND ')}`;
+  }
+
+  query += ` GROUP BY c.id, u.id ORDER BY c.created_at DESC`;
+
+  if (limit !== null && offset !== null) {
+    queryParams.push(limit, offset);
+    query += ` LIMIT $${queryParams.length - 1} OFFSET $${queryParams.length}`;
+  }
+
+  const result = await pool.query(query, queryParams);
   return result.rows;
 };
 

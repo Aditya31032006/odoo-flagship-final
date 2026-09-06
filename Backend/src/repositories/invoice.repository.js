@@ -23,24 +23,50 @@ import {
   GET_INVOICE_STATUS_COUNTS_FOR_CUSTOMER,
 } from '../queries/invoice.query.js';
 
-export const getInvoicesListRepo = async (statusFilter = null, customerId = null) => {
-  let query = customerId ? GET_ALL_INVOICES_FOR_CUSTOMER : GET_ALL_INVOICES;
-  const params = customerId ? [customerId] : [];
-
-  if (statusFilter === 'unpaid') {
-    query = customerId ? GET_UNPAID_INVOICES_FOR_CUSTOMER : GET_UNPAID_INVOICES;
-  } else if (statusFilter === 'paid') {
-    query = customerId ? GET_PAID_INVOICES_FOR_CUSTOMER : GET_PAID_INVOICES;
-  }
-
+export const getInvoicesListRepo = async ({
+  statusFilter = null,
+  customerId = null,
+  search = null,
+  limit = null,
+  offset = null,
+} = {}) => {
   const client = await pool.connect();
   try {
-    await client.query('BEGIN');
-    const invoicesRes = await client.query(query, params);
+    let whereConditions = [];
+    let queryParams = [];
+
+    if (customerId) {
+      queryParams.push(customerId);
+      whereConditions.push(`inv.customer_id = $${queryParams.length}`);
+    }
+
+    if (statusFilter === 'unpaid') {
+      whereConditions.push(`(inv.status IN ('draft', 'issued', 'partially_paid') AND inv.paid_amount < inv.grand_total)`);
+    } else if (statusFilter === 'paid') {
+      whereConditions.push(`(inv.status = 'paid' OR inv.paid_amount >= inv.grand_total)`);
+    }
+
+    if (search && search.trim()) {
+      queryParams.push(`%${search.trim()}%`);
+      whereConditions.push(`(inv.invoice_number ILIKE $${queryParams.length} OR c.company_name ILIKE $${queryParams.length} OR o.order_number ILIKE $${queryParams.length})`);
+    }
+
+    let query = GET_ALL_INVOICES;
+    if (whereConditions.length > 0) {
+      query += ` WHERE ${whereConditions.join(' AND ')}`;
+    }
+    query += ` ORDER BY inv.invoice_date DESC, inv.id DESC`;
+
+    if (limit !== null && offset !== null) {
+      queryParams.push(limit, offset);
+      query += ` LIMIT $${queryParams.length - 1} OFFSET $${queryParams.length}`;
+    }
+
+    const invoicesRes = await client.query(query, queryParams);
+
     const countQuery = customerId ? GET_INVOICE_STATUS_COUNTS_FOR_CUSTOMER : GET_INVOICE_STATUS_COUNTS;
     const countParams = customerId ? [customerId] : [];
     const statusCountsRes = await client.query(countQuery, countParams);
-    await client.query('COMMIT');
 
     return {
       invoices: invoicesRes.rows,
@@ -53,7 +79,6 @@ export const getInvoicesListRepo = async (statusFilter = null, customerId = null
     };
   } catch (error) {
     console.error('Error in getInvoicesListRepo:', error);
-    await client.query('ROLLBACK');
     throw error;
   } finally {
     client.release();

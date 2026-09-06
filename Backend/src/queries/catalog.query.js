@@ -231,6 +231,7 @@ export const GET_ALL_PRODUCTS_WITH_VARIANTS_COUNT = `
     p.tax_percentage,
     p.is_active,
     p.created_at,
+    COUNT(*) OVER()::INT AS total_count,
     (
       SELECT COUNT(*)::INT 
       FROM product_variants pv 
@@ -245,6 +246,7 @@ export const GET_ALL_PRODUCTS_WITH_VARIANTS_COUNT = `
   FROM products p
   JOIN product_categories pc ON p.category_id = pc.id
   WHERE p.is_active = TRUE
+    AND ($1::TEXT IS NULL OR p.name ILIKE '%' || $1 || '%' OR pc.name ILIKE '%' || $1 || '%')
   ORDER BY p.name ASC
 `;
 

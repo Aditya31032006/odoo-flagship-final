@@ -13,6 +13,7 @@ import { payQuotationRepo } from '../repositories/fulfillment.repository.js';
 import { STATUS_CODES } from '../constants/statusCodes.js';
 import { addQuotationIssuedEmailJob } from '../jobs/emailQueue.js';
 import { signToken } from '../utils/cookie.util.js';
+import { parsePaginationParams, buildPaginationMeta } from '../utils/pagination.util.js';
 
 const KANBAN_STAGES = ['draft', 'pending_approval', 'approved', 'negotiating', 'confirmed', 'shipment', 'payment'];
 
@@ -67,15 +68,15 @@ export const getQuotationsController = async (req, res, next) => {
 
     const { view = 'kanban', status = null, search = null } = req.query;
 
-    const quotations = await getQuotationsListRepo({
-      salesRepId,
-      customerId,
-      status: status ? status.trim() : null,
-      searchQuery: search ? search.trim() : null,
-      role: user.role,
-    });
-
     if (view === 'kanban') {
+      const quotations = await getQuotationsListRepo({
+        salesRepId,
+        customerId,
+        status: status ? status.trim() : null,
+        searchQuery: search ? search.trim() : null,
+        role: user.role,
+      });
+
       const kanban = {
         draft: [],
         pending_approval: [],
@@ -110,11 +111,27 @@ export const getQuotationsController = async (req, res, next) => {
       });
     }
 
+    // List View with Pagination
+    const { page, limit, offset } = parsePaginationParams(req.query, 10);
+    const quotations = await getQuotationsListRepo({
+      salesRepId,
+      customerId,
+      status: status ? status.trim() : null,
+      searchQuery: search ? search.trim() : null,
+      role: user.role,
+      limit,
+      offset,
+    });
+
+    const totalCount = quotations.length > 0 ? quotations[0].total_count : 0;
+    const pagination = buildPaginationMeta({ page, limit, total: totalCount });
+
     return res.status(STATUS_CODES.OK).json({
       success: true,
       view: 'list',
       data: quotations,
-      totalCount: quotations.length,
+      pagination,
+      totalCount,
     });
   } catch (error) {
     next(error);

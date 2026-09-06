@@ -15,13 +15,13 @@ export const GET_ALL_INVOICES = `
     (inv.grand_total - inv.paid_amount) AS balance_due,
     inv.created_at,
     inv.updated_at,
+    COUNT(*) OVER()::INT AS total_count,
     c.company_name AS customer_name,
     c.email AS customer_email,
     o.order_number
   FROM invoices inv
   JOIN customers c ON inv.customer_id = c.id
   LEFT JOIN orders o ON inv.order_id = o.id
-  ORDER BY inv.invoice_date DESC, inv.id DESC;
 `;
 
 export const GET_INVOICE_STATUS_COUNTS = `

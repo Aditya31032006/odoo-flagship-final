@@ -53,13 +53,20 @@ import {
   INSERT_SHORTAGE_BACKORDER_RECORD,
 } from '../queries/fulfillment.query.js';
 
-export const getFulfillmentListRepo = async () => {
+export const getFulfillmentListRepo = async ({ search = null, limit = null, offset = null } = {}) => {
   const client = await pool.connect();
   try {
-    await client.query('BEGIN');
     const stockRes = await client.query(GET_WAREHOUSE_STOCK_LIST);
-    const ordersRes = await client.query(GET_ORDERS_AWAITING_FULFILLMENT);
-    await client.query('COMMIT');
+
+    let ordersQuery = GET_ORDERS_AWAITING_FULFILLMENT;
+    const ordersParams = [search ? search.trim() : null];
+
+    if (limit !== null && offset !== null) {
+      ordersParams.push(limit, offset);
+      ordersQuery += ` LIMIT $2 OFFSET $3`;
+    }
+
+    const ordersRes = await client.query(ordersQuery, ordersParams);
 
     return {
       stock: stockRes.rows,
@@ -67,7 +74,6 @@ export const getFulfillmentListRepo = async () => {
     };
   } catch (error) {
     console.error('Error in getFulfillmentListRepo:', error);
-    await client.query('ROLLBACK');
     throw error;
   } finally {
     client.release();

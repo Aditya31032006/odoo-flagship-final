@@ -6,14 +6,20 @@ import {
   updateSubscriptionConfigRepo,
   cancelSubscriptionRepo,
 } from '../repositories/subscription.repository.js';
+import { parsePaginationParams, buildPaginationMeta } from '../utils/pagination.util.js';
 
 export const getSubscriptionsList = async (req, res, next) => {
   try {
-    const { status } = req.query;
-    const data = await getSubscriptionsListRepo(status);
+    const { status, search } = req.query;
+    const { page, limit, offset } = parsePaginationParams(req.query, { defaultLimit: 10 });
+    const data = await getSubscriptionsListRepo({ statusFilter: status, search, limit, offset });
+    const totalCount = data.subscriptions[0]?.total_count || 0;
+    const pagination = buildPaginationMeta(totalCount, page, limit);
+
     return res.status(200).json({
       success: true,
       data,
+      pagination,
     });
   } catch (error) {
     next(error);

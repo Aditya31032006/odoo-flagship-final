@@ -24,10 +24,10 @@ apiClient.interceptors.response.use(
 
 export const staffApi = {
   /**
-   * Fetch all staff members
+   * Fetch all staff members with filters and pagination
    */
-  async getStaffList() {
-    const response = await apiClient.get('/staff');
+  async getStaffList(params = {}) {
+    const response = await apiClient.get('/staff', { params });
     return response.data;
   },
 

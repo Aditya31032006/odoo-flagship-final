@@ -10,16 +10,23 @@ import {
 import { findUserRepo } from '../repositories/auth.repository.js';
 import { hashPassword, generateRandomPassword } from '../utils/password.util.js';
 import { addStaffInvitationJob } from '../jobs/emailQueue.js';
+import { parsePaginationParams, buildPaginationMeta } from '../utils/pagination.util.js';
 
 /**
- * List all internal staff members (excluding customers)
+ * List all internal staff members (excluding customers) with filters and pagination
  */
 export const listStaffController = async (req, res, next) => {
     try {
-        const staff = await listStaffRepo();
+        const { search, role, status } = req.query;
+        const { page, limit, offset } = parsePaginationParams(req.query, { defaultLimit: 10 });
+        const staff = await listStaffRepo({ search, role, status, limit, offset });
+        const totalCount = staff[0]?.total_count || 0;
+        const pagination = buildPaginationMeta(totalCount, page, limit);
+
         return res.status(STATUS_CODES.OK).json({
             message: 'Staff list retrieved successfully',
-            staff
+            staff,
+            pagination
         });
     } catch (error) {
         next(error);

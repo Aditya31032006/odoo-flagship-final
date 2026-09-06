@@ -3,6 +3,7 @@ import useCompany from '../hooks/useCompany.js';
 import CompanyTable from '../components/CompanyTable.jsx';
 import CreateCompanyModal from '../components/CreateCompanyModal.jsx';
 import CompanyCredentialsModal from '../components/CompanyCredentialsModal.jsx';
+import InfiniteScrollSentinel from '../../../shared/components/InfiniteScrollSentinel.jsx';
 import '../styles/company.scss';
 
 export function CompanyManagement() {
@@ -10,6 +11,9 @@ export function CompanyManagement() {
     companies,
     totalCount,
     loading,
+    loadingMore,
+    hasMore,
+    sentinelRef,
     actionLoading,
     error,
     searchTerm,
@@ -158,11 +162,21 @@ export function CompanyManagement() {
               <p style={{ margin: 0, fontWeight: 500 }}>{error}</p>
             </div>
           ) : (
-            <CompanyTable
-              companies={companies}
-              onToggleStatus={handleToggleStatus}
-              actionLoading={actionLoading}
-            />
+            <>
+              <CompanyTable
+                companies={companies}
+                onToggleStatus={handleToggleStatus}
+                actionLoading={actionLoading}
+              />
+              <InfiniteScrollSentinel
+                sentinelRef={sentinelRef}
+                loadingMore={loadingMore}
+                hasMore={hasMore}
+                itemCount={companies.length}
+                totalCount={totalCount}
+                emptyMessage="No organizations found matching your criteria."
+              />
+            </>
           )}
         </div>
       </div>

@@ -5,6 +5,8 @@ import useRazorpay from '../../payments/hook/useRazorpay.js';
 import quotationApi from '../services/quotation.api.js';
 import negotiationApi from '../services/negotiation.api.js';
 import { useDebounce } from '../../../shared/hooks/useDebounce.js';
+import { useInfiniteScroll } from '../../../shared/hooks/useInfiniteScroll.js';
+import InfiniteScrollSentinel from '../../../shared/components/InfiniteScrollSentinel.jsx';
 import NegotiationPanel from '../components/NegotiationPanel.jsx';
 import { useToast } from '../../../shared/context/ToastContext.jsx';
 import '../styles/myQuotations.scss';
@@ -21,8 +23,6 @@ export default function MyQuotations() {
   const actionParam = searchParams.get('action');
   const quoteIdParam = searchParams.get('quoteId');
 
-  const [quotations, setQuotations] = useState([]);
-  const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const debouncedSearch = useDebounce(searchQuery, 300);
   const [selectedStatus, setSelectedStatus] = useState('all');
@@ -33,23 +33,32 @@ export default function MyQuotations() {
   const [loadingDetail, setLoadingDetail] = useState(false);
   const [actionAlert, setActionAlert] = useState(null);
 
-  // Fetch company quotations
-  const fetchCompanyQuotations = useCallback(async () => {
-    setLoading(true);
-    try {
-      const res = await quotationApi.getQuotations({ view: 'list' });
-      const list = Array.isArray(res?.data) ? res.data : Array.isArray(res) ? res : [];
-      setQuotations(list);
-    } catch (err) {
-      console.error('Failed to load customer quotations:', err);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    fetchCompanyQuotations();
-  }, [fetchCompanyQuotations]);
+  // Infinite scroll hook for customer quotations
+  const {
+    items: quotations,
+    loadingInitial,
+    loadingMore,
+    hasMore,
+    totalCount,
+    sentinelRef,
+    refetch,
+  } = useInfiniteScroll({
+    fetchFunction: async (page, limit) => {
+      const res = await quotationApi.getQuotations({
+        view: 'list',
+        page,
+        limit,
+        status: selectedStatus !== 'all' ? selectedStatus : undefined,
+        search: debouncedSearch || undefined,
+      });
+      return {
+        data: res?.data || [],
+        pagination: res?.pagination,
+      };
+    },
+    dependencies: [debouncedSearch, selectedStatus],
+    limit: 10,
+  });
 
   // Clean up ?token= from URL search params for clean browser URL
   useEffect(() => {
@@ -76,7 +85,7 @@ export default function MyQuotations() {
             type: 'success',
             message: res?.message || '✅ Quotation approved & confirmed successfully!',
           });
-          await fetchCompanyQuotations();
+          refetch();
           const detail = await quotationApi.getQuotationById(quoteIdParam);
           if (detail && isMounted) {
             setSelectedQuote(detail);
@@ -107,7 +116,7 @@ export default function MyQuotations() {
     return () => {
       isMounted = false;
     };
-  }, [actionParam, quoteIdParam, fetchCompanyQuotations]);
+  }, [actionParam, quoteIdParam, refetch]);
 
   // Fetch full details when opening a quotation
   const openQuoteDetail = async (quote) => {
@@ -128,22 +137,6 @@ export default function MyQuotations() {
     setQuoteDetail(null);
   };
 
-  // Filter list
-  const filteredQuotations = useMemo(() => {
-    return quotations.filter((q) => {
-      const query = debouncedSearch.trim().toLowerCase();
-      const matchesSearch =
-        !query ||
-        q.quotation_number?.toLowerCase().includes(query) ||
-        q.sales_rep_name?.toLowerCase().includes(query);
-
-      const matchesStatus =
-        selectedStatus === 'all' || q.status === selectedStatus;
-
-      return matchesSearch && matchesStatus;
-    });
-  }, [quotations, debouncedSearch, selectedStatus]);
-
   const totalValue = quotations.reduce((acc, q) => acc + Number(q.grand_total || 0), 0);
   const activeCount = quotations.filter((q) => ['pending_approval', 'approved', 'negotiating'].includes(q.status)).length;
 
@@ -161,7 +154,7 @@ export default function MyQuotations() {
 
         <div className="banner-stats">
           <div className="stat-chip">
-            <span className="num">{quotations.length}</span>
+            <span className="num">{totalCount ?? quotations.length}</span>
             <span className="label">Total Quotes</span>
           </div>
           <div className="stat-chip">
@@ -248,83 +241,94 @@ export default function MyQuotations() {
       </div>
 
       {/* Quotation Cards Grid */}
-      {loading ? (
+      {loadingInitial ? (
         <div className="df-my-quotes__empty">
           <p>Loading your company quotations...</p>
         </div>
-      ) : filteredQuotations.length === 0 ? (
+      ) : quotations.length === 0 ? (
         <div className="df-my-quotes__empty">
           <h3>No quotations found</h3>
           <p>There are currently no quotations matching your filter criteria.</p>
         </div>
       ) : (
-        <div className="df-my-quotes__grid">
-          {filteredQuotations.map((quote) => (
-            <div
-              key={quote.id}
-              className="df-my-quotes__card"
-              onClick={() => openQuoteDetail(quote)}
-            >
-              <div className="card-top">
-                <span className="quote-code">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-                    <polyline points="14 2 14 8 20 8" />
-                  </svg>
-                  {quote.quotation_number}
-                </span>
-                <span className={`status-tag status-tag--${quote.status}`}>
-                  {quote.status === 'shipment' ? '🚚 Shipment' : quote.status === 'payment' ? '🎉 Paid' : quote.status}
-                </span>
-              </div>
+        <>
+          <div className="df-my-quotes__grid">
+            {quotations.map((quote) => (
+              <div
+                key={quote.id}
+                className="df-my-quotes__card"
+                onClick={() => openQuoteDetail(quote)}
+              >
+                <div className="card-top">
+                  <span className="quote-code">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                      <polyline points="14 2 14 8 20 8" />
+                    </svg>
+                    {quote.quotation_number}
+                  </span>
+                  <span className={`status-tag status-tag--${quote.status}`}>
+                    {quote.status === 'shipment' ? '🚚 Shipment' : quote.status === 'payment' ? '🎉 Paid' : quote.status}
+                  </span>
+                </div>
 
-              <div className="card-middle">
-                <div className="amount-display">{formatCurrency(quote.grand_total)}</div>
-                <div className="meta-row">
-                  <span>Items: {quote.item_count || 1}</span>
-                  <span>Valid: {quote.valid_until ? new Date(quote.valid_until).toLocaleDateString() : '30 Days'}</span>
+                <div className="card-middle">
+                  <div className="amount-display">{formatCurrency(quote.grand_total)}</div>
+                  <div className="meta-row">
+                    <span>Items: {quote.item_count || 1}</span>
+                    <span>Valid: {quote.valid_until ? new Date(quote.valid_until).toLocaleDateString() : '30 Days'}</span>
+                  </div>
+                </div>
+
+                <div className="card-bottom">
+                  <span className="rep-info" title={`Sales Rep: ${quote.sales_rep_name}`}>
+                    👤 {quote.sales_rep_name || 'Assigned Sales Rep'}
+                  </span>
+                  {quote.status === 'shipment' ? (
+                    <button
+                      type="button"
+                      className="btn-view-deal"
+                      style={{
+                        background: 'linear-gradient(135deg, #10b981, #059669)',
+                        color: '#ffffff',
+                        border: 'none',
+                        fontWeight: 700,
+                      }}
+                      disabled={isPayingWithRazorpay}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        initiateRazorpayPayment({
+                          quotationId: quote.id,
+                          onSuccess: () => {
+                            refetch();
+                          },
+                        });
+                      }}
+                    >
+                      {isPayingWithRazorpay ? '⌛ Processing...' : '💳 Pay Now'}
+                    </button>
+                  ) : (
+                    <button type="button" className="btn-view-deal">
+                      Negotiate / View
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" width="12" height="12">
+                        <polyline points="9 18 15 12 9 6" />
+                      </svg>
+                    </button>
+                  )}
                 </div>
               </div>
+            ))}
+          </div>
 
-              <div className="card-bottom">
-                <span className="rep-info" title={`Sales Rep: ${quote.sales_rep_name}`}>
-                  👤 {quote.sales_rep_name || 'Assigned Sales Rep'}
-                </span>
-                {quote.status === 'shipment' ? (
-                  <button
-                    type="button"
-                    className="btn-view-deal"
-                    style={{
-                      background: 'linear-gradient(135deg, #10b981, #059669)',
-                      color: '#ffffff',
-                      border: 'none',
-                      fontWeight: 700,
-                    }}
-                    disabled={isPayingWithRazorpay}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      initiateRazorpayPayment({
-                        quotationId: quote.id,
-                        onSuccess: () => {
-                          fetchCompanyQuotations();
-                        },
-                      });
-                    }}
-                  >
-                    {isPayingWithRazorpay ? '⌛ Processing...' : '💳 Pay Now'}
-                  </button>
-                ) : (
-                  <button type="button" className="btn-view-deal">
-                    Negotiate / View
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" width="12" height="12">
-                      <polyline points="9 18 15 12 9 6" />
-                    </svg>
-                  </button>
-                )}
-              </div>
-            </div>
-          ))}
-        </div>
+          <InfiniteScrollSentinel
+            sentinelRef={sentinelRef}
+            loading={loadingMore}
+            hasMore={hasMore}
+            count={quotations.length}
+            total={totalCount}
+            itemName="quotations"
+          />
+        </>
       )}
 
       {/* Quotation Detail & Negotiation Modal */}
@@ -380,7 +384,7 @@ export default function MyQuotations() {
                   quotation={quoteDetail}
                   quotationItems={quoteDetail.items || []}
                   onQuotationUpdated={() => {
-                    fetchCompanyQuotations();
+                    refetch();
                     openQuoteDetail(selectedQuote);
                   }}
                 />

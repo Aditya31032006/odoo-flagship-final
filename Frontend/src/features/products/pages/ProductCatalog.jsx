@@ -1,7 +1,9 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router';
-import useProducts from '../hook/useProducts.js';
+import { productsApi } from '../services/products.api.js';
 import { useDebounce } from '../../../shared/hooks/useDebounce.js';
+import { useInfiniteScroll } from '../../../shared/hooks/useInfiniteScroll.js';
+import InfiniteScrollSentinel from '../../../shared/components/InfiniteScrollSentinel.jsx';
 import PermissionGate from '../../../shared/components/PermissionGate.jsx';
 import '../styles/products.scss';
 
@@ -10,22 +12,37 @@ function formatCurrency(val) {
 }
 
 export const ProductCatalog = () => {
-  const { summary, productsList, isLoading } = useProducts();
   const navigate = useNavigate();
-
+  const [summary, setSummary] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
   const debouncedSearch = useDebounce(searchQuery, 300);
 
-  const filteredProducts = useMemo(() => {
-    if (!debouncedSearch.trim()) return productsList;
-    const q = debouncedSearch.trim().toLowerCase();
-    return productsList.filter(
-      (p) =>
-        p.name?.toLowerCase().includes(q) ||
-        p.category_name?.toLowerCase().includes(q) ||
-        p.sample_variant_name?.toLowerCase().includes(q)
-    );
-  }, [productsList, debouncedSearch]);
+  useEffect(() => {
+    productsApi.getSummary().then(setSummary).catch(console.error);
+  }, []);
+
+  const {
+    items: productsList,
+    loadingInitial,
+    loadingMore,
+    hasMore,
+    totalCount,
+    sentinelRef,
+  } = useInfiniteScroll({
+    fetchFunction: async (page, limit) => {
+      const res = await productsApi.getAllProducts({
+        search: debouncedSearch || undefined,
+        page,
+        limit,
+      });
+      return {
+        data: res?.data || [],
+        pagination: res?.pagination,
+      };
+    },
+    dependencies: [debouncedSearch],
+    limit: 12,
+  });
 
   return (
     <div className="df-products">
@@ -64,7 +81,7 @@ export const ProductCatalog = () => {
           <div className="df-products__kpi-card">
             <div className="kpi-title">Total Products</div>
             <div className="kpi-desc">
-              {summary ? summary.active_products : productsList.length} active, {summary ? summary.archived_products : 0} archived
+              {summary ? summary.active_products : totalCount ?? productsList.length} active, {summary ? summary.archived_products : 0} archived
             </div>
           </div>
 
@@ -109,7 +126,6 @@ export const ProductCatalog = () => {
           </div>
         </div>
 
-
         {/* Products Table matching Wireframe #16 */}
         <div className="df-products__table-wrapper">
           <table className="df-products__table">
@@ -125,14 +141,20 @@ export const ProductCatalog = () => {
               </tr>
             </thead>
             <tbody>
-              {filteredProducts.length === 0 ? (
+              {loadingInitial ? (
                 <tr>
                   <td colSpan="7" className="df-products__empty-cell">
-                    {isLoading ? 'Loading product catalog...' : searchQuery ? 'No products match your search.' : 'No products found.'}
+                    Loading product catalog...
+                  </td>
+                </tr>
+              ) : productsList.length === 0 ? (
+                <tr>
+                  <td colSpan="7" className="df-products__empty-cell">
+                    {searchQuery ? 'No products match your search.' : 'No products found.'}
                   </td>
                 </tr>
               ) : (
-                filteredProducts.map((p) => {
+                productsList.map((p) => {
                   const variantText = Number(p.variants_count) > 1
                     ? `${p.variants_count}(${p.sample_variant_name ? p.sample_variant_name.split(' ')[0] : 'variants'})`
                     : '—';
@@ -170,8 +192,14 @@ export const ProductCatalog = () => {
           </table>
         </div>
 
-        {/* Bottom Banner matching Wireframe #16 */}
-
+        <InfiniteScrollSentinel
+          sentinelRef={sentinelRef}
+          loading={loadingMore}
+          hasMore={hasMore}
+          count={productsList.length}
+          total={totalCount}
+          itemName="products"
+        />
       </div>
     </div>
   );

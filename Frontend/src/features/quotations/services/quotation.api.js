@@ -23,11 +23,13 @@ apiClient.interceptors.response.use(
 );
 
 export const quotationApi = {
-  getQuotations: async ({ view = 'kanban', status = '', search = '' } = {}) => {
+  getQuotations: async ({ view = 'kanban', status = '', search = '', page = 1, limit = 10 } = {}) => {
     const queryParams = new URLSearchParams();
     if (view) queryParams.append('view', view);
     if (status) queryParams.append('status', status);
     if (search) queryParams.append('search', search);
+    if (page) queryParams.append('page', page);
+    if (limit) queryParams.append('limit', limit);
 
     const response = await apiClient.get(`/quotations?${queryParams.toString()}`);
     return response.data;

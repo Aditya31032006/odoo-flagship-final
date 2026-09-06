@@ -13,11 +13,21 @@ import {
   updateOrderRepo,
   deleteOrderRepo,
 } from '../repositories/fulfillment.repository.js';
+import { parsePaginationParams, buildPaginationMeta } from '../utils/pagination.util.js';
 
 export const getFulfillmentListController = async (req, res, next) => {
   try {
-    const data = await getFulfillmentListRepo();
-    return res.status(STATUS_CODES.OK).json({ success: true, data });
+    const { search } = req.query;
+    const { page, limit, offset } = parsePaginationParams(req.query, { defaultLimit: 10 });
+    const data = await getFulfillmentListRepo({ search, limit, offset });
+    const totalCount = data.orders[0]?.total_count || 0;
+    const pagination = buildPaginationMeta(totalCount, page, limit);
+
+    return res.status(STATUS_CODES.OK).json({
+      success: true,
+      data,
+      pagination,
+    });
   } catch (error) {
     next(error);
   }

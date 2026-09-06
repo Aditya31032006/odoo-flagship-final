@@ -24,10 +24,10 @@ apiClient.interceptors.response.use(
 
 export const companyApi = {
   /**
-   * Fetch all companies with primary contact info
+   * Fetch all companies with primary contact info, filters, and pagination
    */
-  async getCompaniesList() {
-    const response = await apiClient.get('/companies');
+  async getCompaniesList(params = {}) {
+    const response = await apiClient.get('/companies', { params });
     return response.data;
   },
 

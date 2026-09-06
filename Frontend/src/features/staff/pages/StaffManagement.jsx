@@ -1,8 +1,10 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useCallback } from 'react';
 import { useForm } from 'react-hook-form';
-import useStaff from '../hook/useStaff.js';
 import useAuth from '../../auth/hook/useAuth.js';
+import { staffApi } from '../services/staff.api.js';
 import { useDebounce } from '../../../shared/hooks/useDebounce.js';
+import useInfiniteScroll from '../../../shared/hooks/useInfiniteScroll.js';
+import InfiniteScrollSentinel from '../../../shared/components/InfiniteScrollSentinel.jsx';
 import '../styles/staff.scss';
 
 // Role definitions
@@ -30,7 +32,6 @@ function formatRoleLabel(role) {
 
 export default function StaffManagement() {
   const { user: currentUser } = useAuth();
-  const { staffList, loading, error, fetchStaff, createStaff, updateStaff, toggleStatus, deleteStaff } = useStaff();
 
   const [searchQuery, setSearchQuery] = useState('');
   const debouncedSearch = useDebounce(searchQuery, 300);
@@ -76,62 +77,55 @@ export default function StaffManagement() {
     },
   });
 
-  useEffect(() => {
-    fetchStaff();
-  }, [fetchStaff]);
+  // Define fetchFunction for infinite scrolling
+  const fetchStaffPage = useCallback(
+    async (page, limit) => {
+      const params = { page, limit };
+      if (debouncedSearch) params.search = debouncedSearch;
+      if (selectedRoleFilter && selectedRoleFilter !== 'all') params.role = selectedRoleFilter;
+      if (selectedStatusFilter && selectedStatusFilter !== 'all') params.status = selectedStatusFilter;
+      return await staffApi.getStaffList(params);
+    },
+    [debouncedSearch, selectedRoleFilter, selectedStatusFilter]
+  );
 
-  // Filtered staff list using debounced query for smooth rendering
-  const filteredStaff = useMemo(() => {
-    return staffList.filter((member) => {
-      const q = debouncedSearch.trim().toLowerCase();
-      const matchesSearch =
-        q === '' ||
-        member.name?.toLowerCase().includes(q) ||
-        member.email?.toLowerCase().includes(q) ||
-        member.mobile?.includes(q);
-
-      const matchesRole =
-        selectedRoleFilter === 'all' || member.role === selectedRoleFilter;
-
-      const matchesStatus =
-        selectedStatusFilter === 'all' ||
-        (selectedStatusFilter === 'active' && member.is_active) ||
-        (selectedStatusFilter === 'inactive' && !member.is_active);
-
-      return matchesSearch && matchesRole && matchesStatus;
-    });
-  }, [staffList, debouncedSearch, selectedRoleFilter, selectedStatusFilter]);
-
-  // Metrics counts
-  const metrics = useMemo(() => {
-    const total = staffList.length;
-    const sales = staffList.filter((s) => s.role === 'sales_rep' || s.role === 'sales_manager').length;
-    const ops = staffList.filter((s) => s.role === 'operations').length;
-    const finance = staffList.filter((s) => s.role === 'finance').length;
-    const admins = staffList.filter((s) => s.role === 'admin').length;
-    return { total, sales, ops, finance, admins };
-  }, [staffList]);
+  const {
+    items: staffList,
+    setItems: setStaffList,
+    total: totalCount,
+    loadingInitial,
+    loadingMore,
+    hasMore,
+    error,
+    sentinelRef,
+    refetch,
+  } = useInfiniteScroll({
+    fetchFunction: fetchStaffPage,
+    dependencies: [debouncedSearch, selectedRoleFilter, selectedStatusFilter],
+    limit: 10,
+  });
 
   // Submit invite staff form
   const onInviteSubmit = async (data) => {
     setIsSubmitting(true);
     setActionAlert({ type: '', text: '', tempPassword: '' });
 
-    const res = await createStaff(data);
-    setIsSubmitting(false);
-
-    if (res?.success) {
+    try {
+      const res = await staffApi.createStaff(data);
+      setIsSubmitting(false);
       setActionAlert({
         type: 'success',
-        text: `Staff member ${res.staff.name} created! An invitation email with temporary credentials has been sent.`,
+        text: `Staff member ${res.staff?.name || data.name} created! An invitation email with temporary credentials has been sent.`,
         tempPassword: res.tempPassword,
       });
       reset();
       setIsInviteModalOpen(false);
-    } else {
+      await refetch();
+    } catch (err) {
+      setIsSubmitting(false);
       setActionAlert({
         type: 'error',
-        text: res?.error || 'Failed to invite staff member.',
+        text: err.customMessage || 'Failed to invite staff member.',
       });
     }
   };
@@ -152,23 +146,27 @@ export default function StaffManagement() {
     setIsEditSubmitting(true);
     setActionAlert({ type: '', text: '', tempPassword: '' });
 
-    const res = await updateStaff(editingStaff.id, {
-      name: data.name,
-      mobile: data.mobile?.trim() || null,
-      role: data.role,
-    });
-    setIsEditSubmitting(false);
-
-    if (res?.success) {
+    try {
+      const res = await staffApi.updateStaff(editingStaff.id, {
+        name: data.name,
+        mobile: data.mobile?.trim() || null,
+        role: data.role,
+      });
+      setIsEditSubmitting(false);
       setActionAlert({
         type: 'success',
         text: `Staff member ${data.name}'s role and details updated successfully!`,
       });
       setEditingStaff(null);
-    } else {
+      // Optimistic update
+      setStaffList((prev) =>
+        prev.map((s) => (s.id === editingStaff.id ? { ...s, ...res.staff, ...data } : s))
+      );
+    } catch (err) {
+      setIsEditSubmitting(false);
       setActionAlert({
         type: 'error',
-        text: res?.error || 'Failed to update staff member.',
+        text: err.customMessage || 'Failed to update staff member.',
       });
     }
   };
@@ -176,16 +174,20 @@ export default function StaffManagement() {
   // Toggle active status
   const handleToggleStatus = async (staffMember) => {
     const newStatus = !staffMember.is_active;
-    const res = await toggleStatus(staffMember.id, newStatus);
-    if (res?.success) {
+    try {
+      await staffApi.toggleStaffStatus(staffMember.id, newStatus);
       setActionAlert({
         type: 'success',
         text: `Status for ${staffMember.name} updated to ${newStatus ? 'Active' : 'Inactive'}.`,
       });
-    } else {
+      // Optimistic update
+      setStaffList((prev) =>
+        prev.map((s) => (s.id === staffMember.id ? { ...s, is_active: newStatus } : s))
+      );
+    } catch (err) {
       setActionAlert({
         type: 'error',
-        text: res?.error || 'Failed to update status.',
+        text: err.customMessage || 'Failed to update status.',
       });
     }
   };
@@ -194,19 +196,21 @@ export default function StaffManagement() {
   const handleConfirmDelete = async () => {
     if (!deletingStaff) return;
     setIsDeleting(true);
-    const res = await deleteStaff(deletingStaff.id);
-    setIsDeleting(false);
-    setDeletingStaff(null);
-
-    if (res?.success) {
+    try {
+      const res = await staffApi.deleteStaff(deletingStaff.id);
+      setIsDeleting(false);
+      setDeletingStaff(null);
       setActionAlert({
         type: 'success',
         text: res.message || 'Staff member removed successfully.',
       });
-    } else {
+      // Optimistic update
+      setStaffList((prev) => prev.filter((s) => s.id !== deletingStaff.id));
+    } catch (err) {
+      setIsDeleting(false);
       setActionAlert({
         type: 'error',
-        text: res?.error || 'Failed to delete staff member.',
+        text: err.customMessage || 'Failed to delete staff member.',
       });
     }
   };
@@ -286,7 +290,7 @@ export default function StaffManagement() {
             </div>
             <div className="metric-card-info">
               <span className="label">Total Staff</span>
-              <span className="count">{metrics.total}</span>
+              <span className="count">{totalCount}</span>
             </div>
           </div>
 
@@ -297,8 +301,8 @@ export default function StaffManagement() {
               </svg>
             </div>
             <div className="metric-card-info">
-              <span className="label">Sales Team</span>
-              <span className="count">{metrics.sales}</span>
+              <span className="label">Loaded</span>
+              <span className="count">{staffList.length}</span>
             </div>
           </div>
 
@@ -311,21 +315,8 @@ export default function StaffManagement() {
               </svg>
             </div>
             <div className="metric-card-info">
-              <span className="label">Operations</span>
-              <span className="count">{metrics.ops}</span>
-            </div>
-          </div>
-
-          <div className="metric-card">
-            <div className="metric-card-icon metric-card-icon--finance">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <line x1="12" y1="1" x2="12" y2="23" />
-                <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
-              </svg>
-            </div>
-            <div className="metric-card-info">
-              <span className="label">Finance</span>
-              <span className="count">{metrics.finance}</span>
+              <span className="label">Active Status</span>
+              <span className="count">{staffList.filter(s => s.is_active).length}</span>
             </div>
           </div>
 
@@ -337,7 +328,7 @@ export default function StaffManagement() {
             </div>
             <div className="metric-card-info">
               <span className="label">Admins</span>
-              <span className="count">{metrics.admins}</span>
+              <span className="count">{staffList.filter(s => s.role === 'admin').length}</span>
             </div>
           </div>
         </div>
@@ -402,11 +393,15 @@ export default function StaffManagement() {
 
         {/* Staff Data Table */}
         <div className="df-staff__table-wrapper">
-          {loading && staffList.length === 0 ? (
+          {loadingInitial ? (
             <div style={{ padding: '3rem', textAlign: 'center', color: '#94a3b8' }}>
               Loading staff directory...
             </div>
-          ) : filteredStaff.length === 0 ? (
+          ) : error ? (
+            <div style={{ padding: '3rem', textAlign: 'center', color: '#ef4444' }}>
+              {error}
+            </div>
+          ) : staffList.length === 0 ? (
             <div className="df-staff__empty-state">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
                 <circle cx="12" cy="12" r="10" />
@@ -418,84 +413,95 @@ export default function StaffManagement() {
               <p>Try refining your search terms or filter selection.</p>
             </div>
           ) : (
-            <table className="df-staff__table">
-              <thead>
-                <tr>
-                  <th>Staff Member</th>
-                  <th>Mobile</th>
-                  <th>Role</th>
-                  <th>Status</th>
-                  <th>Joined Date</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredStaff.map((member) => {
-                  const isSelf = currentUser?.id === member.id;
-                  return (
-                    <tr key={member.id}>
-                      <td>
-                        <div className="df-staff__user-cell">
-                          <div className="avatar">{getInitials(member.name)}</div>
-                          <div className="user-info">
-                            <span className="name">
-                              {member.name} {isSelf && <span style={{ color: '#38bdf8', fontSize: '0.725rem' }}>(You)</span>}
-                            </span>
-                            <span className="email">{member.email}</span>
+            <>
+              <table className="df-staff__table">
+                <thead>
+                  <tr>
+                    <th>Staff Member</th>
+                    <th>Mobile</th>
+                    <th>Role</th>
+                    <th>Status</th>
+                    <th>Joined Date</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {staffList.map((member) => {
+                    const isSelf = currentUser?.id === member.id;
+                    return (
+                      <tr key={member.id}>
+                        <td>
+                          <div className="df-staff__user-cell">
+                            <div className="avatar">{getInitials(member.name)}</div>
+                            <div className="user-info">
+                              <span className="name">
+                                {member.name} {isSelf && <span style={{ color: '#38bdf8', fontSize: '0.725rem' }}>(You)</span>}
+                              </span>
+                              <span className="email">{member.email}</span>
+                            </div>
                           </div>
-                        </div>
-                      </td>
-                      <td>{member.mobile || '—'}</td>
-                      <td>
-                        <span className={`df-staff__role-badge df-staff__role-badge--${member.role}`}>
-                          {formatRoleLabel(member.role)}
-                        </span>
-                      </td>
-                      <td>
-                        <button
-                          type="button"
-                          disabled={isSelf}
-                          className={`df-staff__status-btn ${member.is_active ? 'df-staff__status-btn--active' : 'df-staff__status-btn--inactive'}`}
-                          onClick={() => handleToggleStatus(member)}
-                          title={isSelf ? 'Cannot deactivate your own account' : `Click to ${member.is_active ? 'deactivate' : 'activate'}`}
-                        >
-                          <span className="dot" />
-                          <span>{member.is_active ? 'Active' : 'Inactive'}</span>
-                        </button>
-                      </td>
-                      <td>{member.created_at ? new Date(member.created_at).toLocaleDateString() : '—'}</td>
-                      <td>
-                        <div className="df-staff__action-buttons">
-                          <button
-                            type="button"
-                            className="btn-icon btn-icon--edit"
-                            onClick={() => handleOpenEditModal(member)}
-                            title="Edit Staff Member & Role"
-                          >
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-                              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
-                            </svg>
-                          </button>
+                        </td>
+                        <td>{member.mobile || '—'}</td>
+                        <td>
+                          <span className={`df-staff__role-badge df-staff__role-badge--${member.role}`}>
+                            {formatRoleLabel(member.role)}
+                          </span>
+                        </td>
+                        <td>
                           <button
                             type="button"
                             disabled={isSelf}
-                            className="btn-icon btn-icon--delete"
-                            onClick={() => setDeletingStaff(member)}
-                            title={isSelf ? 'Cannot delete your own account' : 'Delete Staff Member'}
+                            className={`df-staff__status-btn ${member.is_active ? 'df-staff__status-btn--active' : 'df-staff__status-btn--inactive'}`}
+                            onClick={() => handleToggleStatus(member)}
+                            title={isSelf ? 'Cannot deactivate your own account' : `Click to ${member.is_active ? 'deactivate' : 'activate'}`}
                           >
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                              <polyline points="3 6 5 6 21 6" />
-                              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-                            </svg>
+                            <span className="dot" />
+                            <span>{member.is_active ? 'Active' : 'Inactive'}</span>
                           </button>
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+                        </td>
+                        <td>{member.created_at ? new Date(member.created_at).toLocaleDateString() : '—'}</td>
+                        <td>
+                          <div className="df-staff__action-buttons">
+                            <button
+                              type="button"
+                              className="btn-icon btn-icon--edit"
+                              onClick={() => handleOpenEditModal(member)}
+                              title="Edit Staff Member & Role"
+                            >
+                              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                              </svg>
+                            </button>
+                            <button
+                              type="button"
+                              disabled={isSelf}
+                              className="btn-icon btn-icon--delete"
+                              onClick={() => setDeletingStaff(member)}
+                              title={isSelf ? 'Cannot delete your own account' : 'Delete Staff Member'}
+                            >
+                              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                <polyline points="3 6 5 6 21 6" />
+                                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                              </svg>
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+
+              <InfiniteScrollSentinel
+                sentinelRef={sentinelRef}
+                loadingMore={loadingMore}
+                hasMore={hasMore}
+                itemCount={staffList.length}
+                totalCount={totalCount}
+                emptyMessage="No staff members found matching your criteria."
+              />
+            </>
           )}
         </div>
       </div>

@@ -17,21 +17,40 @@ import {
   INSERT_PRODUCT_WITH_CATEGORY,
 } from '../queries/subscription.query.js';
 
-export const getSubscriptionsListRepo = async (statusFilter = null) => {
-  let query = GET_ALL_SUBSCRIPTIONS;
-  const params = [];
-
-  if (statusFilter && statusFilter !== 'all') {
-    query = GET_SUBSCRIPTIONS_BY_STATUS;
-    params.push(statusFilter);
-  }
-
+export const getSubscriptionsListRepo = async ({
+  statusFilter = null,
+  search = null,
+  limit = null,
+  offset = null,
+} = {}) => {
   const client = await pool.connect();
   try {
-    await client.query('BEGIN');
-    const subscriptionsRes = await client.query(query, params);
+    let whereConditions = [];
+    let queryParams = [];
+
+    if (statusFilter && statusFilter !== 'all') {
+      queryParams.push(statusFilter);
+      whereConditions.push(`s.status = $${queryParams.length}`);
+    }
+
+    if (search && search.trim()) {
+      queryParams.push(`%${search.trim()}%`);
+      whereConditions.push(`(c.company_name ILIKE $${queryParams.length} OR sp.name ILIKE $${queryParams.length} OR s.billing_cycle::TEXT ILIKE $${queryParams.length})`);
+    }
+
+    let query = GET_ALL_SUBSCRIPTIONS;
+    if (whereConditions.length > 0) {
+      query += ` WHERE ${whereConditions.join(' AND ')}`;
+    }
+    query += ` ORDER BY s.created_at DESC`;
+
+    if (limit !== null && offset !== null) {
+      queryParams.push(limit, offset);
+      query += ` LIMIT $${queryParams.length - 1} OFFSET $${queryParams.length}`;
+    }
+
+    const subscriptionsRes = await client.query(query, queryParams);
     const statusCountsRes = await client.query(GET_SUBSCRIPTION_STATUS_COUNTS);
-    await client.query('COMMIT');
 
     return {
       subscriptions: subscriptionsRes.rows,
@@ -45,7 +64,6 @@ export const getSubscriptionsListRepo = async (statusFilter = null) => {
     };
   } catch (error) {
     console.error('Error in getSubscriptionsListRepo:', error);
-    await client.query('ROLLBACK');
     throw error;
   } finally {
     client.release();

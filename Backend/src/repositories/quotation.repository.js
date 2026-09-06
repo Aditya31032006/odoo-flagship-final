@@ -25,22 +25,27 @@ import {
 import { GET_ACTIVE_APPROVAL_RULES } from '../queries/catalog.query.js';
 import { allocateStockGreedy } from './fulfillment.repository.js';
 
-export const getQuotationsListRepo = async ({ salesRepId = null, customerId = null, status = null, searchQuery = null, role = null } = {}) => {
+export const getQuotationsListRepo = async ({ salesRepId = null, customerId = null, status = null, searchQuery = null, role = null, limit = null, offset = null } = {}) => {
   const client = await pool.connect();
   try {
-    await client.query('BEGIN');
-    const result = await client.query(GET_QUOTATIONS_LIST, [
+    let query = GET_QUOTATIONS_LIST;
+    const params = [
       salesRepId,
       status || null,
       searchQuery || null,
       customerId || null,
       role || null,
-    ]);
-    await client.query('COMMIT');
+    ];
+
+    if (limit !== null && offset !== null) {
+      params.push(limit, offset);
+      query += ` LIMIT $6 OFFSET $7`;
+    }
+
+    const result = await client.query(query, params);
     return result.rows;
   } catch (error) {
     console.error('Error in getQuotationsListRepo:', error);
-    await client.query('ROLLBACK');
     throw error;
   } finally {
     client.release();

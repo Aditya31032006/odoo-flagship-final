@@ -11,9 +11,16 @@ const apiClient = axios.create({
 });
 
 export const invoiceApi = {
-  getInvoices: async (statusFilter = '') => {
-    const params = statusFilter && statusFilter !== 'all' ? { status: statusFilter } : {};
-    const res = await apiClient.get('/invoices', { params });
+  getInvoices: async (params = {}) => {
+    const queryParams = typeof params === 'string'
+      ? (params && params !== 'all' ? { status: params } : {})
+      : {
+          ...(params.status && params.status !== 'all' ? { status: params.status } : {}),
+          ...(params.search ? { search: params.search } : {}),
+          ...(params.page ? { page: params.page } : {}),
+          ...(params.limit ? { limit: params.limit } : {}),
+        };
+    const res = await apiClient.get('/invoices', { params: queryParams });
     return res.data?.data;
   },
 

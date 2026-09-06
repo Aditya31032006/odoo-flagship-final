@@ -6,10 +6,12 @@ import {
   recordPaymentRepo,
 } from '../repositories/invoice.repository.js';
 import { resolveUserCustomerId } from './quotation.controller.js';
+import { parsePaginationParams, buildPaginationMeta } from '../utils/pagination.util.js';
 
 export const getInvoicesList = async (req, res, next) => {
   try {
-    const { status } = req.query;
+    const { status, search } = req.query;
+    const { page, limit, offset } = parsePaginationParams(req.query, { defaultLimit: 10 });
     const user = req.user;
     let customerId = null;
 
@@ -22,14 +24,26 @@ export const getInvoicesList = async (req, res, next) => {
             invoices: [],
             statusCounts: { unpaid_count: 0, paid_count: 0, partially_paid_count: 0, total_count: 0 },
           },
+          pagination: buildPaginationMeta(0, page, limit),
         });
       }
     }
 
-    const data = await getInvoicesListRepo(status, customerId);
+    const data = await getInvoicesListRepo({
+      statusFilter: status,
+      customerId,
+      search,
+      limit,
+      offset,
+    });
+
+    const totalCount = data.invoices[0]?.total_count || 0;
+    const pagination = buildPaginationMeta(totalCount, page, limit);
+
     return res.status(200).json({
       success: true,
       data,
+      pagination,
     });
   } catch (error) {
     next(error);

@@ -23,6 +23,7 @@ export const GET_ALL_APPROVALS_LIST_BY_ROLE = `
     q.blended_risk_score,
     UPPER(q.risk_level::TEXT) AS risk_level,
     q.status::TEXT AS status,
+    COUNT(*) OVER()::INT AS total_count,
     CASE 
       WHEN q.status = 'pending_approval' THEN 
         COALESCE(
@@ -100,7 +101,8 @@ export const GET_ALL_APPROVALS_LIST_BY_ROLE = `
       OR q.blended_risk_score > 0
     ))
   )
-  ORDER BY q.created_at DESC;
+  AND ($2::TEXT IS NULL OR q.quotation_number ILIKE '%' || $2 || '%' OR c.company_name ILIKE '%' || $2 || '%')
+  ORDER BY q.created_at DESC
 `;
 
 export const GET_APPROVAL_DETAIL_HEADER = `

@@ -4,13 +4,24 @@ import {
   getApprovalDetailRepo,
   submitApprovalDecisionRepo,
 } from '../repositories/approval.repository.js';
+import { parsePaginationParams, buildPaginationMeta } from '../utils/pagination.util.js';
 
 export const getApprovalsListController = async (req, res, next) => {
   try {
     const role = req.user?.role || 'admin';
     const userId = req.user?.id || null;
-    const data = await getApprovalsListRepo({ role, userId });
-    return res.status(STATUS_CODES.OK).json({ success: true, data });
+    const { search } = req.query;
+    const { page, limit, offset } = parsePaginationParams(req.query, { defaultLimit: 10 });
+
+    const data = await getApprovalsListRepo({ role, userId, search, limit, offset });
+    const totalCount = data.approvals[0]?.total_count || 0;
+    const pagination = buildPaginationMeta(totalCount, page, limit);
+
+    return res.status(STATUS_CODES.OK).json({
+      success: true,
+      data,
+      pagination,
+    });
   } catch (error) {
     next(error);
   }

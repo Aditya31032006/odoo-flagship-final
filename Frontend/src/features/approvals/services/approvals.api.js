@@ -11,9 +11,9 @@ const apiClient = axios.create({
 });
 
 export const approvalsApi = {
-  getApprovalsList: async () => {
-    const res = await apiClient.get('/approvals');
-    return res.data?.data;
+  getApprovalsList: async (params = {}) => {
+    const res = await apiClient.get('/approvals', { params });
+    return res.data;
   },
 
   getApprovalDetail: async (quotationId) => {

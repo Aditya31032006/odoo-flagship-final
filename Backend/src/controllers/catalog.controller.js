@@ -17,6 +17,7 @@ import {
   deleteProductVariantRepo,
 } from '../repositories/catalog.repository.js';
 import { STATUS_CODES } from '../constants/statusCodes.js';
+import { parsePaginationParams, buildPaginationMeta } from '../utils/pagination.util.js';
 
 export const getCustomersCatalogController = async (req, res, next) => {
   try {
@@ -99,8 +100,17 @@ export const getProductCatalogSummaryController = async (req, res, next) => {
 
 export const getAllProductsController = async (req, res, next) => {
   try {
-    const products = await getAllProductsRepo();
-    return res.status(STATUS_CODES.OK).json({ success: true, data: products });
+    const { search } = req.query;
+    const { page, limit, offset } = parsePaginationParams(req.query, { defaultLimit: 12 });
+    const products = await getAllProductsRepo({ search, limit, offset });
+    const totalCount = products[0]?.total_count || 0;
+    const pagination = buildPaginationMeta(totalCount, page, limit);
+
+    return res.status(STATUS_CODES.OK).json({
+      success: true,
+      data: products,
+      pagination,
+    });
   } catch (error) {
     next(error);
   }

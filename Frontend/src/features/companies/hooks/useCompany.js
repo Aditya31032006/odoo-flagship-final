@@ -1,12 +1,8 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useCallback } from 'react';
 import companyApi from '../services/company.api.js';
+import { useInfiniteScroll } from '../../../shared/hooks/useInfiniteScroll.js';
 
 export function useCompany() {
-  const [companies, setCompanies] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [actionLoading, setActionLoading] = useState(false);
-
   // Search and Filter State
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all'); // 'all' | 'active' | 'inactive'
@@ -15,23 +11,34 @@ export function useCompany() {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [createdCredentials, setCreatedCredentials] = useState(null); // { company, tempPassword }
   const [feedbackMessage, setFeedbackMessage] = useState({ type: '', text: '' });
+  const [actionLoading, setActionLoading] = useState(false);
 
-  const fetchCompanies = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const res = await companyApi.getCompaniesList();
-      setCompanies(res.companies || []);
-    } catch (err) {
-      setError(err.customMessage || 'Failed to load companies.');
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+  // Define fetchFunction for infinite scroll
+  const fetchCompanies = useCallback(
+    async (page, limit) => {
+      const params = { page, limit };
+      if (searchTerm) params.search = searchTerm;
+      if (filterStatus && filterStatus !== 'all') params.status = filterStatus;
+      return await companyApi.getCompaniesList(params);
+    },
+    [searchTerm, filterStatus]
+  );
 
-  useEffect(() => {
-    fetchCompanies();
-  }, [fetchCompanies]);
+  const {
+    items: companies,
+    setItems: setCompanies,
+    total: totalCount,
+    loadingInitial,
+    loadingMore,
+    hasMore,
+    error,
+    sentinelRef,
+    refetch,
+  } = useInfiniteScroll({
+    fetchFunction: fetchCompanies,
+    dependencies: [searchTerm, filterStatus],
+    limit: 10,
+  });
 
   const handleCreateCompany = async (payload) => {
     setActionLoading(true);
@@ -47,7 +54,7 @@ export function useCompany() {
         type: 'success',
         text: res.message || 'Company provisioned successfully!',
       });
-      await fetchCompanies();
+      await refetch();
       return { success: true };
     } catch (err) {
       const msg = err.customMessage || 'Failed to create company.';
@@ -66,7 +73,10 @@ export function useCompany() {
         type: 'success',
         text: `Company ${!currentStatus ? 'activated' : 'deactivated'} successfully.`,
       });
-      await fetchCompanies();
+      // Optimistic update + refetch
+      setCompanies((prev) =>
+        prev.map((c) => (c.company_id === id ? { ...c, is_active: !currentStatus } : c))
+      );
     } catch (err) {
       setFeedbackMessage({
         type: 'error',
@@ -77,29 +87,13 @@ export function useCompany() {
     }
   };
 
-  const filteredCompanies = useMemo(() => {
-    return companies.filter((c) => {
-      const matchesSearch =
-        !searchTerm ||
-        c.company_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        c.gst_number?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        c.primary_contact_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        c.primary_contact_email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        c.company_email?.toLowerCase().includes(searchTerm.toLowerCase());
-
-      const matchesStatus =
-        filterStatus === 'all' ||
-        (filterStatus === 'active' && c.is_active) ||
-        (filterStatus === 'inactive' && !c.is_active);
-
-      return matchesSearch && matchesStatus;
-    });
-  }, [companies, searchTerm, filterStatus]);
-
   return {
-    companies: filteredCompanies,
-    totalCount: companies.length,
-    loading,
+    companies,
+    totalCount,
+    loading: loadingInitial,
+    loadingMore,
+    hasMore,
+    sentinelRef,
     actionLoading,
     error,
     searchTerm,
@@ -112,7 +106,7 @@ export function useCompany() {
     setCreatedCredentials,
     feedbackMessage,
     setFeedbackMessage,
-    fetchCompanies,
+    refetch,
     handleCreateCompany,
     handleToggleStatus,
   };

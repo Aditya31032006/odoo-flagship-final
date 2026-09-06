@@ -1,7 +1,10 @@
 import React, { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router';
 import useFulfillment from '../hooks/useFulfillment.js';
+import { fulfillmentApi } from '../services/fulfillment.api.js';
 import { useDebounce } from '../../../shared/hooks/useDebounce.js';
+import { useInfiniteScroll } from '../../../shared/hooks/useInfiniteScroll.js';
+import InfiniteScrollSentinel from '../../../shared/components/InfiniteScrollSentinel.jsx';
 import WarehouseStockModal from '../components/WarehouseStockModal.jsx';
 import WarehouseDetailModal from '../components/WarehouseDetailModal.jsx';
 import OrderModal from '../components/OrderModal.jsx';
@@ -13,12 +16,12 @@ export const FulfillmentList = () => {
   const navigate = useNavigate();
   const {
     stock,
-    orders,
     meta,
     isLoadingList,
     isMutating,
     error,
     successMsg,
+    refreshList,
     handleCreateStock,
     handleUpdateStock,
     handleDeleteStock,
@@ -36,6 +39,31 @@ export const FulfillmentList = () => {
 
   // Selected warehouse for detail modal
   const [selectedWarehouseId, setSelectedWarehouseId] = useState(null);
+
+  // Infinite scroll hook for orders awaiting fulfillment
+  const {
+    items: orders,
+    loadingInitial: isLoadingOrders,
+    loadingMore: isLoadingMoreOrders,
+    hasMore: hasMoreOrders,
+    totalCount: totalOrdersCount,
+    sentinelRef: ordersSentinelRef,
+    refetch: refetchOrders,
+  } = useInfiniteScroll({
+    fetchFunction: async (page, limit) => {
+      const res = await fulfillmentApi.getList({
+        search: debouncedOrderSearch || undefined,
+        page,
+        limit,
+      });
+      return {
+        data: res?.data?.orders || [],
+        pagination: res?.pagination,
+      };
+    },
+    dependencies: [debouncedOrderSearch],
+    limit: 10,
+  });
 
   // Filtered Stock List
   const filteredStock = useMemo(() => {
@@ -76,19 +104,6 @@ export const FulfillmentList = () => {
     if (!selectedWarehouseId) return null;
     return groupedStock.find((g) => g.warehouse_id === selectedWarehouseId) || null;
   }, [selectedWarehouseId, groupedStock]);
-
-  // Filtered Orders List
-  const filteredOrders = useMemo(() => {
-    if (!debouncedOrderSearch.trim()) return orders;
-    const q = debouncedOrderSearch.trim().toLowerCase();
-    return orders.filter(
-      (o) =>
-        o.order_number?.toLowerCase().includes(q) ||
-        o.customer_name?.toLowerCase().includes(q) ||
-        o.warehouses_display?.toLowerCase().includes(q) ||
-        o.status_display?.toLowerCase().includes(q)
-    );
-  }, [orders, debouncedOrderSearch]);
 
   // Modal States
   const [stockModal, setStockModal] = useState({ isOpen: false, initialData: null });
@@ -169,6 +184,7 @@ export const FulfillmentList = () => {
         await handleCreateOrder(payload);
       }
       setOrderModal({ isOpen: false, initialData: null });
+      refetchOrders();
     } catch (err) {
       console.error('Failed to save order:', err);
     }
@@ -181,10 +197,11 @@ export const FulfillmentList = () => {
         await handleDeleteStock(deleteModal.id);
       } else if (deleteModal.type === 'order') {
         await handleDeleteOrder(deleteModal.id);
+        refetchOrders();
       }
       setDeleteModal({ isOpen: false, type: null, id: null, title: '', message: '' });
     } catch (err) {
-      console.error('Failed to delete:', err);
+      console.error('Delete failed:', err);
     }
   };
 
@@ -378,74 +395,85 @@ export const FulfillmentList = () => {
         </div>
 
         <div className="df-fulfillment__card">
-          {isLoadingList ? (
+          {isLoadingOrders ? (
             <div className="df-fulfillment__empty">
               <div className="df-fulfillment__empty-title">Loading pending orders...</div>
             </div>
           ) : (
-            <table className="df-fulfillment__table">
-              <thead>
-                <tr>
-                  <th>Order</th>
-                  <th>Customer</th>
-                  <th>Status</th>
-                  <th>Warehouses</th>
-                  <th style={{ textAlign: 'right' }}>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredOrders.length === 0 ? (
+            <>
+              <table className="df-fulfillment__table">
+                <thead>
                   <tr>
-                    <td colSpan={5} className="df-fulfillment__empty">
-                      {orderSearch ? 'No orders match your search criteria.' : 'No orders awaiting fulfillment. Click "+ Create Fulfillment Order" above.'}
-                    </td>
+                    <th>Order</th>
+                    <th>Customer</th>
+                    <th>Status</th>
+                    <th>Warehouses</th>
+                    <th style={{ textAlign: 'right' }}>Actions</th>
                   </tr>
-                ) : (
-                  filteredOrders.map((order) => (
-                    <tr
-                      key={order.order_id}
-                      className="is-clickable"
-                      onClick={() => handleOrderRowClick(order)}
-                    >
-                      <td>
-                        <span className="df-fulfillment__code">
-                          {order.order_number || `ORD-${order.order_id}`}
-                        </span>
-                      </td>
-                      <td>
-                        <strong>{order.customer_name || 'Customer'}</strong>
-                      </td>
-                      <td>
-                        <span className="df-fulfillment__status-pill">
-                          {order.status_display || 'Split Pending'}
-                        </span>
-                      </td>
-                      <td>{order.warehouses_display || 'Main Warehouse'}</td>
-                      <td onClick={(e) => e.stopPropagation()}>
-                        <div className="df-fulfillment__row-actions">
-                          <button
-                            type="button"
-                            className="df-fulfillment__icon-btn"
-                            title="Edit Order"
-                            onClick={(e) => handleOpenEditOrder(e, order)}
-                          >
-                            ✎
-                          </button>
-                          <button
-                            type="button"
-                            className="df-fulfillment__icon-btn df-fulfillment__icon-btn--delete"
-                            title="Delete Order"
-                            onClick={(e) => handleOpenDeleteOrder(e, order)}
-                          >
-                            ✕
-                          </button>
-                        </div>
+                </thead>
+                <tbody>
+                  {orders.length === 0 ? (
+                    <tr>
+                      <td colSpan={5} className="df-fulfillment__empty">
+                        {orderSearch ? 'No orders match your search criteria.' : 'No orders awaiting fulfillment. Click "+ Create Fulfillment Order" above.'}
                       </td>
                     </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
+                  ) : (
+                    orders.map((order) => (
+                      <tr
+                        key={order.order_id}
+                        className="is-clickable"
+                        onClick={() => handleOrderRowClick(order)}
+                      >
+                        <td>
+                          <span className="df-fulfillment__code">
+                            {order.order_number || `ORD-${order.order_id}`}
+                          </span>
+                        </td>
+                        <td>
+                          <strong>{order.customer_name || 'Customer'}</strong>
+                        </td>
+                        <td>
+                          <span className="df-fulfillment__status-pill">
+                            {order.status_display || 'Split Pending'}
+                          </span>
+                        </td>
+                        <td>{order.warehouses_display || 'Main Warehouse'}</td>
+                        <td onClick={(e) => e.stopPropagation()}>
+                          <div className="df-fulfillment__row-actions">
+                            <button
+                              type="button"
+                              className="df-fulfillment__icon-btn"
+                              title="Edit Order"
+                              onClick={(e) => handleOpenEditOrder(e, order)}
+                            >
+                              ✎
+                            </button>
+                            <button
+                              type="button"
+                              className="df-fulfillment__icon-btn df-fulfillment__icon-btn--delete"
+                              title="Delete Order"
+                              onClick={(e) => handleOpenDeleteOrder(e, order)}
+                            >
+                              ✕
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+
+              <InfiniteScrollSentinel
+                sentinelRef={ordersSentinelRef}
+                loading={isLoadingMoreOrders}
+                hasMore={hasMoreOrders}
+                count={orders.length}
+                total={totalOrdersCount}
+                itemName="fulfillment orders"
+              />
+            </>
           )}
         </div>
 

@@ -13,13 +13,26 @@ import {
   UPDATE_QUOTATION_STATUS,
 } from '../queries/approval.query.js';
 
-export const getApprovalsListRepo = async ({ role = 'admin', userId = null } = {}) => {
+export const getApprovalsListRepo = async ({
+  role = 'admin',
+  userId = null,
+  search = null,
+  limit = null,
+  offset = null,
+} = {}) => {
   const client = await pool.connect();
   try {
-    await client.query('BEGIN');
     const countsRes = await client.query(GET_APPROVALS_SUMMARY_COUNTS);
-    const listRes = await client.query(GET_ALL_APPROVALS_LIST_BY_ROLE, [role || 'admin']);
-    await client.query('COMMIT');
+
+    let query = GET_ALL_APPROVALS_LIST_BY_ROLE;
+    const params = [role || 'admin', search ? search.trim() : null];
+
+    if (limit !== null && offset !== null) {
+      params.push(limit, offset);
+      query += ` LIMIT $3 OFFSET $4`;
+    }
+
+    const listRes = await client.query(query, params);
 
     return {
       counts: countsRes.rows[0] || {
@@ -32,7 +45,6 @@ export const getApprovalsListRepo = async ({ role = 'admin', userId = null } = {
     };
   } catch (error) {
     console.error('Error in getApprovalsListRepo:', error);
-    await client.query('ROLLBACK');
     throw error;
   } finally {
     client.release();

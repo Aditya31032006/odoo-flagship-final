@@ -210,16 +210,21 @@ export const getProductCatalogSummaryRepo = async () => {
   }
 };
 
-export const getAllProductsRepo = async () => {
+export const getAllProductsRepo = async ({ search = null, limit = null, offset = null } = {}) => {
   const client = await pool.connect();
   try {
-    await client.query('BEGIN');
-    const result = await client.query(GET_ALL_PRODUCTS_WITH_VARIANTS_COUNT);
-    await client.query('COMMIT');
+    let query = GET_ALL_PRODUCTS_WITH_VARIANTS_COUNT;
+    const params = [search ? search.trim() : null];
+
+    if (limit !== null && offset !== null) {
+      params.push(limit, offset);
+      query += ` LIMIT $2 OFFSET $3`;
+    }
+
+    const result = await client.query(query, params);
     return result.rows;
   } catch (error) {
     console.error('Error in getAllProductsRepo:', error);
-    await client.query('ROLLBACK');
     throw error;
   } finally {
     client.release();

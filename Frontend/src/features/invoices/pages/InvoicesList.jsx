@@ -1,7 +1,9 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router';
 import { invoiceApi } from '../services/invoice.api.js';
 import { useDebounce } from '../../../shared/hooks/useDebounce.js';
+import { useInfiniteScroll } from '../../../shared/hooks/useInfiniteScroll.js';
+import InfiniteScrollSentinel from '../../../shared/components/InfiniteScrollSentinel.jsx';
 import '../styles/invoices.scss';
 
 const formatDate = (dateStr) => {
@@ -23,46 +25,37 @@ const formatCurrency = (val) => {
 const InvoicesList = () => {
   const navigate = useNavigate();
 
-  const [invoices, setInvoices] = useState([]);
   const [statusCounts, setStatusCounts] = useState({ unpaid_count: 0, paid_count: 0, total_count: 0 });
   const [selectedFilter, setSelectedFilter] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
   const debouncedSearch = useDebounce(searchQuery, 300);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState(null);
 
-  const filteredInvoices = useMemo(() => {
-    if (!debouncedSearch.trim()) return invoices;
-    const q = debouncedSearch.trim().toLowerCase();
-    return invoices.filter(
-      (inv) =>
-        inv.invoice_number?.toLowerCase().includes(q) ||
-        inv.customer_name?.toLowerCase().includes(q) ||
-        inv.order_number?.toLowerCase().includes(q) ||
-        inv.status?.toLowerCase().includes(q)
-    );
-  }, [invoices, debouncedSearch]);
-
-  const fetchInvoices = useCallback(async (filter) => {
-    try {
-      setIsLoading(true);
-      setError(null);
-      const data = await invoiceApi.getInvoices(filter);
-      if (data) {
-        setInvoices(data.invoices || []);
-        if (data.statusCounts) setStatusCounts(data.statusCounts);
+  const {
+    items: invoices,
+    loadingInitial,
+    loadingMore,
+    hasMore,
+    totalCount,
+    sentinelRef,
+  } = useInfiniteScroll({
+    fetchFunction: async (page, limit) => {
+      const data = await invoiceApi.getInvoices({
+        status: selectedFilter !== 'all' ? selectedFilter : undefined,
+        search: debouncedSearch || undefined,
+        page,
+        limit,
+      });
+      if (data?.statusCounts) {
+        setStatusCounts(data.statusCounts);
       }
-    } catch (err) {
-      console.error('Failed to load invoices:', err);
-      setError('Unable to load invoices from database.');
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    fetchInvoices(selectedFilter);
-  }, [fetchInvoices, selectedFilter]);
+      return {
+        data: data?.invoices || [],
+        pagination: data?.pagination,
+      };
+    },
+    dependencies: [selectedFilter, debouncedSearch],
+    limit: 10,
+  });
 
   const handleFilterClick = (status) => {
     setSelectedFilter((prev) => (prev === status ? 'all' : status));
@@ -120,7 +113,7 @@ const InvoicesList = () => {
                 className="df-invoices__status-card df-invoices__status-card--all"
                 onClick={() => setSelectedFilter('all')}
               >
-                Show All ({statusCounts.total_count || invoices.length})
+                Show All ({statusCounts.total_count || totalCount || invoices.length})
               </button>
             )}
           </div>
@@ -150,57 +143,62 @@ const InvoicesList = () => {
 
         {/* Invoices Table */}
         <div className="df-invoices__table-wrapper">
-          {isLoading ? (
-            <div className="df-invoices__loading">Loading invoices...</div>
-          ) : error ? (
-            <div className="df-invoices__empty">{error}</div>
-          ) : (
-            <table className="df-invoices__table df-invoices__table--clickable">
-              <thead>
+          <table className="df-invoices__table df-invoices__table--clickable">
+            <thead>
+              <tr>
+                <th>Invoice #</th>
+                <th>Customer</th>
+                <th>Amount</th>
+                <th>Status</th>
+                <th>Due Date</th>
+              </tr>
+            </thead>
+            <tbody>
+              {loadingInitial ? (
                 <tr>
-                  <th>Invoice #</th>
-                  <th>Customer</th>
-                  <th>Amount</th>
-                  <th>Status</th>
-                  <th>Due Date</th>
+                  <td colSpan="5" className="df-invoices__loading">Loading invoices...</td>
                 </tr>
-              </thead>
-              <tbody>
-                {filteredInvoices.length === 0 ? (
-                  <tr>
-                    <td colSpan="5" className="df-invoices__empty">
-                      {searchQuery ? 'No invoices match your search.' : 'No invoices found for the selected view.'}
-                    </td>
-                  </tr>
-                ) : (
-                  filteredInvoices.map((inv) => {
-                    const isPaid = inv.status === 'paid' || parseFloat(inv.paid_amount) >= parseFloat(inv.grand_total);
-                    const statusLabel = isPaid ? 'Paid' : (parseFloat(inv.paid_amount) > 0 ? 'Partially Paid' : 'Unpaid');
-                    const badgeClass = isPaid ? 'paid' : (parseFloat(inv.paid_amount) > 0 ? 'partially_paid' : 'unpaid');
+              ) : invoices.length === 0 ? (
+                <tr>
+                  <td colSpan="5" className="df-invoices__empty">
+                    {searchQuery ? 'No invoices match your search.' : 'No invoices found for the selected view.'}
+                  </td>
+                </tr>
+              ) : (
+                invoices.map((inv) => {
+                  const isPaid = inv.status === 'paid' || parseFloat(inv.paid_amount) >= parseFloat(inv.grand_total);
+                  const statusLabel = isPaid ? 'Paid' : (parseFloat(inv.paid_amount) > 0 ? 'Partially Paid' : 'Unpaid');
+                  const badgeClass = isPaid ? 'paid' : (parseFloat(inv.paid_amount) > 0 ? 'partially_paid' : 'unpaid');
 
-                    return (
-                      <tr key={inv.id} onClick={() => handleRowClick(inv.id)}>
-                        <td>
-                          <strong>{inv.invoice_number}</strong>
-                        </td>
-                        <td>{inv.customer_name || 'Customer'}</td>
-                        <td>{formatCurrency(inv.grand_total)}</td>
-                        <td>
-                          <span className={`df-invoices__badge df-invoices__badge--${badgeClass}`}>
-                            {statusLabel}
-                          </span>
-                        </td>
-                        <td>{formatDate(inv.due_date)}</td>
-                      </tr>
-                    );
-                  })
-                )}
-              </tbody>
-            </table>
-          )}
+                  return (
+                    <tr key={inv.id} onClick={() => handleRowClick(inv.id)}>
+                      <td>
+                        <strong>{inv.invoice_number}</strong>
+                      </td>
+                      <td>{inv.customer_name || 'Customer'}</td>
+                      <td>{formatCurrency(inv.grand_total)}</td>
+                      <td>
+                        <span className={`df-invoices__badge df-invoices__badge--${badgeClass}`}>
+                          {statusLabel}
+                        </span>
+                      </td>
+                      <td>{formatDate(inv.due_date)}</td>
+                    </tr>
+                  );
+                })
+              )}
+            </tbody>
+          </table>
         </div>
 
-       
+        <InfiniteScrollSentinel
+          sentinelRef={sentinelRef}
+          loading={loadingMore}
+          hasMore={hasMore}
+          count={invoices.length}
+          total={totalCount}
+          itemName="invoices"
+        />
       </div>
     </div>
   );

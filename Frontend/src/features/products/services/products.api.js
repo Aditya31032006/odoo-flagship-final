@@ -16,9 +16,9 @@ export const productsApi = {
     return res.data?.data;
   },
 
-  getAllProducts: async () => {
-    const res = await apiClient.get('/catalog/products/all');
-    return res.data?.data || [];
+  getAllProducts: async (params = {}) => {
+    const res = await apiClient.get('/catalog/products/all', { params });
+    return res.data;
   },
 
   getCategories: async () => {

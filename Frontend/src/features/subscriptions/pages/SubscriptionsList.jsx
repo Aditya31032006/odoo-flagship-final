@@ -1,9 +1,11 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router';
 import { useSelector } from 'react-redux';
 import { useForm } from 'react-hook-form';
 import { subscriptionApi } from '../services/subscription.api.js';
 import { useDebounce } from '../../../shared/hooks/useDebounce.js';
+import { useInfiniteScroll } from '../../../shared/hooks/useInfiniteScroll.js';
+import InfiniteScrollSentinel from '../../../shared/components/InfiniteScrollSentinel.jsx';
 import PermissionGate from '../../../shared/components/PermissionGate.jsx';
 import { useToast } from '../../../shared/context/ToastContext.jsx';
 import '../styles/subscriptions.scss';
@@ -29,26 +31,10 @@ export const SubscriptionsList = () => {
   const { toast } = useToast();
   const user = useSelector((state) => state.auth?.user);
 
-  const [subscriptions, setSubscriptions] = useState([]);
   const [statusCounts, setStatusCounts] = useState({});
   const [selectedFilter, setSelectedFilter] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
   const debouncedSearch = useDebounce(searchQuery, 300);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState(null);
-
-  const filteredSubscriptions = useMemo(() => {
-    if (!debouncedSearch.trim()) return subscriptions;
-    const q = debouncedSearch.trim().toLowerCase();
-    return subscriptions.filter(
-      (s) =>
-        s.customer_name?.toLowerCase().includes(q) ||
-        s.plan_name?.toLowerCase().includes(q) ||
-        s.billing_cycle?.toLowerCase().includes(q) ||
-        s.order_number?.toLowerCase().includes(q) ||
-        s.status?.toLowerCase().includes(q)
-    );
-  }, [subscriptions, debouncedSearch]);
 
   // Modal State for "+ New Plan (Admin)"
   const [isPlanModalOpen, setIsPlanModalOpen] = useState(false);
@@ -70,26 +56,33 @@ export const SubscriptionsList = () => {
     },
   });
 
-  const fetchSubscriptions = useCallback(async (filter) => {
-    try {
-      setIsLoading(true);
-      setError(null);
-      const data = await subscriptionApi.getSubscriptions(filter);
-      if (data) {
-        setSubscriptions(data.subscriptions || []);
-        setStatusCounts(data.statusCounts || {});
+  const {
+    items: subscriptions,
+    loadingInitial,
+    loadingMore,
+    hasMore,
+    totalCount,
+    sentinelRef,
+    refetch,
+  } = useInfiniteScroll({
+    fetchFunction: async (page, limit) => {
+      const data = await subscriptionApi.getSubscriptions({
+        status: selectedFilter !== 'all' ? selectedFilter : undefined,
+        search: debouncedSearch || undefined,
+        page,
+        limit,
+      });
+      if (data?.statusCounts) {
+        setStatusCounts(data.statusCounts);
       }
-    } catch (err) {
-      console.error('Failed to load subscriptions:', err);
-      setError('Subscriptions could not be loaded from database.');
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    fetchSubscriptions(selectedFilter);
-  }, [fetchSubscriptions, selectedFilter]);
+      return {
+        data: data?.subscriptions || [],
+        pagination: data?.pagination,
+      };
+    },
+    dependencies: [selectedFilter, debouncedSearch],
+    limit: 10,
+  });
 
   const handleFilterClick = (filter) => {
     setSelectedFilter(filter);
@@ -114,7 +107,7 @@ export const SubscriptionsList = () => {
       setIsPlanModalOpen(false);
       resetPlanForm();
       toast.success('Subscription plan created successfully!');
-      fetchSubscriptions(selectedFilter);
+      refetch();
     } catch (err) {
       console.error('Failed to create plan:', err);
       toast.error(err.response?.data?.message || 'Failed to create plan');
@@ -181,7 +174,7 @@ export const SubscriptionsList = () => {
                 className="df-subscriptions__status-card df-subscriptions__status-card--all"
                 onClick={() => setSelectedFilter('all')}
               >
-                Show All ({statusCounts.total_count ?? subscriptions.length})
+                Show All ({statusCounts.total_count ?? totalCount ?? subscriptions.length})
               </button>
             )}
           </div>
@@ -211,55 +204,56 @@ export const SubscriptionsList = () => {
 
         {/* Subscriptions Table */}
         <div className="df-subscriptions__table-wrapper">
-          {isLoading ? (
-            <div className="df-subscriptions__loading">Loading subscriptions...</div>
-          ) : error ? (
-            <div className="df-subscriptions__empty">{error}</div>
-          ) : (
-            <table className="df-subscriptions__table df-subscriptions__table--clickable">
-              <thead>
+          <table className="df-subscriptions__table df-subscriptions__table--clickable">
+            <thead>
+              <tr>
+                <th>Customer</th>
+                <th>Plan</th>
+                <th>Cycle</th>
+                <th>Next Bill</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {loadingInitial ? (
                 <tr>
-                  <th>Customer</th>
-                  <th>Plan</th>
-                  <th>Cycle</th>
-                  <th>Next Bill</th>
-                  <th>Status</th>
+                  <td colSpan="5" className="df-subscriptions__loading">Loading subscriptions...</td>
                 </tr>
-              </thead>
-              <tbody>
-                {filteredSubscriptions.length === 0 ? (
-                  <tr>
-                    <td colSpan="5" className="df-subscriptions__empty">
-                      {searchQuery ? 'No subscriptions match your search.' : 'No subscriptions found for the selected filter.'}
+              ) : subscriptions.length === 0 ? (
+                <tr>
+                  <td colSpan="5" className="df-subscriptions__empty">
+                    {searchQuery ? 'No subscriptions match your search.' : 'No subscriptions found for the selected filter.'}
+                  </td>
+                </tr>
+              ) : (
+                subscriptions.map((sub) => (
+                  <tr key={sub.id} onClick={() => handleRowClick(sub.id)}>
+                    <td>
+                      <strong>{sub.customer_name || 'N/A'}</strong>
+                    </td>
+                    <td>{sub.plan_name || 'N/A'}</td>
+                    <td>{formatCycle(sub.billing_cycle)}</td>
+                    <td>{formatDate(sub.next_bill_date, sub.status)}</td>
+                    <td>
+                      <span className={`df-subscriptions__badge df-subscriptions__badge--${sub.status}`}>
+                        {sub.status}
+                      </span>
                     </td>
                   </tr>
-                ) : (
-                  filteredSubscriptions.map((sub) => (
-                    <tr key={sub.id} onClick={() => handleRowClick(sub.id)}>
-                      <td>
-                        <strong>{sub.customer_name || 'N/A'}</strong>
-                      </td>
-                      <td>{sub.plan_name || 'N/A'}</td>
-                      <td>{formatCycle(sub.billing_cycle)}</td>
-                      <td>{formatDate(sub.next_bill_date, sub.status)}</td>
-                      <td>
-                        <span className={`df-subscriptions__badge df-subscriptions__badge--${sub.status}`}>
-                          {sub.status}
-                        </span>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          )}
+                ))
+              )}
+            </tbody>
+          </table>
         </div>
 
-        
-
-        {/* + New Plan (Admin) Action */}
-        
-      </div>
+        <InfiniteScrollSentinel
+          sentinelRef={sentinelRef}
+          loading={loadingMore}
+          hasMore={hasMore}
+          count={subscriptions.length}
+          total={totalCount}
+          itemName="subscriptions"
+        />
 
       {/* Modal: + New Plan */}
       {isPlanModalOpen && (
@@ -363,6 +357,7 @@ export const SubscriptionsList = () => {
           </div>
         </div>
       )}
+      </div>
     </div>
   );
 };

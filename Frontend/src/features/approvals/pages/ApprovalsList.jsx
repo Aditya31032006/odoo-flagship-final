@@ -1,22 +1,44 @@
 import React, { useState, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router';
-import useApprovals from '../hooks/useApprovals.js';
+import { approvalsApi } from '../services/approvals.api.js';
 import { useDebounce } from '../../../shared/hooks/useDebounce.js';
+import { useInfiniteScroll } from '../../../shared/hooks/useInfiniteScroll.js';
+import InfiniteScrollSentinel from '../../../shared/components/InfiniteScrollSentinel.jsx';
 import PermissionGate from '../../../shared/components/PermissionGate.jsx';
 import '../styles/approvals.scss';
 
 export const ApprovalsList = () => {
   const navigate = useNavigate();
-  const {
-    counts,
-    approvals,
-    isLoadingList,
-    error,
-  } = useApprovals();
-
+  const [counts, setCounts] = useState({ pending_count: 0, returned_count: 0, approved_count: 0, total_count: 0 });
   const [selectedFilter, setSelectedFilter] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
   const debouncedSearch = useDebounce(searchQuery, 300);
+
+  const {
+    items: approvals,
+    loadingInitial,
+    loadingMore,
+    hasMore,
+    totalCount,
+    sentinelRef,
+  } = useInfiniteScroll({
+    fetchFunction: async (page, limit) => {
+      const res = await approvalsApi.getApprovalsList({
+        search: debouncedSearch || undefined,
+        page,
+        limit,
+      });
+      if (res?.data?.counts) {
+        setCounts(res.data.counts);
+      }
+      return {
+        data: res?.data?.approvals || [],
+        pagination: res?.pagination,
+      };
+    },
+    dependencies: [debouncedSearch],
+    limit: 10,
+  });
 
   const handleFilterClick = (filter) => {
     setSelectedFilter((prev) => (prev === filter ? 'all' : filter));
@@ -52,17 +74,8 @@ export const ApprovalsList = () => {
       );
     }
 
-    if (!debouncedSearch.trim()) return list;
-    const q = debouncedSearch.trim().toLowerCase();
-    return list.filter(
-      (item) =>
-        item.quotation_number?.toLowerCase().includes(q) ||
-        item.customer_name?.toLowerCase().includes(q) ||
-        item.stage?.toLowerCase().includes(q) ||
-        item.assigned_to?.toLowerCase().includes(q) ||
-        item.risk_level?.toLowerCase().includes(q)
-    );
-  }, [approvals, selectedFilter, debouncedSearch]);
+    return list;
+  }, [approvals, selectedFilter]);
 
   const handleRowClick = (quotationId) => {
     navigate(`/approvals/${quotationId}`);
@@ -101,13 +114,6 @@ export const ApprovalsList = () => {
           </div>
         </div>
 
-        {/* Error notification if any */}
-        {error && (
-          <div className="df-approvals__banner df-approvals__banner--danger">
-            <span>{error}</span>
-          </div>
-        )}
-
         {/* KPI Badges / Counts Bar & Search Input */}
         <div className="df-toolbar-row">
           <div className="df-approvals__kpis" style={{ margin: 0 }}>
@@ -138,7 +144,7 @@ export const ApprovalsList = () => {
                 className="df-approvals__kpi-card df-approvals__kpi-card--all"
                 onClick={() => setSelectedFilter('all')}
               >
-                Show All ({counts?.total_count ?? (approvals?.length || 0)})
+                Show All ({counts?.total_count ?? totalCount ?? (approvals?.length || 0)})
               </button>
             )}
           </div>
@@ -168,7 +174,7 @@ export const ApprovalsList = () => {
 
         {/* Approvals Table Card */}
         <div className="df-approvals__card">
-          {isLoadingList ? (
+          {loadingInitial ? (
             <div className="df-approvals__empty">
               <div className="df-approvals__empty-title">Loading approvals...</div>
             </div>
@@ -178,74 +184,85 @@ export const ApprovalsList = () => {
               <p>{searchQuery ? 'No approval requests match your search criteria.' : 'No quotation discount approval requests match your selected filter.'}</p>
             </div>
           ) : (
-            <table className="df-approvals__table">
-              <thead>
-                <tr>
-                  <th>Quotation</th>
-                  <th>Customer</th>
-                  <th>Blended Risk</th>
-                  <th>Stage</th>
-                  <th>Assigned To</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredApprovals.map((item) => {
-                  const riskLevel = item.risk_level?.toUpperCase() || 'LOW';
-                  const isPendingStage = item.stage?.includes('Sales Manager') || item.stage?.includes('Finance');
-                  const isAuto = item.stage === 'Auto-Approved' || item.stage === 'Approved';
-                  const isReturned = item.stage === 'Returned for Revision';
+            <>
+              <table className="df-approvals__table">
+                <thead>
+                  <tr>
+                    <th>Quotation</th>
+                    <th>Customer</th>
+                    <th>Blended Risk</th>
+                    <th>Stage</th>
+                    <th>Assigned To</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredApprovals.map((item) => {
+                    const riskLevel = item.risk_level?.toUpperCase() || 'LOW';
+                    const isPendingStage = item.stage?.includes('Sales Manager') || item.stage?.includes('Finance');
+                    const isAuto = item.stage === 'Auto-Approved' || item.stage === 'Approved';
+                    const isReturned = item.stage === 'Returned for Revision';
 
-                  return (
-                    <tr
-                      key={item.quotation_id}
-                      className="is-clickable"
-                      onClick={() => handleRowClick(item.quotation_id)}
-                      id={`approval-row-${item.quotation_id}`}
-                    >
-                      <td>
-                        <span className="df-approvals__code">
-                          {item.quotation_number || `Q-${item.quotation_id}`}
-                        </span>
-                      </td>
-                      <td>
-                        <span className="df-approvals__company">
-                          {item.customer_name || 'Customer'}
-                        </span>
-                      </td>
-                      <td>
-                        <span
-                          className={`df-approvals__risk-badge df-approvals__risk-badge--${
-                            riskLevel === 'HIGH'
-                              ? 'high'
-                              : riskLevel === 'MEDIUM'
-                              ? 'medium'
-                              : 'low'
-                          }`}
-                        >
-                          {riskLevel}
-                        </span>
-                      </td>
-                      <td>
-                        <span
-                          className={`df-approvals__stage-badge ${
-                            isAuto
-                              ? 'df-approvals__stage-badge--auto'
-                              : isPendingStage
-                              ? 'df-approvals__stage-badge--sales'
-                              : isReturned
-                              ? 'df-approvals__stage-badge--returned'
-                              : ''
-                          }`}
-                        >
-                          {item.stage}
-                        </span>
-                      </td>
-                      <td>{item.assigned_to || '-'}</td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+                    return (
+                      <tr
+                        key={item.quotation_id}
+                        className="is-clickable"
+                        onClick={() => handleRowClick(item.quotation_id)}
+                        id={`approval-row-${item.quotation_id}`}
+                      >
+                        <td>
+                          <span className="df-approvals__code">
+                            {item.quotation_number || `Q-${item.quotation_id}`}
+                          </span>
+                        </td>
+                        <td>
+                          <span className="df-approvals__company">
+                            {item.customer_name || 'Customer'}
+                          </span>
+                        </td>
+                        <td>
+                          <span
+                            className={`df-approvals__risk-badge df-approvals__risk-badge--${
+                              riskLevel === 'HIGH'
+                                ? 'high'
+                                : riskLevel === 'MEDIUM'
+                                ? 'medium'
+                                : 'low'
+                            }`}
+                          >
+                            {riskLevel}
+                          </span>
+                        </td>
+                        <td>
+                          <span
+                            className={`df-approvals__stage-badge ${
+                              isAuto
+                                ? 'df-approvals__stage-badge--auto'
+                                : isPendingStage
+                                ? 'df-approvals__stage-badge--sales'
+                                : isReturned
+                                ? 'df-approvals__stage-badge--returned'
+                                : ''
+                            }`}
+                          >
+                            {item.stage}
+                          </span>
+                        </td>
+                        <td>{item.assigned_to || '-'}</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+
+              <InfiniteScrollSentinel
+                sentinelRef={sentinelRef}
+                loading={loadingMore}
+                hasMore={hasMore}
+                count={approvals.length}
+                total={totalCount}
+                itemName="approvals"
+              />
+            </>
           )}
         </div>
       </div>

@@ -8,16 +8,23 @@ import {
 import { findUserRepo } from '../repositories/auth.repository.js';
 import { hashPassword, generateRandomPassword } from '../utils/password.util.js';
 import { addCompanyInvitationJob } from '../jobs/emailQueue.js';
+import { parsePaginationParams, buildPaginationMeta } from '../utils/pagination.util.js';
 
 /**
- * List all client companies with primary contact info and metrics
+ * List all client companies with primary contact info, metrics, and pagination
  */
 export const listCompaniesController = async (req, res, next) => {
   try {
-    const companies = await listCompaniesWithPrimaryUserRepo();
+    const { search, status } = req.query;
+    const { page, limit, offset } = parsePaginationParams(req.query, { defaultLimit: 10 });
+    const companies = await listCompaniesWithPrimaryUserRepo({ search, status, limit, offset });
+    const totalCount = companies[0]?.total_count || 0;
+    const pagination = buildPaginationMeta(totalCount, page, limit);
+
     return res.status(STATUS_CODES.OK).json({
       message: 'Companies retrieved successfully',
       companies,
+      pagination,
     });
   } catch (error) {
     next(error);

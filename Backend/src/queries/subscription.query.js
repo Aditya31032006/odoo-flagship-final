@@ -12,6 +12,7 @@ export const GET_ALL_SUBSCRIPTIONS = `
     s.status,
     s.created_at,
     s.updated_at,
+    COUNT(*) OVER()::INT AS total_count,
     c.company_name AS customer_name,
     c.email AS customer_email,
     sp.name AS plan_name,
@@ -34,7 +35,6 @@ export const GET_ALL_SUBSCRIPTIONS = `
   FROM subscriptions s
   JOIN customers c ON s.customer_id = c.id
   JOIN subscription_plans sp ON s.subscription_plan_id = sp.id
-  ORDER BY s.created_at DESC;
 `;
 
 export const GET_SUBSCRIPTION_STATUS_COUNTS = `
