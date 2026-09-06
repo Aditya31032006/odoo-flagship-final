@@ -768,6 +768,13 @@ export const payQuotationRepo = async ({
 
     await client.query(UPDATE_QUOTATION_STATUS_BY_ID, ['payment', quotationId]);
 
+    // Auto-resolve any deal health flags for this quotation since payment is complete
+    await client.query(`
+      UPDATE deal_health_flags 
+      SET action = 'resolved', detail = 'Resolved: Payment completed', resolved_at = NOW() 
+      WHERE quotation_id = $1
+    `, [quotationId]);
+
     if (orderId) {
       await client.query(UPDATE_ORDER_STATUS_BY_ID, ['fulfilled', orderId]);
     }

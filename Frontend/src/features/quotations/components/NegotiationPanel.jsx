@@ -24,6 +24,7 @@ export const NegotiationPanel = memo(({
   const [showCounterForm, setShowCounterForm] = useState(false);
 
   const messagesEndRef = useRef(null);
+  const feedRef = useRef(null);
 
   // 1. React Hook Form for Counter-Offer
   const {
@@ -80,9 +81,11 @@ export const NegotiationPanel = memo(({
     loadNegotiation();
   }, [quotationId]);
 
-  // Scroll messages to bottom on new message
+  // Scroll internal messages container to bottom without scrolling window/page
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    if (feedRef.current) {
+      feedRef.current.scrollTop = feedRef.current.scrollHeight;
+    }
   }, [negotiation?.messages]);
 
   // Submit counter-offer handler
@@ -409,7 +412,7 @@ export const NegotiationPanel = memo(({
       )}
 
       {/* Messages Feed */}
-      <div className="df-negotiation-panel__feed">
+      <div className="df-negotiation-panel__feed" ref={feedRef}>
         {loading ? (
           <div className="empty-chat">Loading conversation...</div>
         ) : !negotiation?.messages || negotiation.messages.length === 0 ? (
