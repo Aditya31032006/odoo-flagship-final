@@ -17,6 +17,7 @@ export const getApprovalsListRepo = async ({
   role = 'admin',
   userId = null,
   search = null,
+  status = null,
   limit = null,
   offset = null,
 } = {}) => {
@@ -25,11 +26,11 @@ export const getApprovalsListRepo = async ({
     const countsRes = await client.query(GET_APPROVALS_SUMMARY_COUNTS);
 
     let query = GET_ALL_APPROVALS_LIST_BY_ROLE;
-    const params = [role || 'admin', search ? search.trim() : null];
+    const params = [role || 'admin', search ? search.trim() : null, status || null];
 
     if (limit !== null && offset !== null) {
       params.push(limit, offset);
-      query += ` LIMIT $3 OFFSET $4`;
+      query += ` LIMIT $4 OFFSET $5`;
     }
 
     const listRes = await client.query(query, params);

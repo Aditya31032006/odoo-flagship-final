@@ -17,13 +17,14 @@ export const listCompaniesController = async (req, res, next) => {
   try {
     const { search, status } = req.query;
     const { page, limit, offset } = parsePaginationParams(req.query, { defaultLimit: 10 });
-    const companies = await listCompaniesWithPrimaryUserRepo({ search, status, limit, offset });
-    const totalCount = companies[0]?.total_count || 0;
-    const pagination = buildPaginationMeta(totalCount, page, limit);
+    const { companies, counts } = await listCompaniesWithPrimaryUserRepo({ search, status, limit, offset });
+    const filteredTotal = companies[0]?.total_count || 0;
+    const pagination = buildPaginationMeta(filteredTotal, page, limit);
 
     return res.status(STATUS_CODES.OK).json({
       message: 'Companies retrieved successfully',
       companies,
+      counts,
       pagination,
     });
   } catch (error) {

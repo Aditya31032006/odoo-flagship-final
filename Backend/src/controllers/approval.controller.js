@@ -10,10 +10,10 @@ export const getApprovalsListController = async (req, res, next) => {
   try {
     const role = req.user?.role || 'admin';
     const userId = req.user?.id || null;
-    const { search } = req.query;
-    const { page, limit, offset } = parsePaginationParams(req.query, { defaultLimit: 10 });
+    const { search, status } = req.query;
+    const { page, limit, offset } = parsePaginationParams(req.query, { defaultLimit: 15 });
 
-    const data = await getApprovalsListRepo({ role, userId, search, limit, offset });
+    const data = await getApprovalsListRepo({ role, userId, search, status, limit, offset });
     const totalCount = data.approvals[0]?.total_count || 0;
     const pagination = buildPaginationMeta(totalCount, page, limit);
 

@@ -653,10 +653,11 @@ def seed_database():
         # 14. ORDERS, MULTI-WAREHOUSE SPLITS & INVOICES
         # ---------------------------------------------------------------------
         print("\n1️⃣4️⃣ Seeding Orders, Multi-Warehouse Splits, Invoices & Subscriptions...")
-        cur.execute("SELECT id FROM orders WHERE quotation_id = %s;", (q5_id,))
+        cur.execute("SELECT id FROM orders WHERE quotation_id = %s OR order_number = 'ORD-2026-0001';", (q5_id,))
         order_row = cur.fetchone()
         if order_row:
             ord_id = order_row[0]
+            cur.execute("UPDATE orders SET quotation_id = %s, customer_id = %s, status = 'processing' WHERE id = %s;", (q5_id, acme_cust_id, ord_id))
         else:
             cur.execute("""
                 INSERT INTO orders (order_number, quotation_id, customer_id, status, created_at, updated_at)
@@ -694,10 +695,16 @@ def seed_database():
         print(f"   ✓ Order: ORD-2026-0001 | Splits: WH-CENTRAL (allocated) + WH-EAST (pending)")
 
         # Invoice & Payment Settlement
-        cur.execute("SELECT id FROM invoices WHERE order_id = %s;", (ord_id,))
+        cur.execute("SELECT id FROM invoices WHERE order_id = %s OR invoice_number = 'INV-2026-0001';", (ord_id,))
         inv_row = cur.fetchone()
         if inv_row:
             inv_id = inv_row[0]
+            cur.execute("""
+                UPDATE invoices 
+                SET order_id = %s, customer_id = %s, status = 'paid',
+                    subtotal = 11340.00, discount_total = 0.00, tax_total = 2041.20, grand_total = 13381.20, paid_amount = 13381.20, updated_at = NOW()
+                WHERE id = %s;
+            """, (ord_id, acme_cust_id, inv_id))
         else:
             cur.execute("""
                 INSERT INTO invoices (

@@ -13,13 +13,19 @@ export function useCompany() {
   const [feedbackMessage, setFeedbackMessage] = useState({ type: '', text: '' });
   const [actionLoading, setActionLoading] = useState(false);
 
+  const [counts, setCounts] = useState({ total_count: 0, active_count: 0, inactive_count: 0 });
+
   // Define fetchFunction for infinite scroll
   const fetchCompanies = useCallback(
     async (page, limit) => {
       const params = { page, limit };
       if (searchTerm) params.search = searchTerm;
       if (filterStatus && filterStatus !== 'all') params.status = filterStatus;
-      return await companyApi.getCompaniesList(params);
+      const res = await companyApi.getCompaniesList(params);
+      if (res?.counts) {
+        setCounts(res.counts);
+      }
+      return res;
     },
     [searchTerm, filterStatus]
   );
@@ -89,7 +95,8 @@ export function useCompany() {
 
   return {
     companies,
-    totalCount,
+    counts,
+    totalCount: counts.total_count ?? totalCount,
     loading: loadingInitial,
     loadingMore,
     hasMore,

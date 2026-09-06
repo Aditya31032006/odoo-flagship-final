@@ -102,6 +102,17 @@ export const GET_ALL_APPROVALS_LIST_BY_ROLE = `
     ))
   )
   AND ($2::TEXT IS NULL OR q.quotation_number ILIKE '%' || $2 || '%' OR c.company_name ILIKE '%' || $2 || '%')
+  AND (
+    $3::TEXT IS NULL 
+    OR ($3::TEXT = 'pending' AND q.status = 'pending_approval')
+    OR ($3::TEXT = 'approved' AND q.status IN ('approved', 'confirmed', 'sent'))
+    OR ($3::TEXT = 'returned' AND (
+      q.status::TEXT = 'returned' 
+      OR (q.status = 'draft' AND EXISTS (
+        SELECT 1 FROM quotation_audit_logs qal WHERE qal.quotation_id = q.id AND qal.action = 'returned'
+      ))
+    ))
+  )
   ORDER BY q.created_at DESC
 `;
 
