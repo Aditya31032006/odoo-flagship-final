@@ -157,6 +157,18 @@ const MEGA_MENU_SECTIONS = [
         ),
       },
       {
+        name: 'Client Companies',
+        path: '/companies',
+        desc: 'B2B client organizations & portals',
+        allowedRoles: ['admin', 'sales_manager', 'sales_rep', 'operations'],
+        icon: (
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <rect x="2" y="7" width="20" height="14" rx="2" ry="2" />
+            <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" />
+          </svg>
+        ),
+      },
+      {
         name: 'Staff Management',
         path: '/staff',
         desc: 'Internal roles & access control',
@@ -185,6 +197,11 @@ const PRIMARY_LINKS = [
     name: 'Quotations',
     path: '/quotations',
     allowedRoles: ['admin', 'sales_rep', 'sales_manager', 'finance', 'operations'],
+  },
+  {
+    name: 'Companies',
+    path: '/companies',
+    allowedRoles: ['admin', 'sales_manager', 'sales_rep', 'operations'],
   },
   {
     name: 'Approvals',
@@ -233,7 +250,7 @@ function formatRole(role) {
   return roleMap[role] || role || 'Sales Ops';
 }
 
-const AUTH_ROUTES = ['/login', '/register', '/auth/login', '/auth/register', '/signup', '/forgot-password'];
+const AUTH_ROUTES = ['/login', '/forgot-password'];
 
 function NavbarComponent() {
   const location = useLocation();

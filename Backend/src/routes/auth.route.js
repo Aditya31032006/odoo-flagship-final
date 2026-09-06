@@ -1,23 +1,20 @@
 import express from 'express';
 import {
-    registerValidation,
     loginValidation,
     forgotPasswordValidation,
     resetPasswordValidation,
-    completeOnboardingValidation,
     updateProfileValidation,
     changePasswordValidation,
     magicLoginValidation
 } from "../validation/auth.validation.js";
 import passport from 'passport';
+import config from '../config/config.js';
 import {
-    registerController,
     loginController,
     magicLoginController,
     logoutController,
     getMeController,
     getCompaniesController,
-    completeOnboardingController,
     forgotPasswordController,
     resetPasswordController,
     googleAuthCallbackController,
@@ -30,13 +27,11 @@ import authMiddleware from '../middleware/auth.middleware.js';
 const authRouter = express.Router();
 
 // Direct Auth & Session Routes
-authRouter.post('/register', registerValidation, registerController);
 authRouter.post('/login', loginValidation, loginController);
 authRouter.post('/magic-login', magicLoginValidation, magicLoginController);
 authRouter.get('/logout', authMiddleware, logoutController);
 authRouter.get('/me', authMiddleware, getMeController);
 authRouter.get('/companies', getCompaniesController);
-authRouter.post('/complete-onboarding', authMiddleware, completeOnboardingValidation, completeOnboardingController);
 authRouter.post('/forgot-password', forgotPasswordValidation, forgotPasswordController);
 authRouter.post('/reset-password', resetPasswordValidation, resetPasswordController);
 
@@ -45,7 +40,9 @@ authRouter.get('/profile', authMiddleware, getProfileController);
 authRouter.put('/profile', authMiddleware, updateProfileValidation, updateProfileController);
 authRouter.put('/change-password', authMiddleware, changePasswordValidation, changePasswordController);
 
-// Google OAuth Routes
+// Google OAuth Routes (Login only)
+const frontendUrl = config.FRONTEND_ORIGIN || 'http://localhost:5173';
+
 authRouter.get(
     '/google',
     (req, res, next) => {
@@ -62,7 +59,7 @@ authRouter.get(
     '/google/callback',
     passport.authenticate('google', {
         session: false,
-        failureRedirect: '/login',
+        failureRedirect: `${frontendUrl}/login?error=account_not_found`,
     }),
     googleAuthCallbackController
 );

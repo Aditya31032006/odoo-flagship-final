@@ -1,7 +1,4 @@
 import {
-    registerCompanyWithPrimaryUserRepo,
-    registerEmployeeUnderCompanyRepo,
-    completeUserOnboardingRepo,
     listActiveCompaniesRepo,
     findUserRepo,
     findUserByIdentifierRepo,
@@ -14,107 +11,11 @@ import {
 } from '../repositories/auth.repository.js';
 import { hashPassword, verifyPassword } from '../utils/password.util.js';
 import { signToken, getAccessCookieOptions } from '../utils/cookie.util.js';
-import { addWelcomeEmailJob, addOtpEmailJob } from '../jobs/emailQueue.js';
+import { addOtpEmailJob } from '../jobs/emailQueue.js';
 import redisClient from '../config/redis.js';
 import { STATUS_CODES } from '../constants/statusCodes.js';
 import { MESSAGES } from '../constants/messages.js';
 import config from '../config/config.js';
-
-/**
- * Register either:
- * 1. A new Company (B2B organization + primary user)
- * 2. An Employee under an existing Company (requires company_id)
- */
-export const registerController = async (req, res, next) => {
-    try {
-        const {
-            register_type = 'company', // 'company' | 'employee'
-            name,
-            email,
-            password,
-            mobile,
-            // For Company registration:
-            company_name,
-            gst_number,
-            company_email,
-            company_phone,
-            billing_address,
-            shipping_address,
-            // For Employee under company registration:
-            company_id,
-            employee_role = 'customer'
-        } = req.body;
-
-        const useEmail = email.toLowerCase().trim();
-
-        const existingUser = await findUserRepo(useEmail);
-        if (existingUser) {
-            return res.status(STATUS_CODES.BAD_REQUEST).json({ message: MESSAGES.AUTH.ALREADY_EXISTS });
-        }
-
-        const hashedPassword = await hashPassword(password);
-        let newUser;
-
-        if (register_type === 'company') {
-            if (!company_name || !company_name.trim()) {
-                return res.status(STATUS_CODES.BAD_REQUEST).json({ message: 'Company name is required for company registration.' });
-            }
-
-            newUser = await registerCompanyWithPrimaryUserRepo({
-                company: {
-                    company_name,
-                    gst_number,
-                    email: company_email || useEmail,
-                    phone: company_phone || mobile,
-                    billing_address,
-                    shipping_address
-                },
-                user: {
-                    name,
-                    email: useEmail,
-                    password_hash: hashedPassword,
-                    mobile
-                }
-            });
-        } else if (register_type === 'employee') {
-            if (!company_id) {
-                return res.status(STATUS_CODES.BAD_REQUEST).json({ message: 'Company ID is required when registering as an employee under a company.' });
-            }
-
-            newUser = await registerEmployeeUnderCompanyRepo({
-                company_id: Number(company_id),
-                user: {
-                    name,
-                    email: useEmail,
-                    password_hash: hashedPassword,
-                    mobile
-                },
-                role: employee_role || 'customer'
-            });
-        } else {
-            return res.status(STATUS_CODES.BAD_REQUEST).json({ message: 'Invalid registration type. Must be "company" or "employee".' });
-        }
-
-        // Send welcome email (non-blocking)
-        try {
-            await addWelcomeEmailJob({ name: newUser.name, email: newUser.email });
-        } catch (queueErr) {
-            console.error('Failed to enqueue welcome email:', queueErr.message);
-        }
-
-        const { password_hash, ...safeUser } = newUser;
-        const token = signToken(safeUser);
-        res.cookie("auth_token", token, getAccessCookieOptions());
-
-        return res.status(STATUS_CODES.CREATED).json({
-            message: MESSAGES.USER.CREATED,
-            user: safeUser,
-            token
-        });
-    } catch (error) {
-        next(error);
-    }
-};
 
 /**
  * Login user via email/mobile and password
@@ -160,54 +61,6 @@ export const loginController = async (req, res, next) => {
     }
 };
 
-/**
- * Complete onboarding for users (e.g. after Google OAuth signup)
- */
-export const completeOnboardingController = async (req, res, next) => {
-    try {
-        const {
-            register_type = 'company',
-            company_name,
-            gst_number,
-            billing_address,
-            company_id,
-            mobile
-        } = req.body;
-
-        const userId = req.user.id;
-
-        if (register_type === 'company' && (!company_name || !company_name.trim())) {
-            return res.status(STATUS_CODES.BAD_REQUEST).json({ message: 'Company name is required.' });
-        }
-
-        if (register_type === 'employee' && !company_id) {
-            return res.status(STATUS_CODES.BAD_REQUEST).json({ message: 'Company ID is required.' });
-        }
-
-        const updatedUser = await completeUserOnboardingRepo({
-            user_id: userId,
-            register_type,
-            company: {
-                company_name,
-                gst_number,
-                billing_address
-            },
-            company_id: company_id ? Number(company_id) : null,
-            mobile
-        });
-
-        const token = signToken(updatedUser);
-        res.cookie("auth_token", token, getAccessCookieOptions());
-
-        return res.status(STATUS_CODES.OK).json({
-            message: 'Onboarding completed successfully',
-            user: updatedUser,
-            token
-        });
-    } catch (error) {
-        next(error);
-    }
-};
 
 /**
  * Get list of registered companies for employee registration selection
@@ -420,11 +273,11 @@ export const googleAuthCallbackController = async (req, res, next) => {
         const frontendUrl = config.FRONTEND_ORIGIN || 'http://localhost:5173';
 
         // 1. If user already exists in DB -> Log them in directly via httpOnly cookie
-        if (!req.user.isNew && req.user.user) {
+        if (req.user && req.user.user) {
             const { password_hash, ...safeUser } = req.user.user;
 
             if (!safeUser.is_active) {
-                return res.redirect(`${frontendUrl}/login?error=${encodeURIComponent('Your account is deactivated.')}`);
+                return res.redirect(`${frontendUrl}/login?error=${encodeURIComponent('Your account is deactivated. Please contact your administrator.')}`);
             }
 
             const token = signToken(safeUser);
@@ -433,20 +286,8 @@ export const googleAuthCallbackController = async (req, res, next) => {
             return res.redirect(`${frontendUrl}/`);
         }
 
-        // 2. If new user -> Redirect to /onboarding with Google name & email pre-filled
-        if (req.user.isNew && req.user.googleProfile) {
-            const { name, email, avatar } = req.user.googleProfile;
-            const params = new URLSearchParams({
-                name: name || '',
-                email: email || '',
-                avatar: avatar || '',
-                is_google: 'true',
-            }).toString();
-
-            return res.redirect(`${frontendUrl}/onboarding?${params}`);
-        }
-
-        return res.redirect(`${frontendUrl}/login`);
+        // 2. If user is not registered in the system -> redirect to login with error
+        return res.redirect(`${frontendUrl}/login?error=account_not_found`);
     } catch (error) {
         next(error);
     }

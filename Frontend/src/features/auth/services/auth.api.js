@@ -33,23 +33,7 @@ export const authApi = {
   },
 
   /**
-   * Register as a new Company or an Employee under a Company (cookie is set automatically)
-   */
-  async register(userData) {
-    const response = await apiClient.post('/auth/register', userData);
-    return response.data;
-  },
-
-  /**
-   * Complete onboarding for OAuth users
-   */
-  async completeOnboarding(data) {
-    const response = await apiClient.post('/auth/complete-onboarding', data);
-    return response.data;
-  },
-
-  /**
-   * Get active companies list for employee registration selection
+   * Get active companies list (if needed for selection)
    */
   async getCompanies() {
     const response = await apiClient.get('/auth/companies');

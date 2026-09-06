@@ -19,6 +19,7 @@ import invoiceRouter from './routes/invoice.route.js';
 import reportRouter from './routes/report.route.js';
 import deliveryCalendarRouter from './routes/deliveryCalendar.route.js';
 import paymentRouter from './routes/payment.route.js';
+import companyRouter from './routes/company.route.js';
 import handleError from './middleware/error.middleware.js';
 import config from './config/config.js';
 
@@ -41,6 +42,7 @@ app.use('/api/payments', paymentRouter);
 app.use('/api/dashboard', dashboardRouter);
 app.use('/api/quotations', quotationRouter);
 app.use('/api/catalog', catalogRouter);
+app.use('/api/companies', companyRouter);
 app.use('/api/staff', staffRouter);
 app.use('/api/discount-rules', discountRulesRouter);
 app.use('/api/approvals', approvalRouter);

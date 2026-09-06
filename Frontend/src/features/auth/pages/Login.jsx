@@ -54,6 +54,19 @@ export default function Login() {
     window.location.href = `${import.meta.env.VITE_API_URL || 'http://localhost:3000/api'}/auth/google`;
   };
 
+  // Check URL query parameters for OAuth errors
+  const queryParams = new URLSearchParams(location.search);
+  const oauthErrorParam = queryParams.get('error');
+  const [oauthErrorMessage, setOauthErrorMessage] = useState('');
+
+  useEffect(() => {
+    if (oauthErrorParam === 'account_not_found') {
+      setOauthErrorMessage('Account not found. Your email is not registered in DealFlow360. Please contact your system administrator to provision your account.');
+    } else if (oauthErrorParam) {
+      setOauthErrorMessage(decodeURIComponent(oauthErrorParam));
+    }
+  }, [oauthErrorParam]);
+
   return (
     <div className="df-auth-container">
       <div className="df-auth-card">
@@ -67,9 +80,21 @@ export default function Login() {
             </svg>
             DealFlow360 Enterprise
           </div>
-          <h1>Welcome Back</h1>
-          <p>Sign in with your registered email address or mobile number</p>
+          <h1>Enterprise Sign In</h1>
+          <p>Sign in with your provisioned account credentials</p>
         </div>
+
+        {/* OAuth Error Alert */}
+        {oauthErrorMessage && (
+          <div className="df-auth-card__alert df-auth-card__alert--error" style={{ marginBottom: '1.25rem' }}>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="12" cy="12" r="10" />
+              <line x1="12" y1="8" x2="12" y2="12" />
+              <line x1="12" y1="16" x2="12.01" y2="16" />
+            </svg>
+            <span>{oauthErrorMessage}</span>
+          </div>
+        )}
 
         {/* Error Alert */}
         {error && (
@@ -179,7 +204,7 @@ export default function Login() {
         </form>
 
         <div className="df-auth-card__divider">
-          <span>or continue with</span>
+          <span>or sign in with</span>
         </div>
 
         {/* Google OAuth Button */}
@@ -209,10 +234,9 @@ export default function Login() {
           <span>Continue with Google</span>
         </button>
 
-        {/* Register Navigation */}
-        <div className="df-auth-card__footer">
-          Don't have an account?
-          <Link to="/register">Create an account</Link>
+        {/* Enterprise Notice */}
+        <div className="df-auth-card__footer" style={{ fontSize: '0.8125rem', color: '#6b7280', textAlign: 'center' }}>
+          🔒 Need portal access? Contact your DealFlow360 administrator to provision your company or staff account.
         </div>
       </div>
     </div>

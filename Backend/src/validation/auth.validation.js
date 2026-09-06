@@ -12,66 +12,7 @@ function validate(req, res, next) {
   next();
 }
 
-export const registerValidation = [
-  body('register_type')
-    .optional()
-    .isIn(['company', 'employee'])
-    .withMessage('Register type must be either "company" or "employee"'),
-  body('name').trim().notEmpty().withMessage('Full name is required'),
-  body('email').trim().isEmail().withMessage('A valid email address is required').normalizeEmail(),
-  body('password').isLength({ min: 6 }).withMessage('Password must be at least 6 characters long'),
-  body('mobile')
-    .optional({ values: 'falsy' })
-    .trim()
-    .matches(/^[6-9]\d{9}$/)
-    .withMessage('Mobile number must be exactly 10 digits starting with 6, 7, 8, or 9 (e.g. 9876543210)'),
-  // If register_type === 'company' or default:
-  body('company_name')
-    .if((value, { req }) => !req.body.register_type || req.body.register_type === 'company')
-    .trim()
-    .notEmpty()
-    .withMessage('Company name is required when registering a company'),
-  body('gst_number')
-    .optional({ values: 'falsy' })
-    .trim()
-    .toUpperCase()
-    .matches(/^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/)
-    .withMessage('Invalid GST number format (15 characters, e.g. 27AABCU9603R1ZM)'),
-  // If register_type === 'employee':
-  body('company_id')
-    .if(body('register_type').equals('employee'))
-    .notEmpty()
-    .withMessage('Company ID is required when registering as an employee under a company'),
-  validate
-];
 
-export const completeOnboardingValidation = [
-  body('register_type')
-    .optional()
-    .isIn(['company', 'employee'])
-    .withMessage('Register type must be either "company" or "employee"'),
-  body('company_name')
-    .if((value, { req }) => !req.body.register_type || req.body.register_type === 'company')
-    .trim()
-    .notEmpty()
-    .withMessage('Company name is required when registering a company'),
-  body('gst_number')
-    .optional({ values: 'falsy' })
-    .trim()
-    .toUpperCase()
-    .matches(/^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/)
-    .withMessage('Invalid GST number format (15 characters, e.g. 27AABCU9603R1ZM)'),
-  body('company_id')
-    .if(body('register_type').equals('employee'))
-    .notEmpty()
-    .withMessage('Company ID is required when registering as an employee under a company'),
-  body('mobile')
-    .optional({ values: 'falsy' })
-    .trim()
-    .matches(/^[6-9]\d{9}$/)
-    .withMessage('Mobile number must be exactly 10 digits starting with 6, 7, 8, or 9 (e.g. 9876543210)'),
-  validate
-];
 
 export const loginValidation = [
   body('identifier')

@@ -41,53 +41,7 @@ export function useAuth() {
     [dispatch]
   );
 
-  /**
-   * Register as a Company or as an Employee under a Company
-   */
-  const register = useCallback(
-    async (userData) => {
-      dispatch(setLoading(true));
-      try {
-        const response = await authApi.register(userData);
-        dispatch(
-          setAuthSuccess({
-            user: response.user,
-            message: response.message,
-          })
-        );
-        return { success: true, user: response.user };
-      } catch (err) {
-        const msg = err.customMessage || 'Registration failed. Please check the entered details.';
-        dispatch(setError(msg));
-        return { success: false, error: msg };
-      }
-    },
-    [dispatch]
-  );
 
-  /**
-   * Complete onboarding for OAuth users
-   */
-  const completeOnboarding = useCallback(
-    async (onboardingData) => {
-      dispatch(setLoading(true));
-      try {
-        const response = await authApi.completeOnboarding(onboardingData);
-        dispatch(
-          setAuthSuccess({
-            user: response.user,
-            message: response.message,
-          })
-        );
-        return { success: true, user: response.user };
-      } catch (err) {
-        const msg = err.customMessage || 'Failed to complete onboarding.';
-        dispatch(setError(msg));
-        return { success: false, error: msg };
-      }
-    },
-    [dispatch]
-  );
 
   /**
    * Get full profile (user + company)
@@ -253,8 +207,6 @@ export function useAuth() {
     successMessage,
     login,
     magicLogin,
-    register,
-    completeOnboarding,
     getProfile,
     updateProfile,
     changePassword,

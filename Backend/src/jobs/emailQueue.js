@@ -5,6 +5,7 @@ import {
   generateWelcomeEmail,
   generateOtpEmail,
   generateStaffInvitationEmail,
+  generateCompanyInvitationEmail,
   generateQuotationIssuedEmail,
   generateCounterOfferEmail,
   generateQuotationApprovedEmail,
@@ -75,6 +76,17 @@ export function initEmailWorker() {
           await sendMail({
             toEmail: email,
             subject: `🎉 You've Been Invited to DealFlow360 (${role})`,
+            html,
+          });
+          break;
+        }
+
+        case 'send-company-invitation': {
+          const { name: contactName, email, companyName, tempPassword } = data;
+          const html = generateCompanyInvitationEmail({ name: contactName, email, companyName, tempPassword });
+          await sendMail({
+            toEmail: email,
+            subject: `🏢 Welcome to DealFlow360 - Account Provisioned for ${companyName}`,
             html,
           });
           break;
@@ -190,6 +202,13 @@ export const addOtpEmailJob = async ({ email, otp }) => {
  */
 export const addStaffInvitationJob = async ({ name, email, role, tempPassword }) => {
   return await emailQueue.add('send-staff-invitation', { name, email, role, tempPassword });
+};
+
+/**
+ * Enqueues a client company invitation email job with temporary credentials.
+ */
+export const addCompanyInvitationJob = async ({ name, email, companyName, tempPassword }) => {
+  return await emailQueue.add('send-company-invitation', { name, email, companyName, tempPassword });
 };
 
 /**

@@ -5,8 +5,6 @@ import PublicRoute from '../features/auth/components/PublicRoute.jsx';
 
 // Lazy-loaded page components for on-demand bundle downloading
 const Login = lazy(() => import('../features/auth/pages/Login.jsx'));
-const Register = lazy(() => import('../features/auth/pages/Register.jsx'));
-const Onboarding = lazy(() => import('../features/auth/pages/Onboarding.jsx'));
 const ForgotPassword = lazy(() => import('../features/auth/pages/ForgotPassword.jsx'));
 const Profile = lazy(() => import('../features/auth/pages/Profile.jsx'));
 
@@ -36,6 +34,7 @@ const MyInvoices = lazy(() => import('../features/invoices/pages/MyInvoices.jsx'
 const DealHealthDashboard = lazy(() => import('../features/dealHealth/pages/DealHealthDashboard.jsx'));
 const ReportsDashboard = lazy(() => import('../features/reports/pages/ReportsDashboard.jsx'));
 const StaffManagement = lazy(() => import('../features/staff/pages/StaffManagement.jsx'));
+const CompanyManagement = lazy(() => import('../features/companies/pages/CompanyManagement.jsx'));
 const DeliveryCalendar = lazy(() => import('../features/deliveryCalendar/pages/DeliveryCalendar.jsx'));
 
 // Sleek loading fallback for Suspense
@@ -190,6 +189,17 @@ export const router = createBrowserRouter([
         ],
       },
 
+      // Company Management: Admin & Sales Staff
+      {
+        element: <RoleGuard allowedRoles={['admin', 'sales_manager', 'sales_rep', 'operations']} />,
+        children: [
+          {
+            path: '/companies',
+            element: withSuspense(CompanyManagement),
+          },
+        ],
+      },
+
       // Discount Rules Setup: Admin & Sales Manager
       {
         element: <RoleGuard allowedRoles={['admin', 'sales_manager']} />,
@@ -236,11 +246,11 @@ export const router = createBrowserRouter([
       },
       {
         path: '/register',
-        element: withSuspense(Register),
+        element: <Navigate to="/login" replace />,
       },
       {
         path: '/onboarding',
-        element: withSuspense(Onboarding),
+        element: <Navigate to="/login" replace />,
       },
       {
         path: '/forgot-password',

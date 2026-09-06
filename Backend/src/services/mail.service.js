@@ -400,6 +400,133 @@ export function generateStaffInvitationEmail({ name, email, role, tempPassword }
 }
 
 /**
+ * Generates an HTML client company onboarding email with generated credentials
+ */
+export function generateCompanyInvitationEmail({ name, email, companyName, tempPassword }) {
+  const loginUrl = config.FRONTEND_ORIGIN ? `${config.FRONTEND_ORIGIN}/login` : 'http://localhost:5173/login';
+
+  return `
+  <!DOCTYPE html>
+  <html>
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Welcome to DealFlow360 - Account Provisioned</title>
+    <style>
+      body {
+        margin: 0;
+        padding: 0;
+        background-color: #0b0f19;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+        color: #f1f5f9;
+      }
+      .email-container {
+        max-width: 580px;
+        margin: 40px auto;
+        background-color: #1e293b;
+        border-radius: 12px;
+        overflow: hidden;
+        border: 1px solid #334155;
+      }
+      .email-header {
+        background: linear-gradient(135deg, #0d9488 0%, #0284c7 100%);
+        padding: 30px 20px;
+        text-align: center;
+        color: #ffffff;
+      }
+      .email-header h1 {
+        margin: 0;
+        font-size: 24px;
+        font-weight: 700;
+      }
+      .email-body {
+        padding: 30px 28px;
+        line-height: 1.6;
+        color: #cbd5e1;
+      }
+      .credentials-box {
+        background-color: #0f172a;
+        border: 1px solid rgba(13, 148, 136, 0.4);
+        border-radius: 10px;
+        padding: 18px 20px;
+        margin: 20px 0;
+      }
+      .cred-row {
+        margin: 8px 0;
+        font-size: 14px;
+      }
+      .cred-label {
+        color: #94a3b8;
+        display: inline-block;
+        width: 120px;
+      }
+      .cred-value {
+        color: #ffffff;
+        font-weight: 600;
+        font-family: monospace;
+      }
+      .cred-highlight {
+        color: #2dd4bf;
+        background: rgba(45, 212, 191, 0.1);
+        padding: 3px 8px;
+        border-radius: 4px;
+      }
+      .btn {
+        display: inline-block;
+        background: linear-gradient(135deg, #0d9488 0%, #0284c7 100%);
+        color: #ffffff !important;
+        text-decoration: none;
+        padding: 12px 24px;
+        border-radius: 8px;
+        font-weight: 600;
+        margin-top: 15px;
+      }
+      .footer {
+        padding: 18px;
+        text-align: center;
+        font-size: 12px;
+        color: #64748b;
+        background-color: #0f172a;
+        border-top: 1px solid #334155;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="email-container">
+      <div class="email-header">
+        <h1>🏢 Welcome to DealFlow360</h1>
+      </div>
+      <div class="email-body">
+        <p style="font-size: 16px; color: #f8fafc;">Hello <strong>${name}</strong>,</p>
+        <p>A customer account has been created for <strong>${companyName}</strong> on the <strong>DealFlow360</strong> portal.</p>
+        
+        <p>You can now access your company dashboard to review quotes, negotiate terms, track fulfillment, and manage invoices.</p>
+
+        <p>Here are your login credentials:</p>
+        <div class="credentials-box">
+          <div class="cred-row"><span class="cred-label">Company:</span> <span class="cred-value" style="color: #2dd4bf;">${companyName}</span></div>
+          <div class="cred-row"><span class="cred-label">Login Email:</span> <span class="cred-value">${email}</span></div>
+          <div class="cred-row"><span class="cred-label">Password:</span> <span class="cred-value cred-highlight">${tempPassword}</span></div>
+        </div>
+
+        <p style="font-size: 13px; color: #94a3b8;">For security, please change your password from your Profile settings upon your first login.</p>
+
+        <div style="text-align: center; margin: 25px 0 15px 0;">
+          <a href="${loginUrl}" class="btn">Sign In to Client Portal &rarr;</a>
+        </div>
+
+        <p style="margin-top: 24px; color: #f8fafc;">Best regards,<br><strong>The DealFlow360 Operations Team</strong></p>
+      </div>
+      <div class="footer">
+        &copy; ${new Date().getFullYear()} DealFlow360. All rights reserved.
+      </div>
+    </div>
+  </body>
+  </html>
+  `;
+}
+
+/**
  * Generates an HTML email sent to customer when a new pending quotation is issued with Negotiate and Direct Confirm options
  */
 export function generateQuotationIssuedEmail({

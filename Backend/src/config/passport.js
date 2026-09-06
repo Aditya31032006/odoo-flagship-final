@@ -25,21 +25,16 @@ passport.use(
         const existingUser = await findUserRepo(email);
 
         if (existingUser) {
-          // Existing user -> Log in immediately regardless of where the button was clicked
+          // Existing user -> Log in immediately
           return done(null, {
             isNew: false,
             user: existingUser,
           });
         }
 
-        // New user -> Do not create partial record yet; pass Google profile for onboarding
-        return done(null, {
-          isNew: true,
-          googleProfile: {
-            name,
-            email,
-            avatar: profilePhoto,
-          },
+        // Unregistered user -> Reject authentication (all accounts must be provisioned by admin)
+        return done(null, false, {
+          message: 'Account not registered. Please contact your administrator to obtain access.',
         });
       } catch (error) {
         console.error('Error during Google OAuth authentication:', error);
