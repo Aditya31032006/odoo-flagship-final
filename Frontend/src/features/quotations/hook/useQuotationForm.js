@@ -60,9 +60,9 @@ export const useQuotationForm = ({ quotationId = null } = {}) => {
             setCustomerId(quote.customer_id);
             const foundCust = custList.find((c) => String(c.id) === String(quote.customer_id));
             setSelectedCustomer(foundCust || null);
-            const targetTierId = quote.tier_id || foundCust?.tier_id || 1;
-            const matchingPl = plList.find((pl) => String(pl.id) === String(quote.price_list_id)) ||
-                               plList.find((pl) => String(pl.tier_id) === String(targetTierId)) ||
+            const targetTierId = quote.tier_id || foundCust?.tier_id;
+            const matchingPl = (targetTierId ? plList.find((pl) => String(pl.tier_id) === String(targetTierId)) : null) ||
+                               plList.find((pl) => String(pl.id) === String(quote.price_list_id)) ||
                                plList[0];
             setPriceListId(matchingPl ? matchingPl.id : '');
             setStatus(quote.status || 'draft');
@@ -79,8 +79,8 @@ export const useQuotationForm = ({ quotationId = null } = {}) => {
             }
           }
         } else {
-          // Default to Bronze Tier Price List for new quotes
-          const defaultPl = plList.find((pl) => String(pl.tier_id) === '1') || plList[0];
+          // Default to first available Price List for new quotes if any
+          const defaultPl = plList[0] || null;
           if (defaultPl) {
             setPriceListId(defaultPl.id);
           }
@@ -105,9 +105,9 @@ export const useQuotationForm = ({ quotationId = null } = {}) => {
       const cust = customers.find((c) => String(c.id) === String(newCustId));
       setSelectedCustomer(cust || null);
 
-      // Auto-match price list for customer tier (Gold -> Gold, Silver -> Silver, Bronze -> Bronze)
-      const targetTierId = cust?.tier_id || 1;
-      const matchingPl = priceLists.find((pl) => String(pl.tier_id) === String(targetTierId)) || priceLists[0];
+      // Auto-match price list for customer tier if available
+      const targetTierId = cust?.tier_id;
+      const matchingPl = (targetTierId ? priceLists.find((pl) => String(pl.tier_id) === String(targetTierId)) : null) || priceLists[0];
       if (matchingPl) {
         setPriceListId(matchingPl.id);
       }
@@ -329,8 +329,13 @@ export const useQuotationForm = ({ quotationId = null } = {}) => {
   // Add an upsell suggestion directly as a line item
   const addUpsellSuggestion = useCallback(
     (sug) => {
+      let variantId = sug.suggested_variant_id;
+      if (!variantId || String(variantId) === '0' || String(variantId).startsWith('sub-var-')) {
+        const match = products.find((p) => String(p.product_id) === String(sug.suggested_product_id));
+        variantId = match?.product_variant_id || products[0]?.product_variant_id || null;
+      }
       addProductLine({
-        product_variant_id: sug.suggested_variant_id || (sug.is_subscription ? `sub-var-${sug.subscription_plan_id}` : null),
+        product_variant_id: variantId,
         product_id: sug.suggested_product_id,
         product_name: sug.suggested_product_name,
         variant_name: sug.suggested_variant_name,
@@ -347,7 +352,7 @@ export const useQuotationForm = ({ quotationId = null } = {}) => {
         subscription_plan_id: sug.subscription_plan_id || null,
       });
     },
-    [addProductLine]
+    [addProductLine, products]
   );
 
   // 5. Compute Grand Totals & Blended Risk Assessment
@@ -429,11 +434,11 @@ export const useQuotationForm = ({ quotationId = null } = {}) => {
         discount_percentage: Math.min(100, Math.max(0, Number(it.discount_percentage) || 0)),
       }));
 
-      const resolvedTierId = selectedCustomer?.tier_id || activePriceList?.tier_id || 1;
+      const resolvedTierId = selectedCustomer?.tier_id || activePriceList?.tier_id || null;
 
       const payload = {
         customer_id: customerId,
-        tier_id: resolvedTierId,
+        tier_id: resolvedTierId ? Number(resolvedTierId) : null,
         price_list_id: priceListId ? Number(priceListId) : (activePriceList?.id ? Number(activePriceList.id) : null),
         status: status && status !== 'draft' ? status : 'pending_approval',
         blended_risk_score: calculatedTotals.blendedRiskScore,
@@ -489,11 +494,11 @@ export const useQuotationForm = ({ quotationId = null } = {}) => {
         discount_percentage: Math.min(100, Math.max(0, Number(it.discount_percentage) || 0)),
       }));
 
-      const resolvedTierId = selectedCustomer?.tier_id || activePriceList?.tier_id || 1;
+      const resolvedTierId = selectedCustomer?.tier_id || activePriceList?.tier_id || null;
 
       const payload = {
         customer_id: customerId,
-        tier_id: resolvedTierId,
+        tier_id: resolvedTierId ? Number(resolvedTierId) : null,
         price_list_id: priceListId ? Number(priceListId) : (activePriceList?.id ? Number(activePriceList.id) : null),
         blended_risk_score: calculatedTotals.blendedRiskScore,
         risk_level: calculatedTotals.riskLevel,

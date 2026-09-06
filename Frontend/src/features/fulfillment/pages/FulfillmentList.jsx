@@ -92,7 +92,9 @@ export const FulfillmentList = () => {
           totalAvailable: 0,
         };
       }
-      groups[wId].items.push(item);
+      if (item.stock_id && item.product_name) {
+        groups[wId].items.push(item);
+      }
       groups[wId].totalInStock += Number(item.in_stock) || 0;
       groups[wId].totalReserved += Number(item.reserved) || 0;
       groups[wId].totalAvailable += Number(item.available) || 0;

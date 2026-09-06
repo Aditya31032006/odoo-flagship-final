@@ -141,6 +141,33 @@ export const saveQuotationRepo = async ({
     const effectiveRiskScore = maxExcess > 0 ? Number(maxExcess.toFixed(2)) : Number(blended_risk_score || 0);
     const effectiveRiskLevel = effectiveRiskScore > 5.00 ? 'high' : (effectiveRiskScore > 0 ? 'medium' : 'low');
 
+    // Safely resolve valid tier_id
+    let resolvedTierId = null;
+    if (tier_id != null && !isNaN(Number(tier_id))) {
+      const tierCheck = await client.query('SELECT id FROM customer_tiers WHERE id = $1', [Number(tier_id)]);
+      if (tierCheck.rows.length > 0) {
+        resolvedTierId = tierCheck.rows[0].id;
+      }
+    }
+    if (!resolvedTierId && customer_id) {
+      const custTier = await client.query(
+        'SELECT tier_id FROM customer_tier_assignments WHERE customer_id = $1 AND is_current = TRUE LIMIT 1',
+        [customer_id]
+      );
+      if (custTier.rows.length > 0 && custTier.rows[0].tier_id) {
+        resolvedTierId = custTier.rows[0].tier_id;
+      }
+    }
+
+    // Safely resolve valid price_list_id
+    let resolvedPriceListId = null;
+    if (price_list_id != null && !isNaN(Number(price_list_id))) {
+      const plCheck = await client.query('SELECT id FROM price_lists WHERE id = $1', [Number(price_list_id)]);
+      if (plCheck.rows.length > 0) {
+        resolvedPriceListId = plCheck.rows[0].id;
+      }
+    }
+
     let quotation;
     let actionType = 'created';
 
@@ -149,8 +176,8 @@ export const saveQuotationRepo = async ({
       const updateRes = await client.query(UPDATE_QUOTATION, [
         id,
         customer_id,
-        tier_id,
-        price_list_id,
+        resolvedTierId,
+        resolvedPriceListId,
         status,
         effectiveRiskScore,
         effectiveRiskLevel,
@@ -172,8 +199,8 @@ export const saveQuotationRepo = async ({
         quoteNumber,
         customer_id,
         sales_rep_id || user_id,
-        tier_id,
-        price_list_id,
+        resolvedTierId,
+        resolvedPriceListId,
         status,
         effectiveRiskScore,
         effectiveRiskLevel,
@@ -191,6 +218,29 @@ export const saveQuotationRepo = async ({
     const insertedItems = [];
     for (let i = 0; i < items.length; i++) {
       const item = items[i];
+
+      // Safely resolve valid product_variant_id
+      let resolvedVariantId = Number(item.product_variant_id);
+      if (!resolvedVariantId || isNaN(resolvedVariantId)) {
+        if (item.product_id) {
+          const pvLookup = await client.query(
+            'SELECT id FROM product_variants WHERE product_id = $1 AND is_active = TRUE LIMIT 1',
+            [item.product_id]
+          );
+          if (pvLookup.rows.length > 0) {
+            resolvedVariantId = pvLookup.rows[0].id;
+          }
+        }
+      }
+      if (!resolvedVariantId) {
+        const pvFallback = await client.query(
+          'SELECT id FROM product_variants WHERE is_active = TRUE ORDER BY id ASC LIMIT 1'
+        );
+        if (pvFallback.rows.length > 0) {
+          resolvedVariantId = pvFallback.rows[0].id;
+        }
+      }
+
       const listPrice = item.list_price != null ? Number(item.list_price) : Number(item.unit_price || 0);
       const unitPrice = item.unit_price != null ? Number(item.unit_price) : listPrice;
       const qty = Math.max(1, Number(item.quantity) || 1);
@@ -203,7 +253,7 @@ export const saveQuotationRepo = async ({
 
       const itemRes = await client.query(INSERT_QUOTATION_ITEM, [
         quotation.id,
-        item.product_variant_id,
+        resolvedVariantId,
         i + 1, // line_number
         item.product_name_snapshot || item.product_name || 'Product',
         item.sku_snapshot || item.sku || null,

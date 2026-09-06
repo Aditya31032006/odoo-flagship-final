@@ -11,14 +11,15 @@ export const GET_WAREHOUSE_STOCK_LIST = `
     pv.id AS product_variant_id,
     p.name AS product_name,
     pv.sku,
-    ws.quantity_on_hand AS in_stock,
-    ws.quantity_reserved AS reserved,
-    (ws.quantity_on_hand - ws.quantity_reserved) AS available,
-    ws.lead_time_days
-  FROM warehouse_stock ws
-  JOIN warehouses w ON ws.warehouse_id = w.id
-  JOIN product_variants pv ON ws.product_variant_id = pv.id
-  JOIN products p ON pv.product_id = p.id
+    COALESCE(ws.quantity_on_hand, 0) AS in_stock,
+    COALESCE(ws.quantity_reserved, 0) AS reserved,
+    COALESCE(ws.quantity_on_hand - ws.quantity_reserved, 0) AS available,
+    COALESCE(ws.lead_time_days, 3) AS lead_time_days
+  FROM warehouses w
+  LEFT JOIN warehouse_stock ws ON ws.warehouse_id = w.id
+  LEFT JOIN product_variants pv ON ws.product_variant_id = pv.id
+  LEFT JOIN products p ON pv.product_id = p.id
+  WHERE w.is_active = TRUE
   ORDER BY w.name ASC, p.name ASC;
 `;
 
@@ -36,8 +37,8 @@ export const GET_ORDERS_AWAITING_FULFILLMENT = `
         SELECT 1 FROM fulfillment_splits fs 
         JOIN order_items oi ON fs.order_item_id = oi.id 
         WHERE oi.order_id = o.id
-      ) THEN 'Split Pending'
-      ELSE 'Unassigned'
+      ) THEN 'Split Assigned'
+      ELSE 'Pending Split'
     END AS status_display,
     COALESCE(
       (SELECT STRING_AGG(DISTINCT w.name, ' + ' ORDER BY w.name)
@@ -45,7 +46,7 @@ export const GET_ORDERS_AWAITING_FULFILLMENT = `
        JOIN order_items oi ON fs.order_item_id = oi.id
        JOIN warehouses w ON fs.warehouse_id = w.id
        WHERE oi.order_id = o.id),
-      'Main Warehouse'
+      'Main Warehouse - Central'
     ) AS warehouses_display,
     (
       SELECT COALESCE(SUM(oi.quantity), 0)::INT FROM order_items oi WHERE oi.order_id = o.id
@@ -61,9 +62,7 @@ export const GET_ORDERS_AWAITING_FULFILLMENT = `
   FROM orders o
   JOIN customers c ON o.customer_id = c.id
   LEFT JOIN quotations q ON o.quotation_id = q.id
-  WHERE (q.status = 'confirmed' OR (q.status IS NULL AND o.status = 'confirmed'))
-    AND (q.status IS NULL OR q.status::TEXT NOT IN ('shipment', 'payment', 'rejected', 'cancelled'))
-    AND (o.status::TEXT NOT IN ('processing', 'partially_fulfilled', 'shipped', 'fulfilled', 'cancelled'))
+  WHERE (o.status::TEXT IN ('confirmed', 'processing', 'pending', 'partially_fulfilled'))
     AND ($1::TEXT IS NULL OR o.order_number ILIKE '%' || $1 || '%' OR c.company_name ILIKE '%' || $1 || '%')
   ORDER BY o.created_at DESC
 `;
