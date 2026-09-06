@@ -258,15 +258,7 @@ export const SubscriptionsList = () => {
         
 
         {/* + New Plan (Admin) Action */}
-        <div className="df-subscriptions__actions-row">
-          <button
-            type="button"
-            className="df-subscriptions__btn-admin"
-            onClick={() => setIsPlanModalOpen(true)}
-          >
-            + New Plan (Admin)
-          </button>
-        </div>
+        
       </div>
 
       {/* Modal: + New Plan */}

@@ -59,7 +59,7 @@ export const GET_SELLABLE_PRODUCT_VARIANTS = `
     p.tax_percentage,
     p.category_id,
     pc.name AS category_name,
-    COALESCE(cdc.max_discount_percentage, 100)::NUMERIC(5,2) AS category_max_discount
+    COALESCE(cdc.max_discount_percentage, 15)::NUMERIC(5,2) AS category_max_discount
   FROM product_variants pv
   JOIN products p ON pv.product_id = p.id
   JOIN product_categories pc ON p.category_id = pc.id
@@ -82,7 +82,7 @@ export const SEARCH_PRODUCT_VARIANTS_FUZZY = `
     p.tax_percentage,
     p.category_id,
     pc.name AS category_name,
-    COALESCE(cdc.max_discount_percentage, 100)::NUMERIC(5,2) AS category_max_discount,
+    COALESCE(cdc.max_discount_percentage, 15)::NUMERIC(5,2) AS category_max_discount,
     GREATEST(
       similarity(p.name, $1),
       similarity(pv.sku, $1),
@@ -143,7 +143,7 @@ export const GET_UPSELL_RULES_FOR_PRODUCTS = `
     pv_sug.selling_price AS suggested_selling_price,
     pc_sug.id AS category_id,
     pc_sug.name AS category_name,
-    COALESCE(cdc.max_discount_percentage, 100)::NUMERIC(5,2) AS category_max_discount,
+    COALESCE(cdc.max_discount_percentage, 15)::NUMERIC(5,2) AS category_max_discount,
     FALSE AS is_subscription,
     NULL AS billing_cycle,
     NULL AS subscription_plan_id
@@ -175,7 +175,7 @@ export const GET_UPSELL_RULES_FOR_PRODUCTS = `
     sp.price AS suggested_selling_price,
     pc.id AS category_id,
     pc.name AS category_name,
-    COALESCE(cdc.max_discount_percentage, 100)::NUMERIC(5,2) AS category_max_discount,
+    COALESCE(cdc.max_discount_percentage, 15)::NUMERIC(5,2) AS category_max_discount,
     TRUE AS is_subscription,
     sp.billing_cycle::text AS billing_cycle,
     sp.id AS subscription_plan_id

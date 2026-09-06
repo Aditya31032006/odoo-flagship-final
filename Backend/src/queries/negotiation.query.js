@@ -35,6 +35,9 @@ export const GET_NEGOTIATION_MESSAGES = `
     u.role AS sender_role,
     nm.sender_type,
     nm.message,
+    nm.counter_discount_percentage,
+    nm.requested_delivery_date,
+    nm.message_type,
     nm.created_at
   FROM negotiation_messages nm
   JOIN users u ON nm.sender_user_id = u.id
@@ -72,9 +75,12 @@ export const INSERT_NEGOTIATION_MESSAGE = `
     quotation_item_id,
     sender_user_id,
     sender_type,
-    message
+    message,
+    counter_discount_percentage,
+    requested_delivery_date,
+    message_type
   )
-  VALUES ($1, $2, $3, $4, $5)
+  VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
   RETURNING *
 `;
 

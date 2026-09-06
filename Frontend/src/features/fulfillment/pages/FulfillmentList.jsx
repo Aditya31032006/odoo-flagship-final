@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router';
 import useFulfillment from '../hooks/useFulfillment.js';
 import { useDebounce } from '../../../shared/hooks/useDebounce.js';
 import WarehouseStockModal from '../components/WarehouseStockModal.jsx';
+import WarehouseDetailModal from '../components/WarehouseDetailModal.jsx';
 import OrderModal from '../components/OrderModal.jsx';
 import DeleteConfirmModal from '../components/DeleteConfirmModal.jsx';
 import PermissionGate from '../../../shared/components/PermissionGate.jsx';
@@ -33,6 +34,9 @@ export const FulfillmentList = () => {
   const [orderSearch, setOrderSearch] = useState('');
   const debouncedOrderSearch = useDebounce(orderSearch, 300);
 
+  // Selected warehouse for detail modal
+  const [selectedWarehouseId, setSelectedWarehouseId] = useState(null);
+
   // Filtered Stock List
   const filteredStock = useMemo(() => {
     if (!debouncedStockSearch.trim()) return stock;
@@ -44,6 +48,34 @@ export const FulfillmentList = () => {
         s.sku?.toLowerCase().includes(q)
     );
   }, [stock, debouncedStockSearch]);
+
+  // Group stock by warehouse
+  const groupedStock = useMemo(() => {
+    const groups = {};
+    filteredStock.forEach((item) => {
+      const wId = item.warehouse_id || item.warehouse_name;
+      if (!groups[wId]) {
+        groups[wId] = {
+          warehouse_id: wId,
+          warehouse_name: item.warehouse_name,
+          items: [],
+          totalInStock: 0,
+          totalReserved: 0,
+          totalAvailable: 0,
+        };
+      }
+      groups[wId].items.push(item);
+      groups[wId].totalInStock += Number(item.in_stock) || 0;
+      groups[wId].totalReserved += Number(item.reserved) || 0;
+      groups[wId].totalAvailable += Number(item.available) || 0;
+    });
+    return Object.values(groups);
+  }, [filteredStock]);
+
+  const selectedWarehouseGroup = useMemo(() => {
+    if (!selectedWarehouseId) return null;
+    return groupedStock.find((g) => g.warehouse_id === selectedWarehouseId) || null;
+  }, [selectedWarehouseId, groupedStock]);
 
   // Filtered Orders List
   const filteredOrders = useMemo(() => {
@@ -244,64 +276,72 @@ export const FulfillmentList = () => {
             <table className="df-fulfillment__table">
               <thead>
                 <tr>
-                  <th>Warehouse</th>
-                  <th>Product</th>
-                  <th>In Stock</th>
-                  <th>Reserved</th>
-                  <th>Available</th>
-                  <th style={{ textAlign: 'right' }}>Actions</th>
+                  <th>Warehouse Facility</th>
+                  <th>Stocked Items</th>
+                  <th>Total In Stock</th>
+                  <th>Total Reserved</th>
+                  <th>Total Available</th>
+                  <th style={{ textAlign: 'right' }}>Action</th>
                 </tr>
               </thead>
               <tbody>
-                {filteredStock.length === 0 ? (
+                {groupedStock.length === 0 ? (
                   <tr>
                     <td colSpan={6} className="df-fulfillment__empty">
                       {stockSearch ? 'No warehouse stock matches your search.' : 'No stock records found. Click "+ Add Warehouse Stock" above to register inventory.'}
                     </td>
                   </tr>
                 ) : (
-                  filteredStock.map((item) => (
-                    <tr key={item.stock_id}>
+                  groupedStock.map((group) => (
+                    <tr
+                      key={group.warehouse_id}
+                      className="df-fulfillment__warehouse-row is-clickable"
+                      onClick={() => setSelectedWarehouseId(group.warehouse_id)}
+                      style={{ cursor: 'pointer' }}
+                      title="Click row to view all stock items in this warehouse"
+                    >
                       <td>
-                        <strong className="df-fulfillment__warehouse-name">
-                          {item.warehouse_name}
-                        </strong>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                          <span style={{ fontSize: '1.2rem' }}>🏢</span>
+                          <strong className="df-fulfillment__warehouse-name">
+                            {group.warehouse_name}
+                          </strong>
+                        </div>
                       </td>
                       <td>
-                        <span className="df-fulfillment__product-name">
-                          {item.product_name}
+                        <span className="df-fulfillment__product-count">
+                          {group.items.length} item{group.items.length !== 1 ? 's' : ''}
                         </span>
                       </td>
-                      <td>{item.in_stock}</td>
-                      <td>{item.reserved}</td>
+                      <td>
+                        <strong>{group.totalInStock}</strong>
+                      </td>
+                      <td>
+                        <span style={{ color: group.totalReserved > 0 ? '#d97706' : '#71717a', fontWeight: group.totalReserved > 0 ? 600 : 400 }}>
+                          {group.totalReserved}
+                        </span>
+                      </td>
                       <td>
                         <span
                           className={`df-fulfillment__available-badge ${
-                            item.available <= 0 ? 'df-fulfillment__available-badge--out' : ''
+                            group.totalAvailable <= 0 ? 'df-fulfillment__available-badge--out' : ''
                           }`}
                         >
-                          {item.available}
+                          {group.totalAvailable}
                         </span>
                       </td>
                       <td style={{ textAlign: 'right' }}>
-                        <div className="df-fulfillment__row-actions">
-                          <button
-                            type="button"
-                            className="df-fulfillment__icon-btn"
-                            title="Edit Stock"
-                            onClick={(e) => handleOpenEditStock(e, item)}
-                          >
-                            ✎
-                          </button>
-                          <button
-                            type="button"
-                            className="df-fulfillment__icon-btn df-fulfillment__icon-btn--delete"
-                            title="Delete Stock"
-                            onClick={(e) => handleOpenDeleteStock(e, item)}
-                          >
-                            ✕
-                          </button>
-                        </div>
+                        <button
+                          type="button"
+                          className="df-fulfillment__btn df-fulfillment__btn--cancel"
+                          style={{ padding: '0.35rem 0.75rem', fontSize: '0.8125rem' }}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSelectedWarehouseId(group.warehouse_id);
+                          }}
+                        >
+                          View Inventory ↗
+                        </button>
                       </td>
                     </tr>
                   ))
@@ -437,6 +477,18 @@ export const FulfillmentList = () => {
           warehouses={meta?.warehouses || []}
           onSave={handleSaveOrder}
           isSaving={isMutating}
+        />
+      )}
+
+      {/* Warehouse Detail Modal */}
+      {selectedWarehouseGroup && (
+        <WarehouseDetailModal
+          isOpen={!!selectedWarehouseGroup}
+          onClose={() => setSelectedWarehouseId(null)}
+          warehouseName={selectedWarehouseGroup.warehouse_name}
+          items={selectedWarehouseGroup.items}
+          onEditItem={(item) => handleOpenEditStock(null, item)}
+          onDeleteItem={(item) => handleOpenDeleteStock(null, item)}
         />
       )}
 

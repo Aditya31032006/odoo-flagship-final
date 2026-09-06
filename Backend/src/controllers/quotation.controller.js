@@ -72,6 +72,7 @@ export const getQuotationsController = async (req, res, next) => {
       customerId,
       status: status ? status.trim() : null,
       searchQuery: search ? search.trim() : null,
+      role: user.role,
     });
 
     if (view === 'kanban') {
@@ -133,7 +134,7 @@ export const getQuotationsSummaryController = async (req, res, next) => {
       }
     }
 
-    const summary = await getQuotationsKanbanSummaryRepo({ salesRepId, customerId });
+    const summary = await getQuotationsKanbanSummaryRepo({ salesRepId, customerId, role: user.role });
     return res.status(STATUS_CODES.OK).json({ success: true, data: summary });
   } catch (error) {
     next(error);

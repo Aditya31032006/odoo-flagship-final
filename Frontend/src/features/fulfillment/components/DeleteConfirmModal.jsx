@@ -12,7 +12,7 @@ export const DeleteConfirmModal = ({
   if (!isOpen) return null;
 
   const modalContent = (
-    <div className="df-modal-backdrop" onClick={onClose}>
+    <div className="df-modal-backdrop df-modal-backdrop--top" onClick={onClose}>
       <div className="df-fulfillment-modal__card" onClick={(e) => e.stopPropagation()}>
         <div className="df-fulfillment-modal__header">
           <div>

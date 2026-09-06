@@ -82,6 +82,7 @@ export const GET_QUOTATIONS_LIST = `
         OR word_similarity($3, c.company_name) > 0.35
       )
       AND ($4::BIGINT IS NULL OR q.customer_id = $4)
+      AND ($5::TEXT IS NULL OR $5::TEXT != 'finance' OR q.risk_level = 'high' OR q.blended_risk_score > 5.00)
     ORDER BY 
       CASE 
         WHEN $3::TEXT IS NOT NULL THEN GREATEST(
@@ -102,7 +103,8 @@ export const GET_QUOTATIONS_KANBAN_SUMMARY = `
   FROM quotations q
   WHERE ($1::BIGINT IS NULL OR q.sales_rep_id = $1)
     AND ($2::BIGINT IS NULL OR q.customer_id = $2)
-  GROUP BY q.status
+    AND ($3::TEXT IS NULL OR $3::TEXT != 'finance' OR q.risk_level = 'high' OR q.blended_risk_score > 5.00)
+  GROUP BY q.status;
 `;
 
 export const GET_QUOTATION_BY_ID = `
@@ -164,7 +166,7 @@ export const GET_QUOTATION_ITEMS = `
     pv.product_id,
     p.category_id,
     pc.name AS category_name,
-    COALESCE(cdc.max_discount_percentage, 100)::NUMERIC(5,2) AS category_max_discount
+    COALESCE(cdc.max_discount_percentage, 15)::NUMERIC(5,2) AS category_max_discount
   FROM quotation_items qi
   JOIN product_variants pv ON qi.product_variant_id = pv.id
   JOIN products p ON pv.product_id = p.id

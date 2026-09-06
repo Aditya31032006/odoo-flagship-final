@@ -74,7 +74,12 @@ export const QuotationDetail = ({ isNew = false }) => {
   const handleSubmitApproval = async () => {
     const res = await submitForApproval();
     if (res) {
-      toast.success('Quotation submitted for approval!');
+      const isAutoApproved = res?.data?.status === 'approved' || res?.status === 'approved' || !calculatedTotals.hasExcess;
+      toast.success(
+        isAutoApproved
+          ? 'Quotation submitted & auto-approved (within allowed limits)!'
+          : 'Quotation submitted for governance approval.'
+      );
       setTimeout(() => {
         navigate('/quotations');
       }, 1200);
@@ -82,6 +87,11 @@ export const QuotationDetail = ({ isNew = false }) => {
   };
 
   const handleApproveQuotation = async () => {
+    if (!targetId || targetId === 'new' || isNaN(Number(targetId))) {
+      toast.error('Please save the quotation first before approving.');
+      return;
+    }
+
     const ok = await confirm({
       title: 'Approve Quotation',
       message: 'Are you sure you want to grant approval for this quotation?',
@@ -108,6 +118,11 @@ export const QuotationDetail = ({ isNew = false }) => {
   };
 
   const handleReturnRevision = async () => {
+    if (!targetId || targetId === 'new' || isNaN(Number(targetId))) {
+      toast.error('Please save the quotation first before returning for revision.');
+      return;
+    }
+
     const note = window.prompt('Please enter note/reason for returning to sales rep for revision:');
     if (note === null) return;
 
@@ -129,6 +144,11 @@ export const QuotationDetail = ({ isNew = false }) => {
   };
 
   const handleRejectQuotation = async () => {
+    if (!targetId || targetId === 'new' || isNaN(Number(targetId))) {
+      toast.error('Please save the quotation first before rejecting.');
+      return;
+    }
+
     const reason = window.prompt('Please enter the reason for rejection:');
     if (reason === null) return;
 
@@ -447,7 +467,7 @@ export const QuotationDetail = ({ isNew = false }) => {
                     {isSaving ? 'Saving...' : 'Update & Re-save'}
                   </button>
                 </div>
-              ) : status === 'pending_approval' ? (
+              ) : !isNew && targetId !== 'new' && status === 'pending_approval' ? (
                 <div style={{
                   display: 'flex',
                   alignItems: 'center',
@@ -517,7 +537,7 @@ export const QuotationDetail = ({ isNew = false }) => {
                     onClick={handleSaveDraft}
                     disabled={isSaving}
                   >
-                    {isSaving ? 'Saving...' : 'Save Quotation'}
+                    {isSaving ? 'Saving...' : 'Save Draft'}
                   </button>
 
                   <button
@@ -526,7 +546,7 @@ export const QuotationDetail = ({ isNew = false }) => {
                     onClick={handleSubmitApproval}
                     disabled={isSaving}
                   >
-                    {isSaving ? 'Filing...' : 'File & Send to Customer'}
+                    {isSaving ? 'Submitting...' : 'Submit for Approval'}
                   </button>
                 </>
               )}

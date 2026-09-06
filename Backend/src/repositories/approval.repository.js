@@ -1,7 +1,7 @@
 import { pool } from '../config/database.js';
 import {
   GET_APPROVALS_SUMMARY_COUNTS,
-  GET_ALL_APPROVALS_LIST,
+  GET_ALL_APPROVALS_LIST_BY_ROLE,
   GET_APPROVAL_DETAIL_HEADER,
   GET_APPROVAL_FLAGGED_LINES,
   GET_APPROVAL_AUDIT_LOGS,
@@ -13,12 +13,12 @@ import {
   UPDATE_QUOTATION_STATUS,
 } from '../queries/approval.query.js';
 
-export const getApprovalsListRepo = async () => {
+export const getApprovalsListRepo = async ({ role = 'admin', userId = null } = {}) => {
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
     const countsRes = await client.query(GET_APPROVALS_SUMMARY_COUNTS);
-    const listRes = await client.query(GET_ALL_APPROVALS_LIST);
+    const listRes = await client.query(GET_ALL_APPROVALS_LIST_BY_ROLE, [role || 'admin']);
     await client.query('COMMIT');
 
     return {
@@ -58,12 +58,16 @@ export const getApprovalDetailRepo = async (quotationId) => {
     const auditLogs = logsRes.rows;
     const steps = stepsRes.rows;
 
-    // Build stepper progression
-    // Stepper flow: Submitted -> Sales Manager -> Finance (if high risk) -> Confirmed
-    const isHighRisk = Number(header.blended_risk_score) > 10 || header.risk_level === 'HIGH';
     const isApprovedOrConfirmed = ['approved', 'confirmed', 'sent'].includes(header.status);
     const isPending = header.status === 'pending_approval';
     const isRejected = header.status === 'rejected';
+
+    const smStep = steps.find((s) => s.approver_role === 'sales_manager');
+    const finStep = steps.find((s) => s.approver_role === 'finance');
+
+    const smCompleted = smStep?.step_status === 'approved' || isApprovedOrConfirmed;
+    const smRejected = smStep?.step_status === 'rejected';
+    const smActive = isPending && smStep?.step_status === 'pending';
 
     const stepper = [
       {
@@ -73,22 +77,26 @@ export const getApprovalDetailRepo = async (quotationId) => {
       },
       {
         id: 'sales_manager',
-        label: 'Sales Manager',
-        status: isPending ? 'active' : (isApprovedOrConfirmed ? 'completed' : (isRejected ? 'rejected' : 'pending')),
+        label: 'Sales Manager (Stage 1)',
+        status: smCompleted ? 'completed' : smRejected ? 'rejected' : smActive ? 'active' : (isPending ? 'active' : 'pending'),
       },
     ];
 
-    if (isHighRisk || steps.some((s) => s.approver_role === 'finance')) {
+    if (finStep || Number(header.blended_risk_score) > 5.00) {
+      const finCompleted = finStep?.step_status === 'approved' || isApprovedOrConfirmed;
+      const finRejected = finStep?.step_status === 'rejected';
+      const finActive = isPending && smCompleted && finStep?.step_status === 'pending';
+
       stepper.push({
         id: 'finance',
-        label: 'Finance',
-        status: isApprovedOrConfirmed ? 'completed' : 'pending',
+        label: 'Finance (Stage 2)',
+        status: finCompleted ? 'completed' : finRejected ? 'rejected' : finActive ? 'active' : 'pending',
       });
     }
 
     stepper.push({
       id: 'confirmed',
-      label: 'Confirmed',
+      label: 'Approved & Active',
       status: isApprovedOrConfirmed ? 'completed' : 'pending',
     });
 
@@ -115,57 +123,125 @@ export const submitApprovalDecisionRepo = async ({
   action, // 'approve', 'return_revision', 'reject'
   reason = '',
   userId,
+  userRole = 'admin',
 }) => {
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
 
-    // 1. Determine new quotation status
-    let newStatus = 'approved';
-    let auditAction = 'approved';
+    // 1. Fetch latest approval request & steps
+    const reqRes = await client.query(
+      `SELECT id, status FROM approval_requests WHERE quotation_id = $1 ORDER BY requested_at DESC LIMIT 1`,
+      [quotationId]
+    );
 
-    if (action === 'approve') {
-      newStatus = 'approved';
-      auditAction = 'approved';
-    } else if (action === 'return_revision') {
-      newStatus = 'draft';
-      auditAction = 'returned';
-    } else if (action === 'reject') {
-      newStatus = 'rejected';
-      auditAction = 'rejected';
+    let reqId = reqRes.rows[0]?.id || null;
+    let steps = [];
+
+    if (reqId) {
+      const stepsRes = await client.query(
+        `SELECT id, step_number, approver_role, status, comments, acted_at 
+         FROM approval_steps 
+         WHERE approval_request_id = $1 
+         ORDER BY step_number ASC`,
+        [reqId]
+      );
+      steps = stepsRes.rows;
     }
 
-    // 2. Update quotation
-    await client.query(UPDATE_QUOTATION_STATUS, [newStatus, quotationId]);
-
-    // 3. Update approval request & steps if present
-    const reqRes = await client.query(GET_LATEST_APPROVAL_REQUEST_FOR_QUOTATION, [quotationId]);
-
-    if (reqRes.rows.length > 0) {
-      const reqId = reqRes.rows[0].id;
-      const approvalReqStatus = action === 'approve' ? 'approved' : (action === 'reject' ? 'rejected' : 'returned');
-
-      await client.query(UPDATE_APPROVAL_REQUEST_STATUS, [approvalReqStatus, reqId]);
-
-      // Update pending step
-      await client.query(UPDATE_PENDING_APPROVAL_STEP, [
-        approvalReqStatus,
-        reason || '',
+    if (action === 'return_revision') {
+      if (reqId) {
+        await client.query(
+          `UPDATE approval_steps SET status = 'returned', comments = $1, acted_at = NOW(), approver_user_id = $2 
+           WHERE approval_request_id = $3 AND status = 'pending'`,
+          [reason || 'Returned for revision', userId || null, reqId]
+        );
+        await client.query(
+          `UPDATE approval_requests SET status = 'returned', completed_at = NOW() WHERE id = $1`,
+          [reqId]
+        );
+      }
+      await client.query(UPDATE_QUOTATION_STATUS, ['draft', quotationId]);
+      await client.query(INSERT_QUOTATION_AUDIT_LOG, [
+        quotationId,
         userId || null,
-        reqId,
+        'returned',
+        reason || 'Returned for discount revision',
       ]);
-    }
+    } else if (action === 'reject') {
+      if (reqId) {
+        await client.query(
+          `UPDATE approval_steps SET status = 'rejected', comments = $1, acted_at = NOW(), approver_user_id = $2 
+           WHERE approval_request_id = $3 AND status = 'pending'`,
+          [reason || 'Quotation terms rejected', userId || null, reqId]
+        );
+        await client.query(
+          `UPDATE approval_requests SET status = 'rejected', completed_at = NOW() WHERE id = $1`,
+          [reqId]
+        );
+      }
+      await client.query(UPDATE_QUOTATION_STATUS, ['rejected', quotationId]);
+      await client.query(INSERT_QUOTATION_AUDIT_LOG, [
+        quotationId,
+        userId || null,
+        'rejected',
+        reason || 'Quotation rejected',
+      ]);
+    } else if (action === 'approve') {
+      // Find the current pending step in sequence
+      const currentPendingStep = steps.find((s) => s.status === 'pending');
 
-    // 4. Insert Audit Log
-    await client.query(INSERT_QUOTATION_AUDIT_LOG, [
-      quotationId,
-      userId || null,
-      auditAction,
-      reason || `Quotation ${auditAction} by manager`,
-    ]);
+      if (currentPendingStep) {
+        // Approve this specific step
+        await client.query(
+          `UPDATE approval_steps SET status = 'approved', comments = $1, acted_at = NOW(), approver_user_id = $2 
+           WHERE id = $3`,
+          [reason || 'Approved', userId || null, currentPendingStep.id]
+        );
+
+        // Check if there is another pending step after this one (e.g. Stage 2 Finance)
+        const remainingPendingSteps = steps.filter(
+          (s) => s.id !== currentPendingStep.id && s.step_number > currentPendingStep.step_number && s.status === 'pending'
+        );
+
+        if (remainingPendingSteps.length > 0) {
+          // Quotation REMAINS in pending_approval! Stage 2 (Finance) is now ready.
+          const nextRoleName = remainingPendingSteps[0].approver_role === 'finance' ? 'Finance' : 'Stage 2';
+          await client.query(INSERT_QUOTATION_AUDIT_LOG, [
+            quotationId,
+            userId || null,
+            'approved',
+            reason || `Stage 1 approved by Sales Manager. Forwarded to ${nextRoleName} (Stage 2) for final clearance.`,
+          ]);
+        } else {
+          // All steps completed! Full governance clearance granted!
+          if (reqId) {
+            await client.query(
+              `UPDATE approval_requests SET status = 'approved', completed_at = NOW() WHERE id = $1`,
+              [reqId]
+            );
+          }
+          await client.query(UPDATE_QUOTATION_STATUS, ['approved', quotationId]);
+          await client.query(INSERT_QUOTATION_AUDIT_LOG, [
+            quotationId,
+            userId || null,
+            'approved',
+            reason || 'Final approval granted. Quotation approved for ordering.',
+          ]);
+        }
+      } else {
+        // Direct approve
+        await client.query(UPDATE_QUOTATION_STATUS, ['approved', quotationId]);
+        await client.query(INSERT_QUOTATION_AUDIT_LOG, [
+          quotationId,
+          userId || null,
+          'approved',
+          reason || 'Quotation approved',
+        ]);
+      }
+    }
 
     await client.query('COMMIT');
-
     return await getApprovalDetailRepo(quotationId);
   } catch (error) {
     console.error('Error in submitApprovalDecisionRepo:', error);

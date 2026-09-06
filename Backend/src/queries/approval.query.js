@@ -13,7 +13,7 @@ export const GET_APPROVALS_SUMMARY_COUNTS = `
   FROM quotations q;
 `;
 
-export const GET_ALL_APPROVALS_LIST = `
+export const GET_ALL_APPROVALS_LIST_BY_ROLE = `
   SELECT 
     q.id AS quotation_id,
     q.quotation_number,
@@ -28,19 +28,19 @@ export const GET_ALL_APPROVALS_LIST = `
         COALESCE(
           (SELECT 
              CASE 
-               WHEN ast.approver_role = 'sales_manager' THEN 'Sales Manager'
-               WHEN ast.approver_role = 'finance' THEN 'Finance'
+               WHEN ast.approver_role = 'sales_manager' THEN 'Sales Manager (Stage 1)'
+               WHEN ast.approver_role = 'finance' THEN 'Finance (Stage 2)'
                WHEN ast.approver_role = 'operations' THEN 'Operations'
-               WHEN ast.approver_role = 'admin' THEN 'Admin'
+               WHEN ast.approver_role = 'admin' THEN 'Admin Review'
                ELSE INITCAP(REPLACE(ast.approver_role::TEXT, '_', ' '))
              END
            FROM approval_steps ast 
            JOIN approval_requests ar ON ast.approval_request_id = ar.id 
            WHERE ar.quotation_id = q.id AND ast.status = 'pending' 
            ORDER BY ast.step_number ASC LIMIT 1),
-          'Sales Manager'
+          'Sales Manager (Stage 1)'
         )
-      WHEN q.status = 'approved' OR q.status = 'confirmed' THEN 'Auto-Approved'
+      WHEN q.status = 'approved' OR q.status = 'confirmed' THEN 'Approved'
       WHEN q.status = 'rejected' THEN 'Rejected'
       WHEN q.status = 'draft' AND EXISTS (
         SELECT 1 FROM quotation_audit_logs qal WHERE qal.quotation_id = q.id AND qal.action = 'returned'
@@ -65,11 +65,41 @@ export const GET_ALL_APPROVALS_LIST = `
   FROM quotations q
   JOIN customers c ON q.customer_id = c.id
   LEFT JOIN customer_tiers ct ON q.tier_id = ct.id
-  WHERE q.status IN ('pending_approval', 'approved', 'confirmed', 'rejected') 
-     OR (q.status = 'draft' AND EXISTS (
+  WHERE (
+    -- Admin sees everything
+    ($1::TEXT = 'admin')
+    
+    -- Finance only sees high risk items that have already completed Stage 1 (Sales Manager approved) and are now at Stage 2
+    OR ($1::TEXT = 'finance' AND (
+      (q.status = 'pending_approval' AND EXISTS (
+        SELECT 1 FROM approval_steps ast_fin
+        JOIN approval_requests ar ON ast_fin.approval_request_id = ar.id
+        WHERE ar.quotation_id = q.id 
+          AND ast_fin.approver_role = 'finance' 
+          AND ast_fin.status = 'pending'
+          AND NOT EXISTS (
+            SELECT 1 FROM approval_steps prior_ast 
+            WHERE prior_ast.approval_request_id = ar.id 
+              AND prior_ast.step_number < ast_fin.step_number 
+              AND prior_ast.status != 'approved'
+          )
+      ))
+      OR (q.status IN ('approved', 'rejected') AND EXISTS (
+        SELECT 1 FROM approval_steps ast_fin_acted
+        JOIN approval_requests ar ON ast_fin_acted.approval_request_id = ar.id
+        WHERE ar.quotation_id = q.id AND ast_fin_acted.approver_role = 'finance'
+      ))
+    ))
+
+    -- Sales manager sees items needing Stage 1 review or their team's quotes
+    OR ($1::TEXT NOT IN ('admin', 'finance') AND (
+      q.status IN ('pending_approval', 'approved', 'confirmed', 'rejected')
+      OR (q.status = 'draft' AND EXISTS (
         SELECT 1 FROM quotation_audit_logs qal WHERE qal.quotation_id = q.id
-     ))
-     OR q.blended_risk_score > 0
+      ))
+      OR q.blended_risk_score > 0
+    ))
+  )
   ORDER BY q.created_at DESC;
 `;
 

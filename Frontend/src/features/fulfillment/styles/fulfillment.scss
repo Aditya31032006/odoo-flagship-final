@@ -181,6 +181,27 @@
     color: #09090b;
   }
 
+  &__warehouse-row {
+    transition: background 0.15s ease;
+
+    &:hover {
+      background: #f8fafc;
+    }
+  }
+
+  &__product-count {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.15rem 0.55rem;
+    border-radius: vars.$radius-xs;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    background: #eff6ff;
+    color: #2563eb;
+    border: 1px solid #bfdbfe;
+  }
+
+
   &__product-name {
     color: #09090b;
     font-weight: 500;
@@ -369,11 +390,136 @@
     color: #09090b;
     margin-bottom: 0.5rem;
   }
+
+  // Chevron for expandable rows
+  &__chevron {
+    display: inline-block;
+    font-size: 1rem;
+    color: #71717a;
+    transition: transform 0.2s ease;
+
+    &--open {
+      transform: rotate(90deg);
+    }
+  }
+
+  // Warehouse header row (accordion trigger)
+  &__warehouse-row {
+    background: #f9fafb;
+    border-bottom: 1px solid #e5e7eb;
+    transition: background 0.15s ease;
+
+    &:hover {
+      background: #f1f5f9;
+    }
+
+    td {
+      font-size: 0.9375rem;
+      padding-top: 0.875rem;
+      padding-bottom: 0.875rem;
+    }
+  }
+
+  // Expanded product sub-row
+  &__product-row {
+    background: #ffffff;
+    border-left: 3px solid #e5e7eb;
+
+    &:hover {
+      background: #fafafa;
+    }
+
+    td {
+      font-size: 0.875rem;
+      color: #3f3f46;
+    }
+  }
+
+  &__product-count {
+    font-size: 0.8125rem;
+    color: #71717a;
+    font-weight: 500;
+  }
+
+  &__sku {
+    font-size: 0.75rem;
+    color: #a1a1aa;
+    font-weight: 400;
+  }
 }
 
 // ==========================================
 // MODAL & FORMS STYLES (SHARP)
 // ==========================================
+.df-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
+  z-index: 1200;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 1rem;
+
+  &--top {
+    z-index: 1300;
+  }
+}
+
+.df-wh-detail {
+  &__summary {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: vars.$radius-xs;
+    padding: 1rem;
+  }
+
+  &__stat {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+
+    &-label {
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: #64748b;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    &-value {
+      font-size: 1.35rem;
+      font-weight: 700;
+      color: #0f172a;
+
+      &--reserved {
+        color: #d97706;
+      }
+
+      &--available {
+        color: #059669;
+      }
+
+      &--out {
+        color: #dc2626;
+      }
+    }
+  }
+
+  &__table-wrap {
+    max-height: 420px;
+    overflow-y: auto;
+    border: 1px solid #e2e8f0;
+    border-radius: vars.$radius-xs;
+  }
+}
+
+
 .df-fulfillment-modal {
   &__card {
     background: #ffffff;

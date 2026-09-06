@@ -5,12 +5,14 @@ import ApprovalActionModal from '../components/ApprovalActionModal.jsx';
 import PermissionGate from '../../../shared/components/PermissionGate.jsx';
 import BackButton from '../../../shared/components/BackButton.jsx';
 import { useToast } from '../../../shared/context/ToastContext.jsx';
+import useAuth from '../../auth/hook/useAuth.js';
 import '../styles/approvals.scss';
 
 export const ApprovalDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { user } = useAuth();
   const {
     currentDetail,
     isLoadingDetail,
@@ -238,34 +240,89 @@ export const ApprovalDetail = () => {
         </div>
 
         {/* Decision Action Buttons */}
-        <PermissionGate allowedRoles={['admin', 'sales_manager', 'finance']}>
-          <div className="df-approvals__actions-bar">
-            <button
-              type="button"
-              className="df-approvals__action-btn df-approvals__action-btn--approve"
-              onClick={() => handleOpenModal('approve')}
-              disabled={isSubmittingDecision}
-            >
-              Approve
-            </button>
-            <button
-              type="button"
-              className="df-approvals__action-btn df-approvals__action-btn--return"
-              onClick={() => handleOpenModal('return_revision')}
-              disabled={isSubmittingDecision}
-            >
-              Return for Revision
-            </button>
-            <button
-              type="button"
-              className="df-approvals__action-btn df-approvals__action-btn--reject"
-              onClick={() => handleOpenModal('reject')}
-              disabled={isSubmittingDecision}
-            >
-              Reject
-            </button>
-          </div>
-        </PermissionGate>
+        {(() => {
+          const isPending = header?.status === 'pending_approval';
+          const activeStep = stepper.find((s) => s.status === 'active');
+          const activeRole = activeStep?.id; // 'sales_manager' or 'finance'
+
+          const canUserAct = isPending && (
+            user?.role === 'admin' ||
+            (user?.role === 'sales_manager' && activeRole === 'sales_manager') ||
+            (user?.role === 'finance' && activeRole === 'finance')
+          );
+
+          if (!isPending) {
+            return (
+              <div style={{
+                marginTop: '1.5rem',
+                padding: '1rem 1.5rem',
+                borderRadius: '8px',
+                background: header?.status === 'rejected' ? 'rgba(239, 68, 68, 0.1)' : 'rgba(16, 185, 129, 0.1)',
+                border: `1px solid ${header?.status === 'rejected' ? 'rgba(239, 68, 68, 0.3)' : 'rgba(16, 185, 129, 0.3)'}`,
+                color: header?.status === 'rejected' ? '#ef4444' : '#10b981',
+                fontWeight: 600,
+                fontSize: '0.95rem'
+              }}>
+                {header?.status === 'rejected'
+                  ? '✕ This quotation was rejected and closed.'
+                  : '✓ This quotation has already completed approval governance.'}
+              </div>
+            );
+          }
+
+          if (!canUserAct) {
+            return (
+              <div style={{
+                marginTop: '1.5rem',
+                padding: '1rem 1.5rem',
+                borderRadius: '8px',
+                background: 'rgba(245, 158, 11, 0.1)',
+                border: '1px solid rgba(245, 158, 11, 0.3)',
+                color: '#d97706',
+                fontWeight: 500,
+                fontSize: '0.9375rem'
+              }}>
+                ⏳ <strong>Current Workflow Stage:</strong> {activeStep?.label || 'In Review'}
+                <div style={{ fontSize: '0.85rem', marginTop: '0.25rem', color: '#92400e' }}>
+                  {activeRole === 'sales_manager'
+                    ? 'Awaiting Stage 1 review from Sales Manager before proceeding.'
+                    : activeRole === 'finance'
+                    ? 'Sales Manager has approved. Awaiting Stage 2 clearance from Finance.'
+                    : 'Awaiting pending approval decision.'}
+                </div>
+              </div>
+            );
+          }
+
+          return (
+            <div className="df-approvals__actions-bar" style={{ marginTop: '1.5rem' }}>
+              <button
+                type="button"
+                className="df-approvals__action-btn df-approvals__action-btn--approve"
+                onClick={() => handleOpenModal('approve')}
+                disabled={isSubmittingDecision}
+              >
+                ✓ Approve {activeRole === 'sales_manager' ? '(Stage 1: Sales Mgr)' : activeRole === 'finance' ? '(Stage 2: Finance)' : ''}
+              </button>
+              <button
+                type="button"
+                className="df-approvals__action-btn df-approvals__action-btn--return"
+                onClick={() => handleOpenModal('return_revision')}
+                disabled={isSubmittingDecision}
+              >
+                ↺ Return for Revision
+              </button>
+              <button
+                type="button"
+                className="df-approvals__action-btn df-approvals__action-btn--reject"
+                onClick={() => handleOpenModal('reject')}
+                disabled={isSubmittingDecision}
+              >
+                ✕ Reject
+              </button>
+            </div>
+          );
+        })()}
       </div>
 
       {/* Modal using React Hook Form */}

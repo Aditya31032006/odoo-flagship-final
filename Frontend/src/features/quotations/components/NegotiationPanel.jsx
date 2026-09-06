@@ -419,28 +419,78 @@ export const NegotiationPanel = memo(({
         ) : (
           negotiation.messages.map((msg) => {
             const isClientMsg = msg.sender_type === 'customer';
+            const isMe = (isCustomer && isClientMsg) || (!isCustomer && !isClientMsg);
+            const isCounterOffer = msg.message_type === 'counter_offer' || msg.counter_discount_percentage != null || msg.requested_delivery_date != null;
+
             return (
               <div
                 key={msg.id}
-                className={`message-item ${isClientMsg ? 'message-item--customer' : 'message-item--sales_rep'}`}
+                className={`message-item ${isMe ? 'message-item--me' : 'message-item--other'} ${isClientMsg ? 'message-item--customer-sender' : 'message-item--sales-sender'} ${isCounterOffer ? 'message-item--counter' : ''}`}
               >
                 <div className="message-meta">
                   <span className="sender-name">
-                    {msg.sender_name} ({isClientMsg ? 'Client' : 'Sales Team'})
+                    {isMe ? 'You' : msg.sender_name || (isClientMsg ? 'Customer' : 'Sales Team')} ({isClientMsg ? 'Client' : 'Sales Team'})
                   </span>
                   <span className="timestamp">
                     {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                   </span>
                 </div>
 
-                <div className="message-bubble">
-                  {msg.product_name_snapshot && (
-                    <div className="item-tag">
-                      🏷️ Line: {msg.product_name_snapshot}
+                {isCounterOffer ? (
+                  <div className={`message-bubble message-bubble--counter ${isClientMsg ? 'counter-bubble--customer' : 'counter-bubble--sales'}`}>
+                    <div className="counter-bubble-header">
+                      <span className={`counter-type-badge ${isClientMsg ? 'counter-type-badge--customer' : 'counter-type-badge--sales'}`}>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" style={{ width: '13px', height: '13px' }}>
+                          <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+                        </svg>
+                        {isClientMsg ? 'Customer Counter Proposal' : 'Sales Team Revised Offer'}
+                      </span>
                     </div>
-                  )}
-                  <div>{msg.message}</div>
-                </div>
+
+                    <div className="counter-bubble-pills">
+                      {msg.counter_discount_percentage != null && (
+                        <div className="counter-pill pill-discount">
+                          <span className="pill-label">Proposed Discount</span>
+                          <span className="pill-val">-{msg.counter_discount_percentage}%</span>
+                        </div>
+                      )}
+                      {msg.requested_delivery_date && (
+                        <div className="counter-pill pill-date">
+                          <span className="pill-label">Target Delivery</span>
+                          <span className="pill-val">
+                            📅 {new Date(msg.requested_delivery_date).toLocaleDateString(undefined, {
+                              month: 'short',
+                              day: 'numeric',
+                              year: 'numeric',
+                            })}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+
+                    {msg.product_name_snapshot && (
+                      <div className="item-tag">
+                        🏷️ Line: {msg.product_name_snapshot}
+                      </div>
+                    )}
+
+                    {msg.message && (
+                      <div className="counter-bubble-note">
+                        <span className="note-tag">Note:</span>
+                        <span>{msg.message}</span>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="message-bubble">
+                    {msg.product_name_snapshot && (
+                      <div className="item-tag">
+                        🏷️ Line: {msg.product_name_snapshot}
+                      </div>
+                    )}
+                    <div>{msg.message}</div>
+                  </div>
+                )}
               </div>
             );
           })
