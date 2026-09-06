@@ -393,4 +393,175 @@
     font-size: 1rem;
     color: #71717a;
   }
+
+  // ──────────────────────────────────────────────────────────
+  // Invoice Create Form Layout & Theme
+  // ──────────────────────────────────────────────────────────
+  &__create-card {
+    background: #ffffff;
+    border: 1px solid #e5e7eb;
+    border-radius: vars.$radius-sm;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+  }
+
+  &__form-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 1.5rem;
+  }
+
+  &__field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.45rem;
+
+    label {
+      font-size: 0.8125rem;
+      font-weight: 600;
+      color: #3f3f46;
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
+
+      .required {
+        color: #ef4444;
+      }
+    }
+
+    select,
+    input {
+      width: 100%;
+      box-sizing: border-box;
+      background: #f9fafb;
+      border: 1px solid #e5e7eb;
+      border-radius: vars.$radius-sm;
+      padding: 0.55rem 0.85rem;
+      font-size: 0.875rem;
+      font-family: vars.$font-family-base;
+      color: #09090b;
+      outline: none;
+      transition: border-color 0.15s ease, background-color 0.15s ease, box-shadow 0.15s ease;
+
+      &::placeholder {
+        color: #a1a1aa;
+      }
+
+      &:focus {
+        background: #ffffff;
+        border-color: #2563eb;
+        box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+      }
+    }
+
+    .error-msg {
+      font-size: 0.75rem;
+      color: #ef4444;
+      font-weight: 500;
+      margin-top: 0.15rem;
+    }
+  }
+
+  // Inline Table Inputs
+  &__table-select,
+  &__table-input {
+    width: 100%;
+    box-sizing: border-box;
+    background: #f9fafb;
+    border: 1px solid #e5e7eb;
+    border-radius: vars.$radius-sm;
+    padding: 0.45rem 0.65rem;
+    font-size: 0.8125rem;
+    font-family: vars.$font-family-base;
+    color: #09090b;
+    outline: none;
+    transition: all 0.15s ease;
+
+    &:focus {
+      background: #ffffff;
+      border-color: #2563eb;
+      box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.12);
+    }
+  }
+
+  &__btn-remove-row {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: vars.$radius-xs;
+    color: #a1a1aa;
+    cursor: pointer;
+    transition: all 0.15s ease;
+
+    &:hover {
+      background: #fef2f2;
+      border-color: #fecaca;
+      color: #ef4444;
+    }
+
+    svg {
+      width: 14px;
+      height: 14px;
+    }
+  }
+
+  // Totals & Actions Bottom Bar
+  &__totals-bar {
+    background: #ffffff;
+    border: 1px solid #e5e7eb;
+    border-radius: vars.$radius-sm;
+    padding: 1.5rem 1.75rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 1.5rem;
+    margin-bottom: 2.5rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+  }
+
+  &__totals-group {
+    display: flex;
+    align-items: center;
+    gap: 2.5rem;
+    flex-wrap: wrap;
+  }
+
+  &__total-item {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+
+    .label {
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: #71717a;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .value {
+      font-size: 1.125rem;
+      font-weight: 700;
+      color: #18181b;
+
+      &--grand {
+        font-size: 1.5rem;
+        color: #2563eb;
+      }
+    }
+  }
+
+  &__form-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.875rem;
+    flex-wrap: wrap;
+  }
 }
+

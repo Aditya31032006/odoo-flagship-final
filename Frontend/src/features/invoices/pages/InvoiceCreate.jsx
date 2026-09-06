@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router';
 import { useForm, useFieldArray } from 'react-hook-form';
+import gsap from 'gsap';
 import { invoiceApi } from '../services/invoice.api.js';
 import BackButton from '../../../shared/components/BackButton.jsx';
 import { useToast } from '../../../shared/context/ToastContext.jsx';
@@ -15,6 +16,7 @@ const formatCurrency = (val) => {
 const InvoiceCreate = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const formRef = useRef(null);
 
   const [meta, setMeta] = useState({ customers: [], products: [], orders: [] });
   const [isLoadingMeta, setIsLoadingMeta] = useState(true);
@@ -27,7 +29,6 @@ const InvoiceCreate = () => {
     handleSubmit,
     setValue,
     watch,
-    reset,
     formState: { errors },
   } = useForm({
     defaultValues: {
@@ -62,6 +63,17 @@ const InvoiceCreate = () => {
         const metaData = await invoiceApi.getMeta();
         if (metaData) {
           setMeta(metaData);
+          if (metaData.customers?.length > 0) {
+            setValue('customerId', metaData.customers[0].id);
+          }
+          if (metaData.products?.length > 0) {
+            const firstP = metaData.products[0];
+            setValue('items.0.product_variant_id', firstP.variant_id || firstP.id);
+            setValue('items.0.product_name', firstP.product_name || firstP.name);
+            setValue('items.0.sku', firstP.sku || firstP.product_name || firstP.name);
+            setValue('items.0.unit_price', parseFloat(firstP.selling_price || firstP.base_price) || 0);
+            setValue('items.0.tax_percentage', parseFloat(firstP.tax_percentage) || 18);
+          }
         }
       } catch (err) {
         console.error('Failed to load invoice creation metadata:', err);
@@ -71,15 +83,38 @@ const InvoiceCreate = () => {
       }
     };
     fetchMeta();
-  }, []);
+  }, [setValue]);
+
+  // GSAP Entrance Animation
+  useEffect(() => {
+    if (isLoadingMeta || !formRef.current) return;
+    const ctx = gsap.context(() => {
+      gsap.fromTo(
+        '.gsap-stagger-item',
+        { opacity: 0, y: 18 },
+        {
+          opacity: 1,
+          y: 0,
+          duration: 0.5,
+          stagger: 0.07,
+          ease: 'power3.out',
+          clearProps: 'opacity,transform',
+        }
+      );
+    }, formRef);
+
+    return () => ctx.revert();
+  }, [isLoadingMeta]);
 
   const handleProductSelect = (index, productVariantId) => {
-    const foundProduct = meta.products.find((p) => String(p.id) === String(productVariantId));
+    const foundProduct = meta.products.find(
+      (p) => String(p.variant_id || p.id) === String(productVariantId)
+    );
     if (foundProduct) {
-      setValue(`items.${index}.product_variant_id`, foundProduct.id);
-      setValue(`items.${index}.product_name`, foundProduct.name);
-      setValue(`items.${index}.sku`, foundProduct.sku || foundProduct.name);
-      setValue(`items.${index}.unit_price`, parseFloat(foundProduct.base_price) || 0);
+      setValue(`items.${index}.product_variant_id`, foundProduct.variant_id || foundProduct.id);
+      setValue(`items.${index}.product_name`, foundProduct.product_name || foundProduct.name);
+      setValue(`items.${index}.sku`, foundProduct.sku || foundProduct.product_name || foundProduct.name);
+      setValue(`items.${index}.unit_price`, parseFloat(foundProduct.selling_price || foundProduct.base_price) || 0);
       setValue(`items.${index}.tax_percentage`, parseFloat(foundProduct.tax_percentage) || 18);
     }
   };
@@ -87,11 +122,11 @@ const InvoiceCreate = () => {
   const handleAddItem = () => {
     const firstP = meta.products[0] || {};
     append({
-      product_variant_id: firstP.id || '',
-      product_name: firstP.name || '',
+      product_variant_id: firstP.variant_id || firstP.id || '',
+      product_name: firstP.product_name || firstP.name || '',
       sku: firstP.sku || '',
       quantity: 1,
-      unit_price: parseFloat(firstP.base_price) || 0,
+      unit_price: parseFloat(firstP.selling_price || firstP.base_price) || 0,
       tax_percentage: parseFloat(firstP.tax_percentage) || 18,
     });
   };
@@ -128,7 +163,7 @@ const InvoiceCreate = () => {
         items: formData.items,
       });
 
-      toast.success('Invoice created successfully in database!');
+      toast.success('Invoice created successfully!');
       if (res.data?.invoice?.id) {
         navigate(`/invoices/${res.data.invoice.id}`);
       } else {
@@ -136,7 +171,7 @@ const InvoiceCreate = () => {
       }
     } catch (err) {
       console.error('Failed to create invoice:', err);
-      toast.error(err.response?.data?.message || 'Failed to create invoice');
+      toast.error(err.response?.data?.message || err.customMessage || 'Failed to create invoice');
     } finally {
       setIsSubmitting(false);
     }
@@ -146,101 +181,102 @@ const InvoiceCreate = () => {
     return (
       <div className="df-invoices">
         <div className="df-invoices__container">
-          <div className="df-invoices__loading">Loading customer and catalog metadata...</div>
+          <div className="df-invoices__loading">Loading customer and product catalog...</div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="df-invoices">
+    <div className="df-invoices" ref={formRef}>
       <div className="df-invoices__container">
-        <BackButton to="/invoices" label="Back to Invoices" />
+        <div className="gsap-stagger-item" style={{ marginBottom: '1rem' }}>
+          <BackButton to="/invoices" label="Back to Invoices" />
+        </div>
 
-        <div className="df-invoices__header">
+        <div className="df-invoices__header gsap-stagger-item">
           <div className="df-invoices__title-row">
             <div>
               <h1 className="df-invoices__title">Create New Invoice</h1>
               <p className="df-invoices__subtitle">
-                Generate one-time and recurring invoices with live customer and product catalog
+                Generate standard enterprise invoices with live product catalog and automated tax calculation
               </p>
             </div>
           </div>
         </div>
 
-        {error && <div className="df-invoices__empty">{error}</div>}
+        {error && <div className="df-invoices__empty gsap-stagger-item">{error}</div>}
 
         <form onSubmit={handleSubmit(onFormSubmit)}>
           {/* Card 1: Invoice Header Parameters */}
-          <div
-            style={{
-              background: '#111827',
-              border: '1px solid #1f2937',
-              borderRadius: '0.75rem',
-              padding: '1.5rem',
-              marginBottom: '1.5rem',
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
-              gap: '1.5rem',
-            }}
-          >
-            <div className="df-sub-modal__field">
-              <label>Select Customer *</label>
-              <select {...register('customerId', { required: 'Customer is required' })}>
-                {meta.customers.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.company_name} ({c.email || 'No email'})
-                  </option>
-                ))}
-              </select>
-              {errors.customerId && <span style={{ color: '#fb7185', fontSize: '0.75rem' }}>{errors.customerId.message}</span>}
-            </div>
+          <div className="df-invoices__create-card gsap-stagger-item">
+            <div className="df-invoices__form-grid">
+              <div className="df-invoices__field">
+                <label>
+                  Select Customer <span className="required">*</span>
+                </label>
+                <select {...register('customerId', { required: 'Customer is required' })}>
+                  {meta.customers.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.company_name} ({c.email || 'No email'})
+                    </option>
+                  ))}
+                </select>
+                {errors.customerId && <span className="error-msg">{errors.customerId.message}</span>}
+              </div>
 
-            <div className="df-sub-modal__field">
-              <label>Link Confirmed Order (Optional)</label>
-              <select {...register('orderId')}>
-                <option value="">Direct Invoice (No Order Link)</option>
-                {meta.orders.map((o) => (
-                  <option key={o.id} value={o.id}>
-                    {o.order_number} — {o.customer_name}
-                  </option>
-                ))}
-              </select>
-            </div>
+              <div className="df-invoices__field">
+                <label>Link Confirmed Order (Optional)</label>
+                <select {...register('orderId')}>
+                  <option value="">Direct Invoice (No Order Link)</option>
+                  {meta.orders.map((o) => (
+                    <option key={o.id} value={o.id}>
+                      {o.order_number} — {o.customer_name}
+                    </option>
+                  ))}
+                </select>
+              </div>
 
-            <div className="df-sub-modal__field">
-              <label>Payment Due Date *</label>
-              <input
-                type="date"
-                {...register('dueDate', { required: 'Due date is required' })}
-              />
-              {errors.dueDate && <span style={{ color: '#fb7185', fontSize: '0.75rem' }}>{errors.dueDate.message}</span>}
+              <div className="df-invoices__field">
+                <label>
+                  Payment Due Date <span className="required">*</span>
+                </label>
+                <input
+                  type="date"
+                  {...register('dueDate', { required: 'Due date is required' })}
+                />
+                {errors.dueDate && <span className="error-msg">{errors.dueDate.message}</span>}
+              </div>
             </div>
           </div>
 
           {/* Card 2: Line Items Table */}
-          <div className="df-invoices__section-header">
+          <div className="df-invoices__section-header gsap-stagger-item">
             <h2 className="df-invoices__section-title">Invoice Line Items</h2>
             <button
               type="button"
               className="df-invoices__btn-download"
               onClick={handleAddItem}
-              style={{ fontSize: '0.8125rem', padding: '0.375rem 0.875rem' }}
+              style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}
             >
-              + Add Line Item
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                <line x1="12" y1="5" x2="12" y2="19" />
+                <line x1="5" y1="12" x2="19" y2="12" />
+              </svg>
+              Add Line Item
             </button>
           </div>
 
-          <div className="df-invoices__table-wrapper">
+          <div className="df-invoices__table-wrapper gsap-stagger-item">
             <table className="df-invoices__table">
               <thead>
                 <tr>
-                  <th style={{ width: '38%' }}>Product / SKU</th>
+                  <th style={{ width: '40%' }}>Product / SKU</th>
                   <th style={{ width: '12%' }}>Quantity</th>
-                  <th style={{ width: '18%' }}>Unit Price ($)</th>
+                  <th style={{ width: '18%' }}>Unit Price</th>
                   <th style={{ width: '12%' }}>Tax %</th>
                   <th style={{ width: '14%' }}>Line Total</th>
-                  <th style={{ width: '6%' }}>Action</th>
+                  <th style={{ width: '4%', textAlign: 'center' }}></th>
                 </tr>
               </thead>
               <tbody>
@@ -254,20 +290,13 @@ const InvoiceCreate = () => {
                     <tr key={field.id}>
                       <td>
                         <select
-                          style={{
-                            width: '100%',
-                            background: '#1e293b',
-                            border: '1px solid #334155',
-                            color: '#f8fafc',
-                            borderRadius: '0.375rem',
-                            padding: '0.5rem',
-                          }}
+                          className="df-invoices__table-select"
                           {...register(`items.${idx}.product_variant_id`, { required: true })}
                           onChange={(e) => handleProductSelect(idx, e.target.value)}
                         >
                           {meta.products.map((p) => (
-                            <option key={p.variant_id} value={p.variant_id}>
-                              {p.product_name} ({p.sku}) — ${p.selling_price}
+                            <option key={p.variant_id || p.id} value={p.variant_id || p.id}>
+                              {p.product_name || p.name} ({p.sku}) — {formatCurrency(p.selling_price || p.base_price)}
                             </option>
                           ))}
                         </select>
@@ -276,14 +305,7 @@ const InvoiceCreate = () => {
                         <input
                           type="number"
                           min="1"
-                          style={{
-                            width: '100%',
-                            background: '#1e293b',
-                            border: '1px solid #334155',
-                            color: '#f8fafc',
-                            borderRadius: '0.375rem',
-                            padding: '0.5rem',
-                          }}
+                          className="df-invoices__table-input"
                           {...register(`items.${idx}.quantity`, { required: true, min: 1 })}
                         />
                       </td>
@@ -291,14 +313,7 @@ const InvoiceCreate = () => {
                         <input
                           type="number"
                           step="0.01"
-                          style={{
-                            width: '100%',
-                            background: '#1e293b',
-                            border: '1px solid #334155',
-                            color: '#f8fafc',
-                            borderRadius: '0.375rem',
-                            padding: '0.5rem',
-                          }}
+                          className="df-invoices__table-input"
                           {...register(`items.${idx}.unit_price`, { required: true, min: 0 })}
                         />
                       </td>
@@ -306,34 +321,27 @@ const InvoiceCreate = () => {
                         <input
                           type="number"
                           step="0.1"
-                          style={{
-                            width: '100%',
-                            background: '#1e293b',
-                            border: '1px solid #334155',
-                            color: '#f8fafc',
-                            borderRadius: '0.375rem',
-                            padding: '0.5rem',
-                          }}
+                          className="df-invoices__table-input"
                           {...register(`items.${idx}.tax_percentage`, { min: 0 })}
                         />
                       </td>
                       <td>
-                        <strong>{formatCurrency(itemTotal)}</strong>
+                        <span style={{ fontWeight: 700, color: '#18181b', fontSize: '0.875rem' }}>
+                          {formatCurrency(itemTotal)}
+                        </span>
                       </td>
-                      <td>
+                      <td style={{ textAlign: 'center' }}>
                         {fields.length > 1 && (
                           <button
                             type="button"
+                            className="df-invoices__btn-remove-row"
                             onClick={() => remove(idx)}
-                            style={{
-                              background: 'transparent',
-                              border: 'none',
-                              color: '#fb7185',
-                              cursor: 'pointer',
-                              fontWeight: 600,
-                            }}
+                            title="Remove item"
                           >
-                            ✕
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                              <line x1="18" y1="6" x2="6" y2="18" />
+                              <line x1="6" y1="6" x2="18" y2="18" />
+                            </svg>
                           </button>
                         )}
                       </td>
@@ -345,42 +353,23 @@ const InvoiceCreate = () => {
           </div>
 
           {/* Card 3: Totals & Submit */}
-          <div
-            style={{
-              background: '#111827',
-              border: '1px solid #1f2937',
-              borderRadius: '0.75rem',
-              padding: '1.5rem',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              flexWrap: 'wrap',
-              gap: '1.5rem',
-              marginBottom: '2rem',
-            }}
-          >
-            <div style={{ display: 'flex', gap: '2rem', flexWrap: 'wrap' }}>
-              <div>
-                <div style={{ fontSize: '0.75rem', color: '#94a3b8', textTransform: 'uppercase' }}>Subtotal</div>
-                <div style={{ fontSize: '1.125rem', fontWeight: 600, color: '#f8fafc' }}>
-                  {formatCurrency(subtotal)}
-                </div>
+          <div className="df-invoices__totals-bar gsap-stagger-item">
+            <div className="df-invoices__totals-group">
+              <div className="df-invoices__total-item">
+                <span className="label">Subtotal</span>
+                <span className="value">{formatCurrency(subtotal)}</span>
               </div>
-              <div>
-                <div style={{ fontSize: '0.75rem', color: '#94a3b8', textTransform: 'uppercase' }}>Estimated Tax</div>
-                <div style={{ fontSize: '1.125rem', fontWeight: 600, color: '#f8fafc' }}>
-                  {formatCurrency(taxTotal)}
-                </div>
+              <div className="df-invoices__total-item">
+                <span className="label">Estimated Tax (GST)</span>
+                <span className="value">{formatCurrency(taxTotal)}</span>
               </div>
-              <div>
-                <div style={{ fontSize: '0.75rem', color: '#94a3b8', textTransform: 'uppercase' }}>Grand Total</div>
-                <div style={{ fontSize: '1.5rem', fontWeight: 700, color: '#38bdf8' }}>
-                  {formatCurrency(grandTotal)}
-                </div>
+              <div className="df-invoices__total-item">
+                <span className="label">Grand Total</span>
+                <span className="value value--grand">{formatCurrency(grandTotal)}</span>
               </div>
             </div>
 
-            <div style={{ display: 'flex', gap: '1rem' }}>
+            <div className="df-invoices__form-actions">
               <button
                 type="button"
                 className="df-invoices__btn-download"
@@ -390,7 +379,7 @@ const InvoiceCreate = () => {
               </button>
               <button
                 type="submit"
-                className="df-invoices__btn-payment"
+                className="df-cta-btn"
                 disabled={isSubmitting}
               >
                 {isSubmitting ? 'Issuing Invoice...' : 'Create & Issue Invoice'}
@@ -404,3 +393,4 @@ const InvoiceCreate = () => {
 };
 
 export default React.memo(InvoiceCreate);
+
