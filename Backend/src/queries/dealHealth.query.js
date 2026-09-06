@@ -51,6 +51,12 @@ export const GET_ALL_DEAL_HEALTH_FLAGS = `
   JOIN customers c ON q.customer_id = c.id
   LEFT JOIN users u ON q.sales_rep_id = u.id
   LEFT JOIN users ru ON dhf.resolved_by_user_id = ru.id
+  WHERE q.status NOT IN ('payment')
+    AND NOT EXISTS (
+      SELECT 1 FROM orders ord 
+      JOIN invoices inv ON inv.order_id = ord.id 
+      WHERE ord.quotation_id = q.id AND inv.status = 'paid'
+    )
   ORDER BY 
     CASE 
       WHEN dhf.action = 'open' THEN 1
@@ -84,6 +90,12 @@ export const GET_DEAL_HEALTH_FLAGS_BY_TYPE = `
   LEFT JOIN users u ON q.sales_rep_id = u.id
   LEFT JOIN users ru ON dhf.resolved_by_user_id = ru.id
   WHERE dhf.flag_type = $1
+    AND q.status NOT IN ('payment')
+    AND NOT EXISTS (
+      SELECT 1 FROM orders ord 
+      JOIN invoices inv ON inv.order_id = ord.id 
+      WHERE ord.quotation_id = q.id AND inv.status = 'paid'
+    )
   ORDER BY 
     CASE 
       WHEN dhf.action = 'open' THEN 1
@@ -95,12 +107,19 @@ export const GET_DEAL_HEALTH_FLAGS_BY_TYPE = `
 
 export const GET_DEAL_HEALTH_SUMMARY_COUNTS = `
   SELECT 
-    COUNT(*) FILTER (WHERE flag_type = 'stalled_deal' AND action <> 'resolved')::int AS stalled_count,
-    COUNT(*) FILTER (WHERE flag_type = 'discount_anomaly' AND action <> 'resolved')::int AS discount_anomaly_count,
-    COUNT(*) FILTER (WHERE flag_type = 'delivery_slippage' AND action <> 'resolved')::int AS delivery_slippage_count,
-    COUNT(*) FILTER (WHERE action <> 'resolved')::int AS total_open_flags,
+    COUNT(*) FILTER (WHERE dhf.flag_type = 'stalled_deal' AND dhf.action <> 'resolved')::int AS stalled_count,
+    COUNT(*) FILTER (WHERE dhf.flag_type = 'discount_anomaly' AND dhf.action <> 'resolved')::int AS discount_anomaly_count,
+    COUNT(*) FILTER (WHERE dhf.flag_type = 'delivery_slippage' AND dhf.action <> 'resolved')::int AS delivery_slippage_count,
+    COUNT(*) FILTER (WHERE dhf.action <> 'resolved')::int AS total_open_flags,
     COUNT(*)::int AS total_all_flags
-  FROM deal_health_flags;
+  FROM deal_health_flags dhf
+  JOIN quotations q ON dhf.quotation_id = q.id
+  WHERE q.status NOT IN ('payment')
+    AND NOT EXISTS (
+      SELECT 1 FROM orders ord 
+      JOIN invoices inv ON inv.order_id = ord.id 
+      WHERE ord.quotation_id = q.id AND inv.status = 'paid'
+    );
 `;
 
 export const UPDATE_DEAL_HEALTH_FLAG_ACTION = `
@@ -156,7 +175,12 @@ export const FIND_DISCOUNT_ANOMALIES = `
   FROM quotation_items qi
   JOIN quotations q ON qi.quotation_id = q.id
   WHERE (qi.discount_percentage >= $1 OR qi.excess_discount_percentage > 0)
-    AND q.status NOT IN ('rejected', 'expired', 'cancelled')
+    AND q.status NOT IN ('rejected', 'expired', 'cancelled', 'payment')
+    AND NOT EXISTS (
+      SELECT 1 FROM orders ord 
+      JOIN invoices inv ON inv.order_id = ord.id 
+      WHERE ord.quotation_id = q.id AND inv.status = 'paid'
+    )
     AND NOT EXISTS (
       SELECT 1 FROM deal_health_flags dhf 
       WHERE dhf.quotation_id = qi.quotation_id 
@@ -175,9 +199,16 @@ export const FIND_DELIVERY_SLIPPAGE_DEALS = `
   FROM fulfillment_splits fs
   JOIN order_items oi ON fs.order_item_id = oi.id
   JOIN orders o ON oi.order_id = o.id
+  JOIN quotations q ON o.quotation_id = q.id
   WHERE fs.status IN ('pending', 'allocated', 'processing')
     AND fs.estimated_shipment_date < CURRENT_DATE - ($1 || ' days')::INTERVAL
     AND o.quotation_id IS NOT NULL
+    AND q.status NOT IN ('payment')
+    AND NOT EXISTS (
+      SELECT 1 FROM orders ord 
+      JOIN invoices inv ON inv.order_id = ord.id 
+      WHERE ord.quotation_id = q.id AND inv.status = 'paid'
+    )
     AND NOT EXISTS (
       SELECT 1 FROM deal_health_flags dhf 
       WHERE dhf.quotation_id = o.quotation_id 

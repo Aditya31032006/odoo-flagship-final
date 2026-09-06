@@ -28,6 +28,10 @@ export const QuotationDetail = ({ isNew = false }) => {
   const [isActingApproval, setIsActingApproval] = React.useState(false);
   const targetId = isNew ? 'new' : id;
 
+  React.useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [id]);
+
   const {
     customers,
     priceLists,

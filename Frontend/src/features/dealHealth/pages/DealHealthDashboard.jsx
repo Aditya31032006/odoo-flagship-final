@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router';
 import { useSelector } from 'react-redux';
 import { useForm } from 'react-hook-form';
@@ -180,6 +180,17 @@ const DealHealthDashboard = () => {
     setSelectedFilter((prev) => (prev === type ? 'all' : type));
   };
 
+  const displayedFlags = useMemo(() => {
+    return (flags || []).filter((f) => f.quotation_status !== 'payment');
+  }, [flags]);
+
+  const handleRowClick = (flag) => {
+    const targetId = flag.quotation_id || flag.quotation_number;
+    if (targetId) {
+      navigate(`/quotations/${targetId}`);
+    }
+  };
+
   const handleTriggerScan = async () => {
     try {
       setIsScanning(true);
@@ -326,20 +337,37 @@ const DealHealthDashboard = () => {
                 </tr>
               </thead>
               <tbody>
-                {flags.length === 0 ? (
+                {displayedFlags.length === 0 ? (
                   <tr>
                     <td colSpan="4" className="df-deal-health__empty">
                       No health flags detected for the selected view. All deals healthy.
                     </td>
                   </tr>
                 ) : (
-                  flags.map((flag) => (
-                    <tr key={flag.id}>
+                  displayedFlags.map((flag) => (
+                    <tr
+                      key={flag.id}
+                      className="df-deal-health__table-row is-clickable"
+                      onClick={() => handleRowClick(flag)}
+                      style={{ cursor: 'pointer' }}
+                      title={`Open quotation ${flag.quotation_number || ''}`}
+                    >
                       <td>
                         <strong>{flag.customer_name || 'Customer'}</strong>
                         {flag.quotation_number && (
-                          <div style={{ fontSize: '0.75rem', color: '#94a3b8', marginTop: '0.15rem' }}>
-                            {flag.quotation_number} ({flag.quotation_status})
+                          <div
+                            style={{
+                              fontSize: '0.78rem',
+                              color: '#2563eb',
+                              marginTop: '0.2rem',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '0.35rem',
+                            }}
+                          >
+                            <span style={{ fontWeight: 600 }}>{flag.quotation_number}</span>
+                            <span style={{ color: '#94a3b8' }}>({flag.quotation_status})</span>
+                            <span style={{ fontSize: '0.75rem' }}>↗</span>
                           </div>
                         )}
                       </td>
