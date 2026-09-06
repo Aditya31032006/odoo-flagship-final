@@ -322,7 +322,7 @@ const DealHealthDashboard = () => {
                   <th>Deal</th>
                   <th>Issue</th>
                   <th>Flagged</th>
-                  <th>Action</th>
+                  <th>Status</th>
                 </tr>
               </thead>
               <tbody>
@@ -354,36 +354,21 @@ const DealHealthDashboard = () => {
                               Resolved {flag.resolved_by_name ? `by ${flag.resolved_by_name}` : ''}
                             </span>
                           ) : (
-                            <>
-                              {/* Escalate button matching Wireframe #14 */}
-                              <button
-                                type="button"
-                                className="df-deal-health__btn-escalate"
-                                onClick={() =>
-                                  handleAction(flag.id, 'acknowledged', 'Escalated to Manager')
-                                }
-                              >
-                                Escalate
-                              </button>
-
-                              <button
-                                type="button"
-                                className="df-deal-health__btn-nudge"
-                                onClick={() =>
-                                  handleAction(flag.id, 'acknowledged', 'Nudge sent to rep')
-                                }
-                              >
-                                Nudge
-                              </button>
-
-                              <button
-                                type="button"
-                                className="df-deal-health__btn-resolve"
-                                onClick={() => handleAction(flag.id, 'resolved', 'Issue resolved')}
-                              >
-                                Resolve
-                              </button>
-                            </>
+                            <span
+                              className="df-deal-health__action-badge"
+                              style={{
+                                backgroundColor: '#fef3c7',
+                                color: '#b45309',
+                                border: '1px solid #fde68a',
+                                padding: '4px 10px',
+                                borderRadius: '6px',
+                                fontSize: '0.8rem',
+                                fontWeight: 600,
+                                display: 'inline-block',
+                              }}
+                            >
+                              Active
+                            </span>
                           )}
                         </div>
                       </td>

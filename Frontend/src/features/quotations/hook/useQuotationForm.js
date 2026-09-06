@@ -16,7 +16,7 @@ export const useQuotationForm = ({ quotationId = null } = {}) => {
   const [customerId, setCustomerId] = useState('');
   const [selectedCustomer, setSelectedCustomer] = useState(null);
   const [priceListId, setPriceListId] = useState('');
-  const [status, setStatus] = useState('pending_approval');
+  const [status, setStatus] = useState('draft');
   const [validUntil, setValidUntil] = useState(() => {
     const d = new Date();
     d.setDate(d.getDate() + 30);
@@ -124,11 +124,22 @@ export const useQuotationForm = ({ quotationId = null } = {}) => {
     }
   }, [priceListId, priceListMap]);
 
-  // 4. Update Upsell Suggestions whenever product list in cart changes
+  // 4. Update Upsell & Subscription Suggestions whenever product list in cart changes
   useEffect(() => {
     const productIds = Array.from(
-      new Set(lineItems.map((item) => item.product_id).filter(Boolean))
+      new Set(
+        lineItems
+          .map((item) => {
+            if (item.product_id) return item.product_id;
+            const match = products.find(
+              (p) => String(p.product_variant_id) === String(item.product_variant_id)
+            );
+            return match?.product_id;
+          })
+          .filter(Boolean)
+      )
     );
+
     if (productIds.length === 0) {
       setUpsellSuggestions([]);
       return;
@@ -136,18 +147,35 @@ export const useQuotationForm = ({ quotationId = null } = {}) => {
 
     let active = true;
     catalogApi.getUpsells(productIds).then((suggestions) => {
-      if (active) {
-        // Filter out products already present in line items
-        const existingVariantIds = new Set(lineItems.map((i) => i.product_variant_id));
-        const filtered = suggestions.filter((s) => !existingVariantIds.has(s.suggested_variant_id));
-        setUpsellSuggestions(filtered.slice(0, 4));
+      if (active && Array.isArray(suggestions)) {
+        // Filter out physical items already present in line items and subscriptions already attached
+        const existingVariantIds = new Set(
+          lineItems
+            .filter((i) => !i.is_subscription)
+            .map((i) => String(i.product_variant_id))
+        );
+        const existingSubPlanIds = new Set(
+          lineItems
+            .filter((i) => i.is_subscription)
+            .map((i) => String(i.subscription_plan_id))
+            .filter(Boolean)
+        );
+
+        const filtered = suggestions.filter((s) => {
+          if (s.is_subscription) {
+            return !existingSubPlanIds.has(String(s.subscription_plan_id));
+          }
+          return !existingVariantIds.has(String(s.suggested_variant_id));
+        });
+
+        setUpsellSuggestions(filtered.slice(0, 6));
       }
     });
 
     return () => {
       active = false;
     };
-  }, [lineItems]);
+  }, [lineItems, products]);
 
   // Helper to re-evaluate line item calculations & limits
   const calculateLineItem = useCallback(
@@ -165,12 +193,13 @@ export const useQuotationForm = ({ quotationId = null } = {}) => {
       const taxPct = Number(item.tax_percentage) || 0;
 
       // Calculate discount limit: min(tier limit, category limit)
-      const tierLimit = tierMaxDiscount != null ? Number(tierMaxDiscount) : 100;
-      const categoryLimit = item.category_max_discount != null ? Number(item.category_max_discount) : 100;
+      const tierLimit = tierMaxDiscount != null ? Number(tierMaxDiscount) : 0;
+      const categoryLimit = item.category_max_discount != null ? Number(item.category_max_discount) : 15;
       const allowedDiscount = Math.min(tierLimit, categoryLimit);
 
-      // Excess discount percentage
-      const excessDiscount = Math.max(0, effectiveDiscount - allowedDiscount);
+      // Excess discount percentage against allowed ceiling
+      const enteredDiscount = rawDiscount === '' || isNaN(parsedDiscount) ? 0 : parsedDiscount;
+      const excessDiscount = Math.max(0, enteredDiscount - allowedDiscount);
 
       const grossAmount = unitPrice * effectiveQty;
       const discountAmount = grossAmount * (effectiveDiscount / 100);
@@ -196,7 +225,7 @@ export const useQuotationForm = ({ quotationId = null } = {}) => {
   );
 
   // Recalculate all lines when customer's tier or priceList changes
-  const tierMaxDiscount = selectedCustomer?.tier_max_discount != null ? selectedCustomer.tier_max_discount : (selectedCustomer ? 0 : 100);
+  const tierMaxDiscount = selectedCustomer?.tier_max_discount != null ? Number(selectedCustomer.tier_max_discount) : 0;
 
   // Add a new product variant line
   const addProductLine = useCallback(
@@ -324,17 +353,17 @@ export const useQuotationForm = ({ quotationId = null } = {}) => {
       const excess = Number(item.excess_discount_percentage) || 0;
       if (excess > 0) {
         hasExcess = true;
-        totalExcessPoints += excess;
       }
     });
 
-    const itemCount = lineItems.length;
-    const blendedRiskScore = itemCount > 0 ? Number((totalExcessPoints / itemCount).toFixed(2)) : 0;
+    // Calculate maximum excess discount points across all lines
+    const worstExcessPoint = lineItems.reduce((max, it) => Math.max(max, Number(it.excess_discount_percentage) || 0), 0);
+    const blendedRiskScore = Number(worstExcessPoint.toFixed(2));
 
     let riskLevel = 'low';
-    if (blendedRiskScore > 10) {
+    if (worstExcessPoint > 5.00) {
       riskLevel = 'high';
-    } else if (blendedRiskScore > 0 || hasExcess) {
+    } else if (worstExcessPoint > 0 || hasExcess) {
       riskLevel = 'medium';
     }
 

@@ -25,7 +25,7 @@ apiClient.interceptors.response.use(
 export const negotiationApi = {
   getNegotiation: async (quotationId) => {
     const res = await apiClient.get(`/negotiations/${quotationId}`);
-    return res.data?.data;
+    return res.data;
   },
 
   submitCounterOffer: async (quotationId, payload) => {

@@ -25,7 +25,7 @@ import {
 import { GET_ACTIVE_APPROVAL_RULES } from '../queries/catalog.query.js';
 import { allocateStockGreedy } from './fulfillment.repository.js';
 
-export const getQuotationsListRepo = async ({ salesRepId = null, customerId = null, status = null, searchQuery = null } = {}) => {
+export const getQuotationsListRepo = async ({ salesRepId = null, customerId = null, status = null, searchQuery = null, role = null } = {}) => {
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
@@ -34,6 +34,7 @@ export const getQuotationsListRepo = async ({ salesRepId = null, customerId = nu
       status || null,
       searchQuery || null,
       customerId || null,
+      role || null,
     ]);
     await client.query('COMMIT');
     return result.rows;
@@ -46,13 +47,14 @@ export const getQuotationsListRepo = async ({ salesRepId = null, customerId = nu
   }
 };
 
-export const getQuotationsKanbanSummaryRepo = async ({ salesRepId = null, customerId = null } = {}) => {
+export const getQuotationsKanbanSummaryRepo = async ({ salesRepId = null, customerId = null, role = null } = {}) => {
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
     const result = await client.query(GET_QUOTATIONS_KANBAN_SUMMARY, [
       salesRepId || null,
       customerId || null,
+      role || null,
     ]);
     await client.query('COMMIT');
     return result.rows;
@@ -110,7 +112,7 @@ export const saveQuotationRepo = async ({
   sales_rep_id,
   tier_id,
   price_list_id,
-  status = 'draft',
+  status = 'pending_approval',
   blended_risk_score = 0,
   risk_level = 'low',
   subtotal = 0,
@@ -126,6 +128,14 @@ export const saveQuotationRepo = async ({
   try {
     await client.query('BEGIN');
 
+    // Compute exact risk score and level from excess discount:
+    // 0 pt excess: low risk (auto-approved)
+    // 0.01 to 5.00 pt excess: medium risk (Sales Manager only)
+    // > 5.00 pt excess: high risk (Sales Manager + Finance)
+    const maxExcess = items.reduce((max, it) => Math.max(max, Number(it.excess_discount_percentage) || 0), 0);
+    const effectiveRiskScore = maxExcess > 0 ? Number(maxExcess.toFixed(2)) : Number(blended_risk_score || 0);
+    const effectiveRiskLevel = effectiveRiskScore > 5.00 ? 'high' : (effectiveRiskScore > 0 ? 'medium' : 'low');
+
     let quotation;
     let actionType = 'created';
 
@@ -137,8 +147,8 @@ export const saveQuotationRepo = async ({
         tier_id,
         price_list_id,
         status,
-        blended_risk_score,
-        risk_level,
+        effectiveRiskScore,
+        effectiveRiskLevel,
         subtotal,
         discount_total,
         tax_total,
@@ -160,8 +170,8 @@ export const saveQuotationRepo = async ({
         tier_id,
         price_list_id,
         status,
-        blended_risk_score,
-        risk_level,
+        effectiveRiskScore,
+        effectiveRiskLevel,
         subtotal,
         discount_total,
         tax_total,
@@ -211,15 +221,6 @@ export const saveQuotationRepo = async ({
     const effectiveUserId = user_id || sales_rep_id || quotation?.sales_rep_id || 1;
 
     if (status === 'pending_approval') {
-      await client.query(DELETE_APPROVAL_STEPS_BY_QUOTATION_ID, [quotation.id]);
-      await client.query(DELETE_APPROVAL_REQUESTS_BY_QUOTATION_ID, [quotation.id]);
-
-      const appReqRes = await client.query(CREATE_APPROVAL_REQUEST, [
-        quotation.id,
-        effectiveUserId,
-      ]);
-      const approvalRequest = appReqRes.rows[0];
-
       // Fetch active approval rules matching risk score
       const rulesRes = await client.query(GET_ACTIVE_APPROVAL_RULES);
       const rules = rulesRes.rows;
@@ -227,16 +228,38 @@ export const saveQuotationRepo = async ({
       const matchingRule = rules.find((r) => {
         const min = Number(r.min_risk_score);
         const max = r.max_risk_score != null ? Number(r.max_risk_score) : Infinity;
-        const score = Number(blended_risk_score);
+        const score = Number(effectiveRiskScore || 0);
         return score >= min && score <= max;
-      }) || { requires_sales_manager: true, requires_finance: false };
+      }) || { requires_sales_manager: false, requires_finance: false };
 
-      let stepNum = 1;
-      if (matchingRule.requires_sales_manager) {
-        await client.query(CREATE_APPROVAL_STEP, [approvalRequest.id, stepNum++, 'sales_manager']);
-      }
-      if (matchingRule.requires_finance) {
-        await client.query(CREATE_APPROVAL_STEP, [approvalRequest.id, stepNum++, 'finance']);
+      if (!matchingRule.requires_sales_manager && !matchingRule.requires_finance && Number(effectiveRiskScore || 0) <= 0) {
+        // Auto-approve directly
+        await client.query("UPDATE quotations SET status = 'approved'::quotation_status_enum, updated_at = NOW() WHERE id = $1", [quotation.id]);
+        await client.query(INSERT_QUOTATION_AUDIT_LOG, [
+          quotation.id,
+          effectiveUserId,
+          'approved',
+          'Auto-approved by system: discounts are within allowed customer tier and category limits.',
+          {},
+        ]);
+        quotation.status = 'approved';
+      } else {
+        await client.query(DELETE_APPROVAL_STEPS_BY_QUOTATION_ID, [quotation.id]);
+        await client.query(DELETE_APPROVAL_REQUESTS_BY_QUOTATION_ID, [quotation.id]);
+
+        const appReqRes = await client.query(CREATE_APPROVAL_REQUEST, [
+          quotation.id,
+          effectiveUserId,
+        ]);
+        const approvalRequest = appReqRes.rows[0];
+
+        let stepNum = 1;
+        if (matchingRule.requires_sales_manager) {
+          await client.query(CREATE_APPROVAL_STEP, [approvalRequest.id, stepNum++, 'sales_manager']);
+        }
+        if (matchingRule.requires_finance) {
+          await client.query(CREATE_APPROVAL_STEP, [approvalRequest.id, stepNum++, 'finance']);
+        }
       }
     }
 

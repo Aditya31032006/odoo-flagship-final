@@ -239,10 +239,10 @@ function NavbarComponent() {
   const location = useLocation();
   const navigate = useNavigate();
   const { user, isAuthenticated, logout } = useAuth();
-  
+
   const [isMegaOpen, setIsMegaOpen] = useState(false);
   const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
-  
+
   // Sliding indicator state
   const [indicatorStyle, setIndicatorStyle] = useState({ width: 0, left: 0, opacity: 0 });
   const [hoverStyle, setHoverStyle] = useState({ width: 0, left: 0, opacity: 0 });
@@ -352,24 +352,24 @@ function NavbarComponent() {
 
   const visiblePrimaryLinks = isCustomer
     ? [
-        { name: 'My Quotations', path: '/my_quotations' },
-        { name: 'My Invoices', path: '/my_invoices' },
-        { name: 'My Deliveries', path: '/calendar' },
-      ]
+      { name: 'My Quotations', path: '/my_quotations' },
+      { name: 'My Invoices', path: '/my_invoices' },
+      { name: 'My Deliveries', path: '/calendar' },
+    ]
     : PRIMARY_LINKS.filter((item) => {
-        if (!item.allowedRoles) return true;
-        return user?.role === 'admin' || item.allowedRoles.includes(user?.role);
-      });
+      if (!item.allowedRoles) return true;
+      return user?.role === 'admin' || item.allowedRoles.includes(user?.role);
+    });
 
   const homeDestination = isCustomer ? '/my_quotations' : '/dashboard';
 
   return (
     <header className="df-navbar-wrapper" ref={navRef}>
       <nav className={`df-navbar ${isMegaOpen ? 'df-navbar--expanded' : ''}`} aria-label="Main Navigation">
-        
+
         {/* Main Fixed Top Row */}
         <div className="df-navbar__top-row">
-          
+
           {/* Brand Logo */}
           <Link to={homeDestination} className="df-navbar__brand" title="DealFlow360 Platform">
             <div className="df-navbar__brand-logo">

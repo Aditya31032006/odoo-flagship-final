@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router';
 import useQuotations from '../hook/useQuotations.js';
+import useAuth from '../../auth/hook/useAuth.js';
 import { useDebounce } from '../../../shared/hooks/useDebounce.js';
 import QuotationKanban from '../components/QuotationKanban.jsx';
 import QuotationTable from '../components/QuotationTable.jsx';
@@ -8,6 +9,9 @@ import '../styles/quotations.scss';
 
 export const QuotationsList = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const isFinance = user?.role === 'finance';
+
   const {
     viewMode,
     kanbanData,
@@ -48,11 +52,24 @@ export const QuotationsList = () => {
     }
   };
 
+  // Filter kanban data for finance: only high risk quotations (> 5pt excess)
+  const displayKanbanData = React.useMemo(() => {
+    if (!isFinance) return kanbanData;
+    const filtered = {};
+    Object.keys(kanbanData).forEach((stage) => {
+      filtered[stage] = (kanbanData[stage] || []).filter(
+        (q) => (q.risk_level || '').toLowerCase() === 'high' || Number(q.blended_risk_score || 0) > 5.00
+      );
+    });
+    return filtered;
+  }, [kanbanData, isFinance]);
+
   // Flatten all quotations for Table View if listData is not separately populated
-  const allQuotations =
+  const allQuotations = (
     listData && listData.length > 0
       ? listData
-      : Object.values(kanbanData).flat();
+      : Object.values(displayKanbanData).flat()
+  ).filter((q) => !isFinance || (q.risk_level || '').toLowerCase() === 'high' || Number(q.blended_risk_score || 0) > 5.00);
 
   return (
     <div className="df-quotations">
@@ -171,7 +188,7 @@ export const QuotationsList = () => {
         {/* View Switch: Kanban or Table */}
         {viewMode === 'kanban' ? (
           <QuotationKanban
-            kanbanData={kanbanData}
+            kanbanData={displayKanbanData}
             summary={summary || {}}
             onSelectQuotation={handleSelectQuote}
           />

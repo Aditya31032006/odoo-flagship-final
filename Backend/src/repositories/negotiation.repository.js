@@ -39,9 +39,31 @@ export const getNegotiationWithMessagesRepo = async (quotationId) => {
     const messagesRes = await client.query(GET_NEGOTIATION_MESSAGES, [negotiation.id]);
     await client.query('COMMIT');
 
+    let messages = messagesRes.rows;
+    const hasCounterMessage = messages.some((m) => m.message_type === 'counter_offer' || m.counter_discount_percentage != null || m.requested_delivery_date != null);
+    if (!hasCounterMessage && (negotiation.counter_discount_percentage != null || negotiation.requested_delivery_date != null)) {
+      messages = [
+        {
+          id: `synth-${negotiation.id}`,
+          negotiation_id: negotiation.id,
+          sender_user_id: negotiation.created_by_user_id,
+          sender_name: negotiation.created_by_name || 'Customer',
+          sender_email: negotiation.created_by_email,
+          sender_role: negotiation.created_by_role || 'customer',
+          sender_type: negotiation.created_by_role === 'customer' ? 'customer' : 'sales_rep',
+          message: negotiation.created_by_role === 'customer' ? 'Customer proposed counter terms.' : 'Sales representative proposed revised terms.',
+          counter_discount_percentage: negotiation.counter_discount_percentage,
+          requested_delivery_date: negotiation.requested_delivery_date,
+          message_type: 'counter_offer',
+          created_at: negotiation.created_at,
+        },
+        ...messages,
+      ];
+    }
+
     return {
       ...negotiation,
-      messages: messagesRes.rows,
+      messages,
     };
   } catch (error) {
     console.error('Error in getNegotiationWithMessagesRepo:', error);
@@ -93,17 +115,20 @@ export const submitCounterOfferRepo = async ({
     // 2. Transition quotation status to 'negotiating'
     await client.query(UPDATE_QUOTATION_STATUS, ['negotiating', quotationId]);
 
-    // 3. Add message to thread if commentary provided
+    // 3. Add message to thread as a counter_offer message
     const senderType = userRole === 'customer' ? 'customer' : 'sales_rep';
-    if (message && message.trim()) {
-      await client.query(INSERT_NEGOTIATION_MESSAGE, [
-        negotiation.id,
-        null, // General deal level message
-        userId,
-        senderType,
-        message.trim(),
-      ]);
-    }
+    const noteText = (message && message.trim()) ? message.trim() : (senderType === 'customer' ? 'Submitted counter offer proposal.' : 'Sales representative proposed revised terms.');
+    
+    await client.query(INSERT_NEGOTIATION_MESSAGE, [
+      negotiation.id,
+      null, // General deal level message
+      userId,
+      senderType,
+      noteText,
+      counterDiscount !== undefined ? counterDiscount : null,
+      requestedDeliveryDate || null,
+      'counter_offer',
+    ]);
 
     await client.query('COMMIT');
 
@@ -157,6 +182,9 @@ export const addNegotiationMessageRepo = async ({
       userId,
       senderType,
       message.trim(),
+      null,
+      null,
+      'chat',
     ]);
 
     // 3. Ensure quotation status reflects active negotiation

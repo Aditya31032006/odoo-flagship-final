@@ -29,8 +29,8 @@ export const ApprovalsList = () => {
       list = list.filter(
         (item) =>
           item.status === 'pending_approval' ||
-          item.stage === 'Sales Manager' ||
-          item.stage === 'Finance' ||
+          item.stage?.includes('Sales Manager') ||
+          item.stage?.includes('Finance') ||
           item.stage === 'Operations' ||
           item.stage === 'Admin'
       );
@@ -191,7 +191,7 @@ export const ApprovalsList = () => {
               <tbody>
                 {filteredApprovals.map((item) => {
                   const riskLevel = item.risk_level?.toUpperCase() || 'LOW';
-                  const isPendingStage = item.stage === 'Sales Manager' || item.stage === 'Finance';
+                  const isPendingStage = item.stage?.includes('Sales Manager') || item.stage?.includes('Finance');
                   const isAuto = item.stage === 'Auto-Approved' || item.stage === 'Approved';
                   const isReturned = item.stage === 'Returned for Revision';
 

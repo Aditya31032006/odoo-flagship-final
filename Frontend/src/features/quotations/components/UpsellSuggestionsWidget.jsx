@@ -36,9 +36,13 @@ export const UpsellSuggestionsWidget = memo(({
             ? `Margin +${sug.minimum_margin_percentage}%`
             : `Price: ₹${Number(sug.suggested_selling_price || sug.suggested_base_price).toLocaleString('en-IN')}`;
 
+          const uniqueKey = sug.is_subscription
+            ? `sub-plan-${sug.subscription_plan_id}`
+            : `rule-${sug.rule_id || sug.suggested_variant_id || sug.suggested_product_id}`;
+
           return (
             <div
-              key={sug.rule_id || sug.subscription_plan_id || sug.suggested_variant_id}
+              key={uniqueKey}
               className={`df-quotation-detail__upsell-card ${sug.is_subscription ? 'df-upsell-card--subscription' : ''}`}
               onClick={() => onAddSuggestion(sug)}
               title={`Click to add ${sug.suggested_product_name}`}
@@ -48,7 +52,7 @@ export const UpsellSuggestionsWidget = memo(({
                   {sug.is_subscription ? '🔁 ' : '+ '}
                   {sug.suggested_product_name}
                 </div>
-                <div className="detail" style={sug.is_subscription ? { color: '#38bdf8', fontWeight: 500 } : {}}>
+                <div className="detail" style={sug.is_subscription ? { color: '#0284c7', fontWeight: 600 } : {}}>
                   {detailText}
                 </div>
               </div>

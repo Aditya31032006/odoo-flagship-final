@@ -7,7 +7,9 @@ import {
 
 export const getApprovalsListController = async (req, res, next) => {
   try {
-    const data = await getApprovalsListRepo();
+    const role = req.user?.role || 'admin';
+    const userId = req.user?.id || null;
+    const data = await getApprovalsListRepo({ role, userId });
     return res.status(STATUS_CODES.OK).json({ success: true, data });
   } catch (error) {
     next(error);
@@ -32,6 +34,14 @@ export const submitApprovalDecisionController = async (req, res, next) => {
     const { id } = req.params;
     const { action, reason } = req.body;
     const userId = req.user?.id;
+    const userRole = req.user?.role || 'admin';
+
+    if (!id || isNaN(Number(id))) {
+      return res.status(STATUS_CODES.BAD_REQUEST).json({
+        success: false,
+        message: 'Invalid quotation ID. Quotation must be saved before submitting an approval decision.',
+      });
+    }
 
     if (!action || !['approve', 'return_revision', 'reject'].includes(action)) {
       return res.status(STATUS_CODES.BAD_REQUEST).json({
@@ -45,6 +55,7 @@ export const submitApprovalDecisionController = async (req, res, next) => {
       action,
       reason,
       userId,
+      userRole,
     });
 
     return res.status(STATUS_CODES.OK).json({
