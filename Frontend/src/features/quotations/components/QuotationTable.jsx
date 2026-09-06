@@ -21,21 +21,24 @@ export const QuotationTable = ({ quotations = [], onSelectQuotation }) => {
   useEffect(() => {
     if (!tableRef.current) return;
     const ctx = gsap.context(() => {
-      gsap.fromTo(
-        '.df-quotations-table tbody tr',
-        {
-          opacity: 0,
-          y: 14,
-        },
-        {
-          opacity: 1,
-          y: 0,
-          duration: 0.35,
-          stagger: 0.03,
-          ease: 'power2.out',
-          clearProps: 'opacity,transform',
-        }
-      );
+      const rows = tableRef.current.querySelectorAll('.df-quotations-table tbody tr');
+      if (rows.length > 0) {
+        gsap.fromTo(
+          rows,
+          {
+            opacity: 0,
+            y: 14,
+          },
+          {
+            opacity: 1,
+            y: 0,
+            duration: 0.35,
+            stagger: 0.03,
+            ease: 'power2.out',
+            clearProps: 'opacity,transform',
+          }
+        );
+      }
     }, tableRef);
 
     return () => ctx.revert();

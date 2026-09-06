@@ -28,39 +28,45 @@ export const QuotationKanban = ({
     if (!boardRef.current) return;
     const ctx = gsap.context(() => {
       // Columns enter with smooth stagger
-      gsap.fromTo(
-        '.df-kanban-column',
-        {
-          opacity: 0,
-          y: 22,
-        },
-        {
-          opacity: 1,
-          y: 0,
-          duration: 0.5,
-          stagger: 0.05,
-          ease: 'power3.out',
-          clearProps: 'opacity,transform',
-        }
-      );
+      const cols = boardRef.current.querySelectorAll('.df-kanban-column');
+      if (cols.length > 0) {
+        gsap.fromTo(
+          cols,
+          {
+            opacity: 0,
+            y: 22,
+          },
+          {
+            opacity: 1,
+            y: 0,
+            duration: 0.5,
+            stagger: 0.05,
+            ease: 'power3.out',
+            clearProps: 'opacity,transform',
+          }
+        );
+      }
 
       // Quotation cards cascade in
-      gsap.fromTo(
-        '.df-quote-card',
-        {
-          opacity: 0,
-          y: 16,
-        },
-        {
-          opacity: 1,
-          y: 0,
-          duration: 0.45,
-          delay: 0.08,
-          stagger: 0.035,
-          ease: 'power2.out',
-          clearProps: 'opacity,transform',
-        }
-      );
+      const cards = boardRef.current.querySelectorAll('.df-quote-card');
+      if (cards.length > 0) {
+        gsap.fromTo(
+          cards,
+          {
+            opacity: 0,
+            y: 16,
+          },
+          {
+            opacity: 1,
+            y: 0,
+            duration: 0.45,
+            delay: 0.08,
+            stagger: 0.035,
+            ease: 'power2.out',
+            clearProps: 'opacity,transform',
+          }
+        );
+      }
     }, boardRef);
 
     return () => ctx.revert();

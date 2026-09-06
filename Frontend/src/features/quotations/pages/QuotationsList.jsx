@@ -106,21 +106,24 @@ export const QuotationsList = () => {
   useEffect(() => {
     if (!containerRef.current) return;
     const ctx = gsap.context(() => {
-      gsap.fromTo(
-        '.gsap-stagger-field',
-        {
-          opacity: 0,
-          y: 18,
-        },
-        {
-          opacity: 1,
-          y: 0,
-          duration: 0.5,
-          stagger: 0.06,
-          ease: 'power3.out',
-          clearProps: 'opacity,transform',
-        }
-      );
+      const fields = containerRef.current.querySelectorAll('.gsap-stagger-field');
+      if (fields.length > 0) {
+        gsap.fromTo(
+          fields,
+          {
+            opacity: 0,
+            y: 18,
+          },
+          {
+            opacity: 1,
+            y: 0,
+            duration: 0.5,
+            stagger: 0.06,
+            ease: 'power3.out',
+            clearProps: 'opacity,transform',
+          }
+        );
+      }
     }, containerRef);
 
     return () => ctx.revert();

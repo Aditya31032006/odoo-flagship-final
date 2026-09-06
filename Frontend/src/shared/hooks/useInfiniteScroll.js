@@ -78,7 +78,17 @@ export function useInfiniteScroll({
             ? pagination.hasNextPage
             : newItems.length >= limit && targetPage * limit < totalCount;
 
-        setItems((prev) => (isReset ? newItems : [...prev, ...newItems]));
+        setItems((prev) => {
+          if (isReset) return newItems;
+          const combined = [...prev, ...newItems];
+          const seen = new Set();
+          return combined.filter((item, idx) => {
+            const key = item?.id ?? item?.quotation_id ?? item?.stock_id ?? item?.order_id ?? item?.invoice_id ?? idx;
+            if (seen.has(key)) return false;
+            seen.add(key);
+            return true;
+          });
+        });
         setTotal(totalCount);
         setHasMore(hasNext);
         hasMoreRef.current = hasNext;

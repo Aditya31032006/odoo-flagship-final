@@ -52,6 +52,7 @@ import {
   RESOLVE_PENDING_BACKORDERS_FOR_ORDER,
   INSERT_SHORTAGE_BACKORDER_RECORD,
 } from '../queries/fulfillment.query.js';
+import { generateOrderNumber } from '../utils/sequence.util.js';
 
 export const getFulfillmentListRepo = async ({ search = null, limit = null, offset = null } = {}) => {
   const client = await pool.connect();
@@ -583,7 +584,9 @@ export const createOrderRepo = async ({
     const subtotal = (unitPrice * qty);
     const taxAmount = (subtotal * 0.18);
     const grandTotal = (subtotal + taxAmount);
-    const orderNum = order_number || `Q-${Math.floor(1000 + Math.random() * 9000)}`;
+    const orderNum = order_number && String(order_number).trim() !== ''
+      ? String(order_number).trim()
+      : await generateOrderNumber(client);
 
     const quoteRes = await client.query(UPSERT_CONFIRMED_QUOTATION_RECORD, [
       orderNum,

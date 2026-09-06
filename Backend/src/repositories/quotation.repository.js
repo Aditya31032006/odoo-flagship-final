@@ -24,6 +24,7 @@ import {
 } from '../queries/quotation.query.js';
 import { GET_ACTIVE_APPROVAL_RULES } from '../queries/catalog.query.js';
 import { allocateStockGreedy } from './fulfillment.repository.js';
+import { generateQuotationNumber, generateOrderNumber } from '../utils/sequence.util.js';
 
 export const getQuotationsListRepo = async ({ salesRepId = null, customerId = null, status = null, searchQuery = null, role = null, limit = null, offset = null } = {}) => {
   const client = await pool.connect();
@@ -99,16 +100,6 @@ export const getQuotationFullDetailRepo = async (quotationId) => {
 };
 
 /**
- * Generate unique quotation number
- */
-async function generateQuotationNumber(client) {
-  const countRes = await client.query(COUNT_QUOTATIONS_TOTAL);
-  const count = (countRes.rows[0]?.count || 0) + 1;
-  const year = new Date().getFullYear();
-  return `QT-${year}-${String(count).padStart(4, '0')}`;
-}
-
-/**
  * Save or update quotation with items in a PostgreSQL transaction
  */
 export const saveQuotationRepo = async ({
@@ -133,6 +124,16 @@ export const saveQuotationRepo = async ({
   try {
     await client.query('BEGIN');
 
+    const cleanCustomerId = customer_id && !isNaN(Number(customer_id)) ? Number(customer_id) : null;
+    const cleanTierId = tier_id && !isNaN(Number(tier_id)) ? Number(tier_id) : null;
+    const cleanPriceListId = price_list_id && !isNaN(Number(price_list_id)) ? Number(price_list_id) : null;
+    const cleanValidUntil = valid_until && String(valid_until).trim() !== '' ? String(valid_until).trim() : null;
+    const cleanSubtotal = Number(subtotal) || 0;
+    const cleanDiscountTotal = Number(discount_total) || 0;
+    const cleanTaxTotal = Number(tax_total) || 0;
+    const cleanGrandTotal = Number(grand_total) || 0;
+    const effectiveUserId = user_id || sales_rep_id || 1;
+
     // Compute exact risk score and level from excess discount:
     // 0 pt excess: low risk (auto-approved)
     // 0.01 to 5.00 pt excess: medium risk (Sales Manager only)
@@ -142,26 +143,26 @@ export const saveQuotationRepo = async ({
     const effectiveRiskLevel = effectiveRiskScore > 5.00 ? 'high' : (effectiveRiskScore > 0 ? 'medium' : 'low');
 
     let quotation;
-    let actionType = 'created';
+    let actionType = status === 'approved' ? 'approved' : (status === 'pending_approval' ? 'submitted' : (id ? 'edited' : 'submitted'));
 
     if (id) {
       // Update existing quotation
       const updateRes = await client.query(UPDATE_QUOTATION, [
         id,
-        customer_id,
-        tier_id,
-        price_list_id,
+        cleanCustomerId,
+        cleanTierId,
+        cleanPriceListId,
         status,
         effectiveRiskScore,
         effectiveRiskLevel,
-        subtotal,
-        discount_total,
-        tax_total,
-        grand_total,
-        valid_until,
+        cleanSubtotal,
+        cleanDiscountTotal,
+        cleanTaxTotal,
+        cleanGrandTotal,
+        cleanValidUntil,
       ]);
       quotation = updateRes.rows[0];
-      actionType = status === 'pending_approval' ? 'submitted' : 'edited';
+      actionType = status === 'approved' ? 'approved' : (status === 'pending_approval' ? 'submitted' : 'edited');
 
       // Remove existing line items to re-insert
       await client.query(DELETE_QUOTATION_ITEMS, [id]);
@@ -170,27 +171,48 @@ export const saveQuotationRepo = async ({
       const quoteNumber = await generateQuotationNumber(client);
       const insertRes = await client.query(CREATE_QUOTATION, [
         quoteNumber,
-        customer_id,
-        sales_rep_id || user_id,
-        tier_id,
-        price_list_id,
+        cleanCustomerId,
+        sales_rep_id || effectiveUserId,
+        cleanTierId,
+        cleanPriceListId,
         status,
         effectiveRiskScore,
         effectiveRiskLevel,
-        subtotal,
-        discount_total,
-        tax_total,
-        grand_total,
-        valid_until,
+        cleanSubtotal,
+        cleanDiscountTotal,
+        cleanTaxTotal,
+        cleanGrandTotal,
+        cleanValidUntil,
       ]);
       quotation = insertRes.rows[0];
-      actionType = status === 'pending_approval' ? 'submitted' : 'created';
+      actionType = status === 'approved' ? 'approved' : (status === 'pending_approval' ? 'submitted' : 'submitted');
     }
 
     // Insert line items
     const insertedItems = [];
     for (let i = 0; i < items.length; i++) {
       const item = items[i];
+
+      // Resolve valid variant ID
+      let variantId = item.product_variant_id;
+      if (typeof variantId === 'string' && variantId.startsWith('sub-var-')) {
+        variantId = null;
+      }
+      variantId = variantId && !isNaN(Number(variantId)) ? Number(variantId) : null;
+      if (!variantId && item.variant_id && !isNaN(Number(item.variant_id))) {
+        variantId = Number(item.variant_id);
+      }
+      if (!variantId && item.product_id && !isNaN(Number(item.product_id))) {
+        const fallbackVar = await client.query('SELECT id FROM product_variants WHERE product_id = $1 LIMIT 1', [Number(item.product_id)]);
+        if (fallbackVar.rows.length > 0) {
+          variantId = fallbackVar.rows[0].id;
+        }
+      }
+      if (!variantId) {
+        const anyVar = await client.query('SELECT id FROM product_variants LIMIT 1');
+        variantId = anyVar.rows[0]?.id || 1;
+      }
+
       const listPrice = item.list_price != null ? Number(item.list_price) : Number(item.unit_price || 0);
       const unitPrice = item.unit_price != null ? Number(item.unit_price) : listPrice;
       const qty = Math.max(1, Number(item.quantity) || 1);
@@ -203,7 +225,7 @@ export const saveQuotationRepo = async ({
 
       const itemRes = await client.query(INSERT_QUOTATION_ITEM, [
         quotation.id,
-        item.product_variant_id,
+        variantId,
         i + 1, // line_number
         item.product_name_snapshot || item.product_name || 'Product',
         item.sku_snapshot || item.sku || null,
@@ -223,8 +245,6 @@ export const saveQuotationRepo = async ({
     }
 
     // If submitted for approval, evaluate approval rules and create approval steps
-    const effectiveUserId = user_id || sales_rep_id || quotation?.sales_rep_id || 1;
-
     if (status === 'pending_approval') {
       // Fetch active approval rules matching risk score
       const rulesRes = await client.query(GET_ACTIVE_APPROVAL_RULES);
@@ -248,6 +268,7 @@ export const saveQuotationRepo = async ({
           {},
         ]);
         quotation.status = 'approved';
+        actionType = null;
       } else {
         await client.query(DELETE_APPROVAL_STEPS_BY_QUOTATION_ID, [quotation.id]);
         await client.query(DELETE_APPROVAL_REQUESTS_BY_QUOTATION_ID, [quotation.id]);
@@ -272,12 +293,9 @@ export const saveQuotationRepo = async ({
     if (status === 'confirmed') {
       const existingOrder = await client.query(CHECK_ORDER_EXISTS_FOR_QUOTATION, [quotation.id]);
       if (existingOrder.rows.length === 0) {
-        const countRes = await client.query(COUNT_QUOTATIONS_TOTAL);
-        const orderCount = (countRes.rows[0]?.count || 0) + 1;
-        const year = new Date().getFullYear();
-        const orderNumber = `ORD-${year}-${String(orderCount).padStart(4, '0')}`;
+        const orderNumber = await generateOrderNumber(client);
 
-        const orderRes = await client.query(INSERT_CONFIRMED_ORDER, [orderNumber, quotation.id, customer_id]);
+        const orderRes = await client.query(INSERT_CONFIRMED_ORDER, [orderNumber, quotation.id, cleanCustomerId]);
         const createdOrderId = orderRes.rows[0].id;
 
         for (const insertedItem of insertedItems) {
@@ -377,19 +395,25 @@ export const saveQuotationRepo = async ({
     }
 
     // Record in quotation audit log
-    await client.query(INSERT_QUOTATION_AUDIT_LOG, [
-      quotation.id,
-      effectiveUserId,
-      actionType,
-      action_reason || (status === 'pending_approval' ? 'Submitted for approval' : 'Saved quotation draft'),
-      JSON.stringify({
-        grand_total,
-        status,
-        blended_risk_score,
-        risk_level,
-        item_count: items.length,
-      }),
-    ]);
+    if (actionType) {
+      const validAction = ['submitted', 'approved', 'rejected', 'returned', 'edited'].includes(actionType)
+        ? actionType
+        : (status === 'approved' ? 'approved' : (status === 'rejected' ? 'rejected' : (id ? 'edited' : 'submitted')));
+
+      await client.query(INSERT_QUOTATION_AUDIT_LOG, [
+        quotation.id,
+        effectiveUserId,
+        validAction,
+        action_reason || (status === 'pending_approval' ? 'Submitted for approval' : (status === 'approved' ? 'Approved quotation' : 'Saved quotation draft')),
+        JSON.stringify({
+          grand_total: cleanGrandTotal,
+          status: quotation.status || status,
+          blended_risk_score: effectiveRiskScore,
+          risk_level: effectiveRiskLevel,
+          item_count: items.length,
+        }),
+      ]);
+    }
 
     await client.query('COMMIT');
 

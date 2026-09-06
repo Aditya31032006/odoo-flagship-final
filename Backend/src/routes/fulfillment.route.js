@@ -14,7 +14,7 @@ import {
   deleteOrderController,
 } from '../controllers/fulfillment.controller.js';
 import { authMiddleware, authorizeRoles } from '../middleware/auth.middleware.js';
-import { ROLES } from '../constants/roles.js';
+import { ROLES, ALL_INTERNAL_ROLES } from '../constants/roles.js';
 
 const router = Router();
 
@@ -23,31 +23,31 @@ router.use(authMiddleware);
 // Meta routes
 router.get('/meta', getFulfillmentMetaController);
 
-// Stock routes - Operations & Admin
-router.post('/stock', authorizeRoles(ROLES.ADMIN, ROLES.OPERATIONS), createStockController);
-router.put('/stock/:id', authorizeRoles(ROLES.ADMIN, ROLES.OPERATIONS), updateStockController);
-router.delete('/stock/:id', authorizeRoles(ROLES.ADMIN, ROLES.OPERATIONS), deleteStockController);
+// Stock routes - All internal staff
+router.post('/stock', authorizeRoles(ALL_INTERNAL_ROLES), createStockController);
+router.put('/stock/:id', authorizeRoles(ALL_INTERNAL_ROLES), updateStockController);
+router.delete('/stock/:id', authorizeRoles(ALL_INTERNAL_ROLES), deleteStockController);
 
-// Order routes
-router.post('/orders', authorizeRoles(ROLES.ADMIN, ROLES.OPERATIONS, ROLES.FINANCE), createOrderController);
-router.put('/orders/:id', authorizeRoles(ROLES.ADMIN, ROLES.OPERATIONS, ROLES.FINANCE), updateOrderController);
-router.delete('/orders/:id', authorizeRoles(ROLES.ADMIN, ROLES.OPERATIONS, ROLES.FINANCE), deleteOrderController);
+// Order routes - All internal staff
+router.post('/orders', authorizeRoles(ALL_INTERNAL_ROLES), createOrderController);
+router.put('/orders/:id', authorizeRoles(ALL_INTERNAL_ROLES), updateOrderController);
+router.delete('/orders/:id', authorizeRoles(ALL_INTERNAL_ROLES), deleteOrderController);
 
-// Detail & Splitting routes
+// Detail & Splitting routes - All internal staff
 router.get('/:id', getFulfillmentDetailController);
 router.post(
   '/:id/accept-split',
-  authorizeRoles(ROLES.ADMIN, ROLES.OPERATIONS, ROLES.FINANCE),
+  authorizeRoles(ALL_INTERNAL_ROLES),
   acceptSuggestedSplitController
 );
 router.post(
   '/:id/manual-override',
-  authorizeRoles(ROLES.ADMIN, ROLES.OPERATIONS, ROLES.FINANCE),
+  authorizeRoles(ALL_INTERNAL_ROLES),
   saveManualOverrideSplitController
 );
 router.post(
   '/:id/complete-shipment',
-  authorizeRoles(ROLES.ADMIN, ROLES.OPERATIONS, ROLES.FINANCE),
+  authorizeRoles(ALL_INTERNAL_ROLES),
   completeShipmentController
 );
 

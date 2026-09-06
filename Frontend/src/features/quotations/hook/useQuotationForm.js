@@ -423,17 +423,24 @@ export const useQuotationForm = ({ quotationId = null } = {}) => {
       setError(null);
       setSuccessMessage(null);
 
-      const sanitizedItems = lineItems.map((it) => ({
-        ...it,
-        quantity: Math.max(1, Number(it.quantity) || 1),
-        discount_percentage: Math.min(100, Math.max(0, Number(it.discount_percentage) || 0)),
-      }));
+      const sanitizedItems = lineItems.map((it) => {
+        let variantId = it.product_variant_id;
+        if (typeof variantId === 'string' && variantId.startsWith('sub-var-')) {
+          variantId = null;
+        }
+        return {
+          ...it,
+          product_variant_id: variantId && !isNaN(Number(variantId)) ? Number(variantId) : (it.variant_id && !isNaN(Number(it.variant_id)) ? Number(it.variant_id) : null),
+          quantity: Math.max(1, Number(it.quantity) || 1),
+          discount_percentage: Math.min(100, Math.max(0, Number(it.discount_percentage) || 0)),
+        };
+      });
 
       const resolvedTierId = selectedCustomer?.tier_id || activePriceList?.tier_id || 1;
 
       const payload = {
-        customer_id: customerId,
-        tier_id: resolvedTierId,
+        customer_id: Number(customerId),
+        tier_id: Number(resolvedTierId),
         price_list_id: priceListId ? Number(priceListId) : (activePriceList?.id ? Number(activePriceList.id) : null),
         status: status && status !== 'draft' ? status : 'pending_approval',
         blended_risk_score: calculatedTotals.blendedRiskScore,
@@ -442,7 +449,7 @@ export const useQuotationForm = ({ quotationId = null } = {}) => {
         discount_total: calculatedTotals.discountTotal,
         tax_total: calculatedTotals.taxTotal,
         grand_total: calculatedTotals.grandTotal,
-        valid_until: validUntil,
+        valid_until: validUntil && String(validUntil).trim() !== '' ? String(validUntil).trim() : null,
         items: sanitizedItems,
       };
 
@@ -483,17 +490,24 @@ export const useQuotationForm = ({ quotationId = null } = {}) => {
       setError(null);
       setSuccessMessage(null);
 
-      const sanitizedItems = lineItems.map((it) => ({
-        ...it,
-        quantity: Math.max(1, Number(it.quantity) || 1),
-        discount_percentage: Math.min(100, Math.max(0, Number(it.discount_percentage) || 0)),
-      }));
+      const sanitizedItems = lineItems.map((it) => {
+        let variantId = it.product_variant_id;
+        if (typeof variantId === 'string' && variantId.startsWith('sub-var-')) {
+          variantId = null;
+        }
+        return {
+          ...it,
+          product_variant_id: variantId && !isNaN(Number(variantId)) ? Number(variantId) : (it.variant_id && !isNaN(Number(it.variant_id)) ? Number(it.variant_id) : null),
+          quantity: Math.max(1, Number(it.quantity) || 1),
+          discount_percentage: Math.min(100, Math.max(0, Number(it.discount_percentage) || 0)),
+        };
+      });
 
       const resolvedTierId = selectedCustomer?.tier_id || activePriceList?.tier_id || 1;
 
       const payload = {
-        customer_id: customerId,
-        tier_id: resolvedTierId,
+        customer_id: Number(customerId),
+        tier_id: Number(resolvedTierId),
         price_list_id: priceListId ? Number(priceListId) : (activePriceList?.id ? Number(activePriceList.id) : null),
         blended_risk_score: calculatedTotals.blendedRiskScore,
         risk_level: calculatedTotals.riskLevel,
@@ -501,7 +515,7 @@ export const useQuotationForm = ({ quotationId = null } = {}) => {
         discount_total: calculatedTotals.discountTotal,
         tax_total: calculatedTotals.taxTotal,
         grand_total: calculatedTotals.grandTotal,
-        valid_until: validUntil,
+        valid_until: validUntil && String(validUntil).trim() !== '' ? String(validUntil).trim() : null,
         items: sanitizedItems,
         action_reason: 'Submitted for approval by Sales Representative',
       };

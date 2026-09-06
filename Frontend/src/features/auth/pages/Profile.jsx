@@ -632,7 +632,7 @@ export default function Profile() {
                     </svg>
                     <span>Change</span>
                   </button>
-                  <button
+                  {/* <button
                     type="button"
                     className={`df-profile__mode-btn ${isForgotMode ? 'active' : ''}`}
                     onClick={() => {
@@ -647,7 +647,7 @@ export default function Profile() {
                       <polyline points="22,6 12,13 2,6" />
                     </svg>
                     <span>Forgot (OTP)</span>
-                  </button>
+                  </button> */}
                 </div>
               )}
             </div>
@@ -690,7 +690,7 @@ export default function Profile() {
                   <div className="form-group">
                     <label htmlFor="current_password">
                       <span>Current Password *</span>
-                      <button
+                      {/* <button
                         type="button"
                         className="df-profile__badge-link"
                         onClick={() => {
@@ -706,7 +706,7 @@ export default function Profile() {
                           <line x1="12" y1="17" x2="12.01" y2="17" />
                         </svg>
                         <span>Forgot? Reset via OTP</span>
-                      </button>
+                      </button> */}
                     </label>
                     <div className="input-wrapper">
                       <input

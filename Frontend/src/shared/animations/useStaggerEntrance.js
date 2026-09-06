@@ -26,6 +26,7 @@ export const useStaggerEntrance = (
 
   useEffect(() => {
     if (!containerRef.current) return;
+    if (!selector || typeof selector !== 'string' || !selector.trim()) return;
 
     const items = containerRef.current.querySelectorAll(selector);
     if (!items || items.length === 0) return;

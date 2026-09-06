@@ -21,6 +21,7 @@ import {
 } from '../queries/negotiation.query.js';
 import { GET_QUOTATION_BY_ID } from '../queries/quotation.query.js';
 import { allocateStockGreedy } from './fulfillment.repository.js';
+import { generateOrderNumber } from '../utils/sequence.util.js';
 
 /**
  * Fetch full negotiation thread with history of messages for a quotation
@@ -228,27 +229,28 @@ export const acceptQuotationTermsRepo = async ({ quotationId, userId, userRole }
       await client.query(UPDATE_NEGOTIATION_STATUS_ACCEPTED, [negRes.rows[0].id]);
     }
 
-    // 3. Generate unique order number
-    const countRes = await client.query(COUNT_ORDERS_TOTAL);
-    const orderCount = (countRes.rows[0]?.count || 0) + 1;
-    const year = new Date().getFullYear();
-    const orderNumber = `ORD-${year}-${String(orderCount).padStart(4, '0')}`;
+    // 3. Check if order already exists for this quotation, or create a new one
+    const existingOrderRes = await client.query('SELECT * FROM orders WHERE quotation_id = $1 LIMIT 1', [quotationId]);
+    let createdOrder = existingOrderRes.rows[0];
 
-    // 4. Create confirmed order
-    const orderRes = await client.query(CREATE_ORDER_FROM_QUOTATION, [
-      orderNumber,
-      quotationId,
-      quotation.customer_id,
-    ]);
-    const createdOrder = orderRes.rows[0];
+    if (!createdOrder) {
+      const orderNumber = await generateOrderNumber(client);
 
-    // 5. Transfer quotation items to order_items and generate subscription records
-    const qItemsRes = await client.query(GET_QUOTATION_ITEMS_ORDERED_BY_LINE, [quotationId]);
-    for (const item of qItemsRes.rows) {
-      let isSub = false;
-      let subscriptionPlanId = null;
-      let subscriptionCycle = 'monthly';
-      let productId = null;
+      // 4. Create confirmed order
+      const orderRes = await client.query(CREATE_ORDER_FROM_QUOTATION, [
+        orderNumber,
+        quotationId,
+        quotation.customer_id,
+      ]);
+      createdOrder = orderRes.rows[0];
+
+      // 5. Transfer quotation items to order_items and generate subscription records
+      const qItemsRes = await client.query(GET_QUOTATION_ITEMS_ORDERED_BY_LINE, [quotationId]);
+      for (const item of qItemsRes.rows) {
+        let isSub = false;
+        let subscriptionPlanId = null;
+        let subscriptionCycle = 'monthly';
+        let productId = null;
 
       if (item.product_variant_id) {
         const prodCheck = await client.query(CHECK_NEGOTIATION_PRODUCT_VARIANT_IS_SUBSCRIPTION, [item.product_variant_id]);
@@ -345,8 +347,9 @@ export const acceptQuotationTermsRepo = async ({ quotationId, userId, userRole }
         }
       }
     }
+  }
 
-    await client.query('COMMIT');
+  await client.query('COMMIT');
 
     return {
       quotation: updatedQuoteRes.rows[0],
